@@ -8,7 +8,7 @@ html,body{height:100%}
 body{margin:0;display:flex;flex-direction:column;color:#eee;font-family:system-ui,sans-serif;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);
 background:linear-gradient(135deg,#0f0c20,#1b1038,#0c1b2e,#0f0c20);background-size:300% 300%;animation:bg 14s ease infinite}
 @keyframes bg{50%{background-position:100% 50%}}
-header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:rgba(20,16,40,.7)}
+header{display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(20,16,40,.7)}
 h1{margin:0;font-size:19px;flex:1;background:linear-gradient(90deg,#c4b5fd,#67e8f9,#f9a8d4);-webkit-background-clip:text;color:transparent}
 #orb{width:34px;height:34px;border-radius:50%;background:conic-gradient(#8b5cf6,#22d3ee,#f472b6,#8b5cf6);box-shadow:0 0 18px #8b5cf6aa;animation:spin 6s linear infinite,br 3s ease-in-out infinite}
 body.think #orb{animation:spin 1s linear infinite,br 1s ease-in-out infinite}
@@ -35,65 +35,143 @@ body.talk #orb{animation:spin 2s linear infinite,tk .35s ease-in-out infinite al
 .dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
 @keyframes bn{0%,80%,100%{transform:none;opacity:.5}40%{transform:translateY(-8px);opacity:1}}
 footer{display:flex;gap:8px;padding:10px;background:rgba(20,16,40,.7)}
+textarea{padding:12px;border-radius:14px;border:0;background:#25253d;color:#fff;font-size:15px;outline:none;font-family:inherit;resize:none}
 input{flex:1;min-width:0;padding:12px;border-radius:22px;border:0;background:#25253d;color:#fff;font-size:16px;outline:none}
 .k{border:0;border-radius:50%;width:44px;height:44px;background:#6c4cd9;color:#fff;font-size:18px}
 .k.on{background:#ef4444;animation:rg 1s infinite}
 @keyframes rg{from{box-shadow:0 0 0 0 #ef4444aa}to{box-shadow:0 0 0 18px #ef444400}}
-#set{position:fixed;inset:0;background:#0f0c20f2;padding:24px;display:flex;flex-direction:column;gap:12px;z-index:5}
-#set[hidden]{display:none}
-#set p{margin:0;font-size:14px;color:#bbb;line-height:1.5}
-#set button.k{border-radius:22px;width:auto;height:44px}
+.ov{overflow-y:auto;position:fixed;inset:0;background:#0f0c20f5;padding:20px;padding-top:calc(20px + env(safe-area-inset-top));display:flex;flex-direction:column;gap:10px;z-index:5}
+.ov[hidden]{display:none}
+.ov p{margin:0;font-size:14px;color:#bbb;line-height:1.5}
+.ov .k{border-radius:22px;width:auto;height:44px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button,.cl{border:0;border-radius:16px;padding:8px 12px;background:#25253d;color:#ddd;font-size:14px}
+.tabs button.on{background:#6c4cd9;color:#fff}
+#pl{flex:1;overflow-y:auto}
+.row{display:flex;gap:8px;align-items:center;padding:10px 12px;margin:6px 0;background:#25253d;border-radius:12px;line-height:1.4}
+.row span{flex:1}
+.row button{border:0;background:none;font-size:18px}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
 </style></head><body>
-<header><div id="orb"></div><h1>Aura</h1><button class="ic" id="vol">&#128266;</button><button class="ic" id="gear">&#9881;</button></header>
+<header><div id="orb"></div><h1>Aura</h1><button class="ic" id="mod">&#128188;</button><button class="ic" id="lst">&#128203;</button><button class="ic" id="vol">&#128266;</button><button class="ic" id="gear">&#9881;</button></header>
 <div id="st"><span class="wv"><i></i><i></i><i></i><i></i><i></i></span>Mic on hai... bolo</div>
 <div id="log"></div>
 <footer><button class="k" id="mic">&#127908;</button><input id="m" placeholder="Aura se baat karo..."><button class="k" id="go">&#10148;</button></footer>
-<div id="set" hidden>
+<div id="set" class="ov" hidden>
 <h2 style="margin:0">Aura settings</h2>
 <p>Keys sirf is phone mein save hoti hain. Groq tez hai, Gemini backup hai. Ek bhi chalegi.</p>
 <input id="qk" type="password" placeholder="Groq API key">
 <input id="gk" type="password" placeholder="Gemini API key">
+<input id="dv" placeholder="Tumhara naam (Aura ka developer)">
+<input id="ct" placeholder="Tumhara sheher (mausam ke liye)">
+<textarea id="ru" rows="7" placeholder="Aura ke liye apne rules likho. Jaise: Mujhe bhai bulana. Hamesha 2 line mein jawab dena. Subah mausam batana."></textarea>
 <button class="k" id="save">Save karo</button>
+</div>
+<div id="pn" class="ov" hidden>
+<div class="tabs"><button data-t="rem">⏰ Reminders</button><button data-t="todo">☑ To-do</button><button data-t="note">📝 Notes</button><button data-t="app">📱 Apps</button><button data-t="con">👤 Contacts</button><button data-t="mem">🧠 Yaad</button></div>
+<div id="pl"></div>
+<div class="tabs"><button class="cl" id="clr">Chat saaf karo</button><button class="cl" id="adda">➕ App</button><button class="cl" id="addc">➕ Contact</button><button class="cl" id="cls">Band karo</button><button class="cl" id="wipe">🗑 Sab data mitao</button></div>
 </div>
 <script>
 const $=id=>document.getElementById(id),S=k=>localStorage.getItem(k)||'',p=n=>String(n).padStart(2,'0');
+const J=(k,d)=>{try{return JSON.parse(S(k))||d}catch(e){return d}},W=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const fmt=d=>`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 const NAT=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
 const rp=n=>{try{return Capacitor.registerPlugin(n)}catch(e){return null}};
-const CP=NAT?{SpeechRecognition:rp('SpeechRecognition'),TextToSpeech:rp('TextToSpeech'),LocalNotifications:rp('LocalNotifications')}:{};
-let speakOn=true,viaMic=false,rec=null,lis=false,hist=JSON.parse(S('hist')||'[]'),rems=JSON.parse(S('rem')||'[]');
-const AURA=`Tum Aura ho, user ki dost jaisi AI assistant. Casual Hinglish (Roman letters) mein baat karo, chhote seedhe jawab do, thodi masti rakho. Pata na ho to saaf bolo. Agar user reminder ya yaad dilane ko bole, to dost ki tarah confirm karo aur jawab ke bilkul aakhir mein yeh tag lagao: [[REMIND|YYYY-MM-DD HH:MM|kaam]] (24-hour time, date abhi ke samay ke hisaab se sahi nikalo).`;
-const sys=()=>AURA+' Abhi ka samay: '+fmt(new Date())+' ('+new Date().toLocaleDateString('en',{weekday:'long'})+').';
+const CP=NAT?{SpeechRecognition:rp('SpeechRecognition'),TextToSpeech:rp('TextToSpeech'),LocalNotifications:rp('LocalNotifications'),AppLauncher:rp('AppLauncher'),Volume:rp('Volume'),Torch:rp('Torch'),CapgoBrightness:rp('CapgoBrightness')}:{};
+let mode=localStorage.getItem('mode')||'kaam',speakOn=true,viaMic=false,rec=null,lis=false,tab='rem',EX='',hist=J('hist',[]),rems=J('rem',[]),todos=J('todo',[]),notes=J('note',[]),mem=J('mem',[]),cons=J('con',[]),apps=J('app',null)||[{n:'whatsapp',v:'com.whatsapp'},{n:'telegram',v:'org.telegram.messenger'},{n:'tiktok',v:'com.zhiliaoapp.musically'},{n:'instagram',v:'com.instagram.android'},{n:'youtube',v:'com.google.android.youtube'},{n:'chrome',v:'com.android.chrome'},{n:'maps',v:'com.google.android.apps.maps'},{n:'gmail',v:'com.google.android.gm'},{n:'facebook',v:'com.facebook.katana'},{n:'spotify',v:'com.spotify.music'}];
+function setMode(m){mode=m;localStorage.setItem('mode',m);$('mod').innerHTML=m=='masti'?'&#127881;':'&#128188;'}
+const save=()=>{W('rem',rems);W('todo',todos);W('note',notes);W('mem',mem);W('con',cons);W('app',apps)};
+const AURA=`Tum Aura ho, user ki dost jaisi AI assistant. Casual Hinglish (Roman letters) mein baat karo, chhote seedhe jawab do, thodi masti rakho. Pata na ho to saaf bolo. Jab zaroorat ho to jawab ke aakhir mein tag lagao (har tag alag line, tag ke alawa kuch nahi): reminder: [[REMIND|YYYY-MM-DD HH:MM|kaam]] (24-hour time, date abhi ke samay se sahi nikalo); user apne baare mein kuch zaroori bataye (naam, pasand, kaam): [[MEM|baat]]; to-do add: [[TODO|kaam]]; note save: [[NOTE|text]]; user apna sheher bataye: [[CITY|sheher]]. Confirm dost ki tarah karo.`;
+const sys=()=>AURA+(S('dev')?' Tumhe '+S('dev')+' ne banaya hai, wahi tumhare developer hain. Koi poochhe ki tumhe kisne banaya ya tumhara developer kaun hai, to sirf yahi naam batao, aur kisi company ka naam developer ke taur par mat lo. Koi poochhe ki andar kaunsa AI model chal raha hai, to jhooth mat bolo, bas kaho ki ye technical detail tum share nahi karti. Tum khud ko insaan nahi bolti, tum ek AI assistant ho.':'')+(S('rules')?' User ke apne rules, inhe hamesha follow karo (tag format mat badlo): '+S('rules'):'')+(mem.length?' User ke baare mein tumhe yaad hai: '+mem.join('; ')+'.':'')+' Abhi ka samay: '+fmt(new Date())+' ('+new Date().toLocaleDateString('en',{weekday:'long'})+').'+(mode=='masti'?' MASTI MODE: abhi masti ka mood hai, funny dost jaisi baat karo, emoji chalenge.':' KAAM MODE: seedha, saaf aur clear jawab do, bina faltu masti ke.')+' Rule: delete, online payment ya koi important/personal kaam karne se pehle user se poochho, aur sirf tab karo jab user haan bole. OTP, password, card ya bank details kabhi yaad mat rakho, aise data par user ko warn karo. Delete ke liye tag [[DEL|rem/todo/note/mem|text]] lagao. Phone kaam ke tags (sirf jab user bole): [[WA|naam|message]], [[SMS|naam|message]], [[CALL|naam]], [[OPEN|app]] (app ka naam, Apps list se), [[YT|search]] (YouTube par kuch chalane ko bole). Payment ka koi kaam kabhi mat karo, mana karo. Live info mile to 1-2 source ka naam batao.'+(cons.length?' Contacts: '+cons.map(c=>c.n).join(', ')+'.':'')+(apps.length?' Apps list: '+apps.map(a=>a.n).join(', ')+'.':'')+(EX?' '+EX:'');
 const sig=()=>({signal:AbortSignal.timeout(9000)});
 async function gem(m,c){const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':S('gk')},body:JSON.stringify({system_instruction:{parts:[{text:sys()}]},contents:c}),...sig()});if(!r.ok)throw 0;return(await r.json()).candidates[0].content.parts[0].text}
-async function groq(c){const msgs=[{role:'system',content:sys()},...c.map(x=>({role:x.role=='model'?'assistant':'user',content:x.parts[0].text}))];const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+S('qk')},body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:msgs,max_tokens:200}),...sig()});if(!r.ok)throw 0;return(await r.json()).choices[0].message.content}
+async function groq(c){const msgs=[{role:'system',content:sys()},...c.map(x=>({role:x.role=='model'?'assistant':'user',content:x.parts[0].text}))];const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+S('qk')},body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:msgs,max_tokens:250}),...sig()});if(!r.ok)throw 0;return(await r.json()).choices[0].message.content}
 async function ask(c){const t=[];if(S('qk'))t.push(()=>groq(c));if(S('gk'))['gemini-flash-lite-latest','gemini-flash-latest','gemini-3.8-flash'].forEach(m=>t.push(()=>gem(m,c)));for(const f of t){try{return await f()}catch(e){}}return null}
+async function wx(){const c=S('city');if(!c)return'Mausam: user ka sheher pata nahi, pehle sheher poochho aur [[CITY|sheher]] tag lagao.';
+try{const g=await(await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&name='+encodeURIComponent(c),sig())).json();const l=g.results[0];
+const w=await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${l.latitude}&longitude=${l.longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=1`,sig())).json();
+const u=w.current,d=w.daily;return`Live mausam ${l.name}: abhi ${u.temperature_2m}C (mehsoos ${u.apparent_temperature}C), nami ${u.relative_humidity_2m}%, hawa ${u.wind_speed_10m} km/h, WMO code ${u.weather_code} (0 saaf, 1-3 badal, 45-48 kohra, 51-67 barish, 71-77 baraf, 80-82 baujhar, 95+ toofan). Aaj max ${d.temperature_2m_max[0]}C, min ${d.temperature_2m_min[0]}C, barish ka chance ${d.precipitation_probability_max[0]}%. Isi data se jawab do.`}catch(e){return'Mausam abhi fetch nahi hua, user ko batao.'}}
 function add(t,c){const d=document.createElement('div');d.className='b '+c;d.textContent=t;$('log').appendChild(d);$('log').scrollTop=1e9;return d}
 function typeText(el,t){el.textContent='';el.classList.add('cur');let i=0,s=t.length>200?3:1;const iv=setInterval(()=>{i+=s;el.textContent=t.slice(0,i);$('log').scrollTop=1e9;if(i>=t.length){clearInterval(iv);el.classList.remove('cur')}},18)}
+async function quick(t){const l=t.toLowerCase(),up=/\b(up|badha|badhao|badhana|zyada|tez|high|increase|louder)\b/.test(l),dn=/\b(down|kam|ghata|ghatao|ghatana|low|decrease|halka|dheere)\b/.test(l),mx=/\b(full|max|maximum|poora|puri)\b/.test(l),mn=/\b(mute|zero|silent|min)\b/.test(l),nm=l.match(/(\d{1,3})\s*(%|percent)?/);
+const lvl=c=>mx?1:mn?0:nm&&+nm[1]<=100?nm[1]/100:up?Math.min(1,c+.15):dn?Math.max(0,c-.15):null,pc=v=>Math.round(v*100)+'%';
+try{
+if(/\b(volume|awaaz|aawaz)\b/.test(l)&&CP.Volume){const c=(await CP.Volume.getVolume()).volume,v=lvl(c);if(v===null)return false;await CP.Volume.setVolume({volume:v});return 'Volume '+pc(v)}
+if(/\b(brightness|roshni|ujala)\b/.test(l)&&CP.CapgoBrightness){const B=CP.CapgoBrightness;let c=.5;try{c=(await B.getSystemBrightness()).brightness}catch(e){}const v=lvl(c);if(v===null)return false;
+try{await B.setSystemBrightness({brightness:v})}catch(e){try{await B.setBrightness({brightness:v});return 'Brightness '+pc(v)+' (sirf Aura mein). Poore phone ke liye Settings > Apps > Aura > Modify system settings allow karo.'}catch(e2){return 'Brightness error: '+(e2.message||e2)}}return 'Brightness '+pc(v)}
+if(/\b(torch|flashlight|flash light)\b/.test(l)&&CP.Torch){const off=/\b(off|band|bujha|bujhao)\b/.test(l);if(off)await CP.Torch.disable();else await CP.Torch.enable();return off?'Torch band':'Torch on'}
+const mo=l.match(/^(?:open\s+)?(.+?)\s+(?:kholo|khol do|kholna|open karo|open kar do)$|^(?:open|kholo)\s+(.+)$/);
+if(mo){const nx=(mo[1]||mo[2]).trim(),a=apps.find(x=>x.n.toLowerCase()==nx)||apps.find(x=>x.n.length>2&&nx.includes(x.n.toLowerCase()));if(a){openU(a.v);return a.n+' khol rahi hoon'}}
+}catch(e){return 'Control error: '+(e.message||e)}return false}
+function openU(u){if(NAT&&CP.AppLauncher)CP.AppLauncher.openUrl({url:u}).then(r=>{if(r&&r.completed===false)add('App khul nahi paya. Install hai? Package ya link sahi hai?','a')}).catch(e=>add('Khul nahi paya: '+(e.message||e),'a'));else window.open(u,'_blank')}
+async function srch(q){if(!S('gk'))return'Live search ke liye Gemini key chahiye.';const out=[];
+try{const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':S('gk')},body:JSON.stringify({contents:[{role:'user',parts:[{text:q+' (latest accurate jankari do, key facts ke saath, Hinglish mein)'}]}],tools:[{google_search:{}}]}),signal:AbortSignal.timeout(20000)});
+const j=await r.json(),c=j.candidates[0],tx=c.content.parts.map(p=>p.text||'').join(''),src=((c.groundingMetadata||{}).groundingChunks||[]).slice(0,4).map(x=>x.web&&x.web.title).filter(Boolean);
+out.push('Google Search se: '+tx+(src.length?' [Sources: '+src.join(', ')+']':''))}catch(e){}
+try{const r=await fetch('https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=2&srsearch='+encodeURIComponent(q),sig()),j=await r.json();
+const w=j.query.search.map(x=>x.title+': '+x.snippet.replace(/<[^>]+>/g,'')).join(' | ');if(w)out.push('Wikipedia se: '+w)}catch(e){}
+return out.length?'Live info (isi se jawab do, source ka naam batao): '+out.join(' || '):'Live search abhi nahi chala.'}
+function card(txt,yes){const d=add('','a'),s=document.createElement('div'),b=document.createElement('div');s.textContent=txt;b.style.cssText='display:flex;gap:8px;margin-top:8px';
+[['Haan',1],['Na',0]].forEach(([l,v])=>{const x=document.createElement('button');x.className='cl';x.textContent=l;x.onclick=()=>{b.remove();s.textContent+=v?' ✅':' ❌';if(v)yes()};b.append(x)});d.append(s,b);$('log').scrollTop=1e9}
+function guard(t){let m=t,f=0;m=m.replace(/\b(?:\d[ -]?){13,19}\b/g,()=>{f=1;return'[HIDDEN]'});
+m=m.replace(/\b(otp|pin|cvv|password|passcode)\b([^.\n]{0,20}?)\s((?=\S*[\d@#$!%^&*])[A-Za-z0-9@#$!%^&*]{4,})/gi,(a,k,mid)=>{f=1;return k+mid+' [HIDDEN]'});
+m=m.replace(/\b\d{4,8}\b(?=[^.\n]{0,15}\botp\b)/gi,()=>{f=1;return'[HIDDEN]'});return[m,f]}
 function stopTalk(){try{CP.TextToSpeech&&CP.TextToSpeech.stop()}catch(e){}if(window.speechSynthesis)speechSynthesis.cancel()}
 function say(t){if(!speakOn)return;t=t.replace(/[*_#`]/g,'');const d=()=>document.body.className='';
 if(NAT&&CP.TextToSpeech){stopTalk();document.body.className='talk';CP.TextToSpeech.speak({text:t,lang:'en-IN',rate:1.1,pitch:1,volume:1}).then(d).catch(e=>{d();add('Awaaz error: '+(e.message||e),'a')});return}
 if(!window.speechSynthesis)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-IN';u.rate=1.15;u.onstart=()=>document.body.className='talk';u.onend=u.onerror=d;speechSynthesis.speak(u)}
-function sched(d,x){if(!NAT||!CP.LocalNotifications)return;CP.LocalNotifications.schedule({notifications:[{id:Math.floor(Date.now()/1000)%2000000000,title:'Aura ⏰',body:x,schedule:{at:new Date(d.replace(' ','T')),allowWhileIdle:true}}]}).catch(()=>{})}
+function sched(d,x,id){if(!NAT||!CP.LocalNotifications)return;CP.LocalNotifications.schedule({notifications:[{id,title:'Aura ⏰',body:x,schedule:{at:new Date(d.replace(' ','T')),allowWhileIdle:true}}]}).catch(()=>{})}
 function notify(t){say('Reminder. '+t);add('⏰ '+t,'a');if(!NAT&&'Notification'in window&&Notification.permission=='granted'){navigator.serviceWorker.ready.then(r=>r.showNotification('Aura ⏰',{body:t,vibrate:[200,100,200]})).catch(()=>{})}}
-setInterval(()=>{const n=fmt(new Date());let ch=0;rems.forEach(r=>{if(!r.done&&r.due<=n){r.done=1;ch=1;notify(r.text)}});if(ch)localStorage.setItem('rem',JSON.stringify(rems))},15000);
-async function send(){const t=$('m').value.trim();if(!t)return;$('m').value='';add(t,'u');const mic=viaMic;viaMic=false;
+setInterval(()=>{const n=fmt(new Date());let ch=0;rems.forEach(r=>{if(!r.done&&r.due<=n){r.done=1;ch=1;notify(r.text)}});if(ch){save();if(!$('pn').hidden)rend()}},15000);
+function tags(r){return r.replace(/\[\[(\w+)\|(.+?)\]\]/g,(_,k,v)=>{v=v.trim();
+if(k=='REMIND'){const i=v.indexOf('|'),d=v.slice(0,i).trim(),x=v.slice(i+1).trim();if(/^\d{4}-\d\d-\d\d \d\d:\d\d$/.test(d)&&x){const id=1+Math.floor(Math.random()*2e9);rems.push({due:d,text:x,done:0,id});sched(d,x,id)}}
+else if(k=='MEM'){if(!mem.includes(v))card('Ye yaad rakhun? "'+v+'"',()=>{mem.push(v);mem=mem.slice(-30);save()})}
+else if(k=='WA'||k=='SMS'||k=='CALL'){const q=v.split('|'),nm=q[0].trim().toLowerCase(),tx=(q[1]||'').trim(),c=cons.find(c=>c.n.toLowerCase()==nm)||cons.find(c=>c.n.toLowerCase().includes(nm));
+if(!c)add('"'+q[0]+'" ka number nahi mila. 📋 → 👤 Contacts mein jodo.','a');
+else{const num=c.v.replace(/\D/g,''),u=k=='WA'?'whatsapp://send?phone='+num+'&text='+encodeURIComponent(tx):k=='SMS'?'sms:+'+num+'?body='+encodeURIComponent(tx):'tel:+'+num;
+card(k=='CALL'?c.n+' ko call karun?':(k=='WA'?'WhatsApp par ':'SMS se ')+c.n+' ko bhejun?\n"'+tx+'"',()=>openU(u))}}
+else if(k=='YT')openU('https://www.youtube.com/results?search_query='+encodeURIComponent(v));
+else if(k=='OPEN'){const a=apps.find(x=>x.n.toLowerCase()==v.toLowerCase())||apps.find(x=>x.n.toLowerCase().includes(v.toLowerCase()));if(a)openU(a.v);else add('"'+v+'" Apps list mein nahi hai. 📋 → 📱 Apps → ➕ se jodo.','a')}
+else if(k=='DEL'){const i=v.indexOf('|'),t=v.slice(0,i).trim().toLowerCase(),x=v.slice(i+1).trim().toLowerCase();
+card('Delete karun: "'+x+'" ('+t+')?',()=>{const L={rem:[rems,r=>r.text],todo:[todos,r=>r.t],note:[notes,r=>r.t],mem:[mem,r=>r]}[t];if(!L)return;const a=L[0],n=a.findIndex(r=>L[1](r).toLowerCase().includes(x));
+if(n<0){add('Wo item nahi mila.','a');return}const r=a[n];if(t=='rem'&&NAT&&CP.LocalNotifications&&r.id)CP.LocalNotifications.cancel({notifications:[{id:r.id}]}).catch(()=>{});a.splice(n,1);save();add('Delete ho gaya.','a')})}
+else if(k=='TODO')todos.push({t:v,d:0});
+else if(k=='NOTE')notes.push({t:v});
+else if(k=='CITY')localStorage.setItem('city',v);
+return''}).trim()}
+async function send(){const t=$('m').value.trim();if(!t)return;$('m').value='';const[tt,fl]=guard(t);add(tt,'u');if(fl)add('⚠️ Isme OTP/password/card jaisi sensitive info thi. Maine ise chhupa diya, AI ko nahi bheja aur save bhi nahi karungi. Aisi detail kisi ko mat dena.','a');
+if(/masti\s*(time|mode)|masti shuru/i.test(t))setMode('masti');else if(/(kaam|work)\s*(time|mode)|masti (khatam|band)/i.test(t))setMode('kaam');const mic=viaMic;viaMic=false;
+const qk=await quick(tt);if(qk){add(qk,'a');say(qk);return}
 if(!S('gk')&&!S('qk')){add('Pehle ⚙️ mein API key daalo.','a');$('set').hidden=false;return}
 const w=add('','a');w.innerHTML='<span class="dots"><span></span><span></span><span></span></span>';document.body.className='think';
-hist.push({role:'user',parts:[{text:t}]});const c=hist.slice(-10);
-if(mic)c[c.length-1]={role:'user',parts:[{text:t+' (Roman Hinglish mein, sirf 1-2 chhote vakya)'}]};
+hist.push({role:'user',parts:[{text:tt}]});const c=hist.slice(-10);
+if(mic)c[c.length-1]={role:'user',parts:[{text:tt+' (Roman Hinglish mein, sirf 1-2 chhote vakya)'}]};
+EX=(/mausam|weather|barish|baarish|temperature|garmi|sardi|thand|chhata|umbrella/i.test(t)?await wx():'')+(/search|khoj|latest|news|khabar|pata kar|details chahiye|jankari|aaj ka|price|rate|score/i.test(t)?await srch(tt):'');
 let r=await ask(c);document.body.className='';
 if(!r){hist.pop();w.textContent='Saare servers busy hain ya key galat hai. Key check karo (⚙️) ya thodi der baad try karo.';return}
-r=r.replace(/\[\[REMIND\|(.+?)\|(.+?)\]\]/g,(_,d,x)=>{if(/^\d{4}-\d\d-\d\d \d\d:\d\d$/.test(d.trim())){rems.push({due:d.trim(),text:x.trim(),done:0});sched(d.trim(),x.trim())}return''}).trim();
-localStorage.setItem('rem',JSON.stringify(rems));hist.push({role:'model',parts:[{text:r}]});localStorage.setItem('hist',JSON.stringify(hist.slice(-20)));
+r=tags(r)||'Done!';save();hist.push({role:'model',parts:[{text:r}]});W('hist',hist.slice(-20));
 typeText(w,r);say(r)}
+function rend(){document.querySelectorAll('.tabs [data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t==tab));const L=$('pl');L.innerHTML='';
+const rows=tab=='rem'?rems.map(r=>(r.done?'✅ ':'⏰ ')+r.due+' - '+r.text):tab=='todo'?todos.map(r=>(r.d?'☑ ':'☐ ')+r.t):tab=='note'?notes.map(r=>r.t):tab=='con'?cons.map(r=>r.n+': '+r.v):tab=='app'?apps.map(r=>r.n+': '+r.v):mem;
+if(!rows.length){L.innerHTML='<p>Abhi kuch nahi hai. Aura ko bolo, wo khud save kar degi.</p>';return}
+rows.forEach((t,i)=>{const d=document.createElement('div');d.className='row';const s=document.createElement('span');s.textContent=t;if(tab=='todo')s.onclick=()=>{todos[i].d^=1;save();rend()};
+const x=document.createElement('button');x.textContent='🗑';x.onclick=()=>{if(tab=='rem'){const r=rems[i];if(NAT&&CP.LocalNotifications&&r.id)CP.LocalNotifications.cancel({notifications:[{id:r.id}]}).catch(()=>{});rems.splice(i,1)}else if(tab=='todo')todos.splice(i,1);else if(tab=='note')notes.splice(i,1);else if(tab=='con')cons.splice(i,1);else if(tab=='app')apps.splice(i,1);else mem.splice(i,1);save();rend()};
+d.append(s,x);L.append(d)})}
+document.querySelectorAll('.tabs [data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;rend()});
+$('mod').onclick=()=>{setMode(mode=='masti'?'kaam':'masti');add(mode=='masti'?'Masti mode on! 🎉':'Kaam mode on.','a')};
+$('wipe').onclick=()=>{const w=prompt('Saara data (chat, memory, notes, reminders, keys) hamesha ke liye mit jayega. Pakka? Likho: MITAO');if(w!=='MITAO')return;
+try{CP.LocalNotifications.cancel({notifications:rems.filter(r=>r.id).map(r=>({id:r.id}))}).catch(()=>{})}catch(e){}localStorage.clear();location.reload()};
+$('adda').onclick=()=>{const n=prompt('App ka naam (jaise zangi)?');if(!n)return;const v=prompt('Package name ya link (Play Store link ke id= ke baad wala naam, jaise com.whatsapp)');if(!v)return;apps.push({n:n.trim(),v:v.trim()});save();tab='app';rend()};
+$('addc').onclick=()=>{const n=prompt('Contact ka naam?');if(!n)return;const v=prompt('Number (country code ke saath, jaise 919876543210)');if(!v)return;cons.push({n:n.trim(),v:v.trim()});save();tab='con';rend()};
+$('lst').onclick=()=>{$('pn').hidden=false;rend()};$('cls').onclick=()=>$('pn').hidden=true;
+$('clr').onclick=()=>{hist=[];W('hist',[]);$('log').innerHTML='';$('pn').hidden=true;add('Chat saaf ho gayi.','a')};
 $('go').onclick=send;$('m').onkeydown=e=>{if(e.key=='Enter')send()};
 $('vol').onclick=function(){speakOn=!speakOn;this.innerHTML=speakOn?'&#128266;':'&#128263;';if(!speakOn)stopTalk()};
-$('gear').onclick=()=>{$('qk').value=S('qk');$('gk').value=S('gk');$('set').hidden=false};
-$('save').onclick=()=>{localStorage.setItem('qk',$('qk').value.trim());localStorage.setItem('gk',$('gk').value.trim());$('set').hidden=true;
+$('gear').onclick=()=>{$('qk').value=S('qk');$('gk').value=S('gk');$('ct').value=S('city');$('dv').value=S('dev');$('ru').value=S('rules');$('set').hidden=false};
+$('save').onclick=()=>{localStorage.setItem('qk',$('qk').value.trim());localStorage.setItem('gk',$('gk').value.trim());localStorage.setItem('city',$('ct').value.trim());localStorage.setItem('dev',$('dv').value.trim());localStorage.setItem('rules',$('ru').value.trim());$('set').hidden=true;
 if(NAT&&CP.LocalNotifications)CP.LocalNotifications.requestPermissions().catch(()=>{});else if('Notification'in window)Notification.requestPermission();
-add('Keys save ho gayi. Ab baat karo!','a')};
+add('Save ho gaya. Ab baat karo!','a')};
 function micOn(){$('mic').classList.add('on');$('st').classList.add('show');$('orb').classList.add('lis');navigator.vibrate&&navigator.vibrate(40)}
 function micOff(){$('mic').classList.remove('on');$('st').classList.remove('show');$('orb').classList.remove('lis');rec=null;lis=false}
 async function nmic(){const R=CP.SpeechRecognition;if(lis){try{await R.stop()}catch(e){}micOff();return}
@@ -109,5 +187,5 @@ if(!SR){add('Is browser mein mic support nahi hai, Chrome use karo.','a');return
 const r=new SR();r.lang='hi-IN';rec=r;stopTalk();
 r.onstart=micOn;r.onresult=e=>{viaMic=true;$('m').value=e.results[0][0].transcript;send()};r.onend=r.onerror=micOff;r.start()};
 if(!NAT&&'serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
-typeText(add('','a'),S('gk')||S('qk')?'Hii! Main Aura hoon. Kya scene hai?':'Hii! Main Aura hoon. Pehle ⚙️ mein apni API key daalo, phir baat karte hain.');
+setMode(mode);typeText(add('','a'),S('gk')||S('qk')?'Hii! Main Aura hoon. Kya scene hai?':'Hii! Main Aura hoon. Pehle ⚙️ mein apni API key daalo, phir baat karte hain.');
 </script></body></html>
