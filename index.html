@@ -20,6 +20,10 @@ body.talk #orb{animation:spin 2s linear infinite,tk .35s ease-in-out infinite al
 .ic{border:0;background:#25253d;color:#fff;border-radius:50%;width:38px;height:38px;font-size:17px}
 #st{display:none;text-align:center;padding:7px;background:linear-gradient(90deg,#ef4444,#f97316);font-size:14px;font-weight:bold;animation:bl 1s infinite}
 #st.show{display:block}
+.wv{display:inline-flex;gap:3px;align-items:center;height:18px;margin-right:8px;vertical-align:middle}
+.wv i{width:4px;height:6px;border-radius:2px;background:#fff;animation:wv .6s ease-in-out infinite alternate}
+.wv i:nth-child(2){animation-delay:.1s}.wv i:nth-child(3){animation-delay:.2s}.wv i:nth-child(4){animation-delay:.3s}.wv i:nth-child(5){animation-delay:.4s}
+@keyframes wv{to{height:18px}}
 @keyframes bl{50%{opacity:.6}}
 #log{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column}
 .b{max-width:82%;padding:10px 14px;margin:6px 0;border-radius:18px;line-height:1.45;white-space:pre-wrap;animation:pop .35s both}
@@ -42,7 +46,7 @@ input{flex:1;min-width:0;padding:12px;border-radius:22px;border:0;background:#25
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
 </style></head><body>
 <header><div id="orb"></div><h1>Aura</h1><button class="ic" id="vol">&#128266;</button><button class="ic" id="gear">&#9881;</button></header>
-<div id="st">&#127908; Mic on hai... bolo</div>
+<div id="st"><span class="wv"><i></i><i></i><i></i><i></i><i></i></span>Mic on hai... bolo</div>
 <div id="log"></div>
 <footer><button class="k" id="mic">&#127908;</button><input id="m" placeholder="Aura se baat karo..."><button class="k" id="go">&#10148;</button></footer>
 <div id="set" hidden>
@@ -55,7 +59,10 @@ input{flex:1;min-width:0;padding:12px;border-radius:22px;border:0;background:#25
 <script>
 const $=id=>document.getElementById(id),S=k=>localStorage.getItem(k)||'',p=n=>String(n).padStart(2,'0');
 const fmt=d=>`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-let speakOn=true,viaMic=false,rec=null,hist=JSON.parse(S('hist')||'[]'),rems=JSON.parse(S('rem')||'[]');
+const NAT=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
+const rp=n=>{try{return Capacitor.registerPlugin(n)}catch(e){return null}};
+const CP=NAT?{SpeechRecognition:rp('SpeechRecognition'),TextToSpeech:rp('TextToSpeech'),LocalNotifications:rp('LocalNotifications')}:{};
+let speakOn=true,viaMic=false,rec=null,lis=false,hist=JSON.parse(S('hist')||'[]'),rems=JSON.parse(S('rem')||'[]');
 const AURA=`Tum Aura ho, user ki dost jaisi AI assistant. Casual Hinglish (Roman letters) mein baat karo, chhote seedhe jawab do, thodi masti rakho. Pata na ho to saaf bolo. Agar user reminder ya yaad dilane ko bole, to dost ki tarah confirm karo aur jawab ke bilkul aakhir mein yeh tag lagao: [[REMIND|YYYY-MM-DD HH:MM|kaam]] (24-hour time, date abhi ke samay ke hisaab se sahi nikalo).`;
 const sys=()=>AURA+' Abhi ka samay: '+fmt(new Date())+' ('+new Date().toLocaleDateString('en',{weekday:'long'})+').';
 const sig=()=>({signal:AbortSignal.timeout(9000)});
@@ -64,8 +71,12 @@ async function groq(c){const msgs=[{role:'system',content:sys()},...c.map(x=>({r
 async function ask(c){const t=[];if(S('qk'))t.push(()=>groq(c));if(S('gk'))['gemini-flash-lite-latest','gemini-flash-latest','gemini-3.8-flash'].forEach(m=>t.push(()=>gem(m,c)));for(const f of t){try{return await f()}catch(e){}}return null}
 function add(t,c){const d=document.createElement('div');d.className='b '+c;d.textContent=t;$('log').appendChild(d);$('log').scrollTop=1e9;return d}
 function typeText(el,t){el.textContent='';el.classList.add('cur');let i=0,s=t.length>200?3:1;const iv=setInterval(()=>{i+=s;el.textContent=t.slice(0,i);$('log').scrollTop=1e9;if(i>=t.length){clearInterval(iv);el.classList.remove('cur')}},18)}
-function say(t){if(!speakOn||!window.speechSynthesis)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t.replace(/[*_#`]/g,''));u.lang='en-IN';u.rate=1.15;u.onstart=()=>document.body.className='talk';u.onend=u.onerror=()=>document.body.className='';speechSynthesis.speak(u)}
-function notify(t){say('Reminder. '+t);add('⏰ '+t,'a');if('Notification'in window&&Notification.permission=='granted'){navigator.serviceWorker.ready.then(r=>r.showNotification('Aura ⏰',{body:t,vibrate:[200,100,200]})).catch(()=>new Notification('Aura ⏰',{body:t}))}}
+function stopTalk(){try{CP.TextToSpeech&&CP.TextToSpeech.stop()}catch(e){}if(window.speechSynthesis)speechSynthesis.cancel()}
+function say(t){if(!speakOn)return;t=t.replace(/[*_#`]/g,'');const d=()=>document.body.className='';
+if(NAT&&CP.TextToSpeech){stopTalk();document.body.className='talk';CP.TextToSpeech.speak({text:t,lang:'en-IN',rate:1.1,pitch:1,volume:1}).then(d).catch(e=>{d();add('Awaaz error: '+(e.message||e),'a')});return}
+if(!window.speechSynthesis)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-IN';u.rate=1.15;u.onstart=()=>document.body.className='talk';u.onend=u.onerror=d;speechSynthesis.speak(u)}
+function sched(d,x){if(!NAT||!CP.LocalNotifications)return;CP.LocalNotifications.schedule({notifications:[{id:Math.floor(Date.now()/1000)%2000000000,title:'Aura ⏰',body:x,schedule:{at:new Date(d.replace(' ','T')),allowWhileIdle:true}}]}).catch(()=>{})}
+function notify(t){say('Reminder. '+t);add('⏰ '+t,'a');if(!NAT&&'Notification'in window&&Notification.permission=='granted'){navigator.serviceWorker.ready.then(r=>r.showNotification('Aura ⏰',{body:t,vibrate:[200,100,200]})).catch(()=>{})}}
 setInterval(()=>{const n=fmt(new Date());let ch=0;rems.forEach(r=>{if(!r.done&&r.due<=n){r.done=1;ch=1;notify(r.text)}});if(ch)localStorage.setItem('rem',JSON.stringify(rems))},15000);
 async function send(){const t=$('m').value.trim();if(!t)return;$('m').value='';add(t,'u');const mic=viaMic;viaMic=false;
 if(!S('gk')&&!S('qk')){add('Pehle ⚙️ mein API key daalo.','a');$('set').hidden=false;return}
@@ -74,19 +85,29 @@ hist.push({role:'user',parts:[{text:t}]});const c=hist.slice(-10);
 if(mic)c[c.length-1]={role:'user',parts:[{text:t+' (Roman Hinglish mein, sirf 1-2 chhote vakya)'}]};
 let r=await ask(c);document.body.className='';
 if(!r){hist.pop();w.textContent='Saare servers busy hain ya key galat hai. Key check karo (⚙️) ya thodi der baad try karo.';return}
-r=r.replace(/\[\[REMIND\|(.+?)\|(.+?)\]\]/g,(_,d,x)=>{if(/^\d{4}-\d\d-\d\d \d\d:\d\d$/.test(d.trim()))rems.push({due:d.trim(),text:x.trim(),done:0});return''}).trim();
+r=r.replace(/\[\[REMIND\|(.+?)\|(.+?)\]\]/g,(_,d,x)=>{if(/^\d{4}-\d\d-\d\d \d\d:\d\d$/.test(d.trim())){rems.push({due:d.trim(),text:x.trim(),done:0});sched(d.trim(),x.trim())}return''}).trim();
 localStorage.setItem('rem',JSON.stringify(rems));hist.push({role:'model',parts:[{text:r}]});localStorage.setItem('hist',JSON.stringify(hist.slice(-20)));
 typeText(w,r);say(r)}
 $('go').onclick=send;$('m').onkeydown=e=>{if(e.key=='Enter')send()};
-$('vol').onclick=function(){speakOn=!speakOn;this.innerHTML=speakOn?'&#128266;':'&#128263;';if(!speakOn)speechSynthesis.cancel()};
+$('vol').onclick=function(){speakOn=!speakOn;this.innerHTML=speakOn?'&#128266;':'&#128263;';if(!speakOn)stopTalk()};
 $('gear').onclick=()=>{$('qk').value=S('qk');$('gk').value=S('gk');$('set').hidden=false};
-$('save').onclick=()=>{localStorage.setItem('qk',$('qk').value.trim());localStorage.setItem('gk',$('gk').value.trim());$('set').hidden=true;if('Notification'in window)Notification.requestPermission();add('Keys save ho gayi. Ab baat karo!','a')};
+$('save').onclick=()=>{localStorage.setItem('qk',$('qk').value.trim());localStorage.setItem('gk',$('gk').value.trim());$('set').hidden=true;
+if(NAT&&CP.LocalNotifications)CP.LocalNotifications.requestPermissions().catch(()=>{});else if('Notification'in window)Notification.requestPermission();
+add('Keys save ho gayi. Ab baat karo!','a')};
+function micOn(){$('mic').classList.add('on');$('st').classList.add('show');$('orb').classList.add('lis');navigator.vibrate&&navigator.vibrate(40)}
+function micOff(){$('mic').classList.remove('on');$('st').classList.remove('show');$('orb').classList.remove('lis');rec=null;lis=false}
+async function nmic(){const R=CP.SpeechRecognition;if(lis){try{await R.stop()}catch(e){}micOff();return}
+lis=true;micOn();stopTalk();
+try{const a=await R.available();if(!a.available){micOff();add('Is phone par speech recognition nahi mila. Google app update karo.','a');return}
+let pm=await R.checkPermissions();if(pm.speechRecognition!=='granted'){pm=await R.requestPermissions();if(pm.speechRecognition!=='granted'){micOff();add('Mic permission do: Settings > Apps > Aura > Permissions.','a');return}}
+const r=await R.start({language:'hi-IN',maxResults:1,partialResults:false,popup:false});
+micOff();const t=r&&r.matches&&r.matches[0];if(t){viaMic=true;$('m').value=t;send()}else add('Kuch sunai nahi diya, dobara bolo.','a')
+}catch(e){micOff();add('Mic error: '+(e.message||e),'a')}}
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-function micOff(){$('mic').classList.remove('on');$('st').classList.remove('show');$('orb').classList.remove('lis');rec=null}
-$('mic').onclick=()=>{if(rec){rec.stop();return}if(!SR){add('Is browser mein mic support nahi hai, Chrome use karo.','a');return}
-const r=new SR();r.lang='hi-IN';rec=r;speechSynthesis.cancel();
-r.onstart=()=>{$('mic').classList.add('on');$('st').classList.add('show');$('orb').classList.add('lis');navigator.vibrate&&navigator.vibrate(40)};
-r.onresult=e=>{viaMic=true;$('m').value=e.results[0][0].transcript;send()};r.onend=r.onerror=micOff;r.start()};
-if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+$('mic').onclick=()=>{if(NAT&&CP.SpeechRecognition)return nmic();if(rec){rec.stop();return}
+if(!SR){add('Is browser mein mic support nahi hai, Chrome use karo.','a');return}
+const r=new SR();r.lang='hi-IN';rec=r;stopTalk();
+r.onstart=micOn;r.onresult=e=>{viaMic=true;$('m').value=e.results[0][0].transcript;send()};r.onend=r.onerror=micOff;r.start()};
+if(!NAT&&'serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 typeText(add('','a'),S('gk')||S('qk')?'Hii! Main Aura hoon. Kya scene hai?':'Hii! Main Aura hoon. Pehle ⚙️ mein apni API key daalo, phir baat karte hain.');
 </script></body></html>
