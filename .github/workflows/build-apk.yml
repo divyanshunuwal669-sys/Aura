@@ -20,8 +20,65 @@ jobs:
           npm i @capacitor/core @capacitor/cli @capacitor/android @capacitor/local-notifications @capacitor/app-launcher @capacitor-community/speech-recognition @capacitor-community/text-to-speech @capawesome/capacitor-volume @capawesome/capacitor-torch @capgo/capacitor-brightness --legacy-peer-deps
           npx cap init Aura com.divyanshu.aura --web-dir=www
           npx cap add android
+          D=android/app/src/main/java/com/divyanshu/aura
+          mkdir -p $D
+          cat > $D/AuraNativePlugin.java << 'EOF'
+          package com.divyanshu.aura;
+          import android.content.Intent;
+          import android.content.pm.PackageManager;
+          import android.content.pm.ResolveInfo;
+          import com.getcapacitor.JSArray;
+          import com.getcapacitor.JSObject;
+          import com.getcapacitor.Plugin;
+          import com.getcapacitor.PluginCall;
+          import com.getcapacitor.PluginMethod;
+          import com.getcapacitor.annotation.CapacitorPlugin;
+          import java.util.List;
+          @CapacitorPlugin(name = "AuraNative")
+          public class AuraNativePlugin extends Plugin {
+            @PluginMethod
+            public void launch(PluginCall call) {
+              String pkg = call.getString("package");
+              if (pkg == null) { call.reject("package missing"); return; }
+              Intent i = getContext().getPackageManager().getLaunchIntentForPackage(pkg);
+              if (i == null) { call.reject("app launch nahi ho sakta"); return; }
+              i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+              getContext().startActivity(i);
+              call.resolve();
+            }
+            @PluginMethod
+            public void listApps(PluginCall call) {
+              PackageManager pm = getContext().getPackageManager();
+              Intent main = new Intent(Intent.ACTION_MAIN, null);
+              main.addCategory(Intent.CATEGORY_LAUNCHER);
+              List<ResolveInfo> list = pm.queryIntentActivities(main, 0);
+              JSArray arr = new JSArray();
+              for (ResolveInfo ri : list) {
+                JSObject o = new JSObject();
+                o.put("name", ri.loadLabel(pm).toString());
+                o.put("package", ri.activityInfo.packageName);
+                arr.put(o);
+              }
+              JSObject r = new JSObject();
+              r.put("apps", arr);
+              call.resolve(r);
+            }
+          }
+          EOF
+          cat > $D/MainActivity.java << 'EOF'
+          package com.divyanshu.aura;
+          import android.os.Bundle;
+          import com.getcapacitor.BridgeActivity;
+          public class MainActivity extends BridgeActivity {
+            @Override
+            public void onCreate(Bundle savedInstanceState) {
+              registerPlugin(AuraNativePlugin.class);
+              super.onCreate(savedInstanceState);
+            }
+          }
+          EOF
           M=android/app/src/main/AndroidManifest.xml
-          sed -i 's#<application#<uses-permission android:name="android.permission.RECORD_AUDIO"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/><uses-permission android:name="android.permission.USE_EXACT_ALARM"/><uses-permission android:name="android.permission.WRITE_SETTINGS"/><uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/><uses-permission android:name="android.permission.FLASHLIGHT"/><queries><package android:name="com.whatsapp"/><package android:name="com.whatsapp.w4b"/><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent><intent><action android:name="android.speech.RecognitionService"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries><application#' $M
+          sed -i 's#<application#<uses-permission android:name="android.permission.RECORD_AUDIO"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/><uses-permission android:name="android.permission.USE_EXACT_ALARM"/><uses-permission android:name="android.permission.WRITE_SETTINGS"/><uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/><uses-permission android:name="android.permission.FLASHLIGHT"/><uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/><queries><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent><intent><action android:name="android.speech.RecognitionService"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries><application#' $M
           npx cap sync android
           cd android && mkdir -p ~/.android && cp ../debug.keystore ~/.android/debug.keystore && chmod +x gradlew && ./gradlew assembleDebug
       - uses: actions/upload-artifact@v4
