@@ -107,7 +107,11 @@ if(/\b(torch|flashlight|flash light)\b/.test(l)&&CP.Torch){const off=/\b(off|ban
 const mo=l.match(/^(?:open\s+)?(.+?)\s+(?:kholo|khol do|kholna|open karo|open kar do)$|^(?:open|kholo)\s+(.+)$/);
 if(mo){const nx=(mo[1]||mo[2]).trim(),a=apps.find(x=>x.n.toLowerCase()==nx)||apps.find(x=>x.n.length>2&&nx.includes(x.n.toLowerCase()));if(a){openU(a.v);return a.n+' khol rahi hoon'}}
 }catch(e){return 'Control error: '+(e.message||e)}return false}
-function openU(u){if(NAT&&CP.AppLauncher)CP.AppLauncher.openUrl({url:u}).then(r=>{if(r&&r.completed===false)add('App khul nahi paya. Install hai? Package ya link sahi hai?','a')}).catch(e=>add('Khul nahi paya: '+(e.message||e),'a'));else if(/^https?:/.test(u))window.open(u,'_blank');else location.href=/:/.test(u)?u:'intent://#Intent;package='+u+';end'}
+const SCH={'com.whatsapp':'whatsapp://send','com.google.android.youtube':'vnd.youtube://','org.telegram.messenger':'tg://','com.instagram.android':'instagram://','com.zhiliaoapp.musically':'snssdk1233://','com.facebook.katana':'fb://','com.spotify.music':'spotify://','com.android.chrome':'googlechrome://','com.google.android.apps.maps':'geo:0,0','com.google.android.gm':'mailto:'};
+async function openU(u){const pkg=!/:/.test(u);
+if(NAT){let er='';if(CP.AppLauncher){for(const t of(pkg?[u,SCH[u]]:[u]).filter(Boolean)){try{const r=await CP.AppLauncher.openUrl({url:t});if(!r||r.completed!==false)return;er='app install nahi ya package galat'}catch(e){er=(e.message||String(e))}}}else er='app-launcher plugin nahi mila';
+add('App khul nahi paya ('+er+'). Package check karo ya nayi APK banao jisme @capacitor/app-launcher ho.','a');return}
+if(/^https?:/.test(u))window.open(u,'_blank');else location.href=pkg?'intent://#Intent;package='+u+';end':u}
 async function srch(q){if(!S('gk'))return'Live search ke liye Gemini key chahiye.';const out=[];
 try{const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':S('gk')},body:JSON.stringify({contents:[{role:'user',parts:[{text:q+' (latest accurate jankari do, key facts ke saath, Hinglish mein)'}]}],tools:[{google_search:{}}]}),signal:AbortSignal.timeout(20000)});
 const j=await r.json(),c=j.candidates[0],tx=c.content.parts.map(p=>p.text||'').join(''),src=((c.groundingMetadata||{}).groundingChunks||[]).slice(0,4).map(x=>x.web&&x.web.title).filter(Boolean);
@@ -120,7 +124,7 @@ function card(txt,yes){const d=add('','a'),s=document.createElement('div'),b=doc
 function guard(t){let m=t,f=0;m=m.replace(/\b(?:\d[ -]?){13,19}\b/g,()=>{f=1;return'[HIDDEN]'});
 m=m.replace(/\b(otp|pin|cvv|password|passcode)\b([^.\n]{0,20}?)\s((?=\S*[\d@#$!%^&*])[A-Za-z0-9@#$!%^&*]{4,})/gi,(a,k,mid)=>{f=1;return k+mid+' [HIDDEN]'});
 m=m.replace(/\b\d{4,8}\b(?=[^.\n]{0,15}\botp\b)/gi,()=>{f=1;return'[HIDDEN]'});return[m,f]}
-const VER='v14 • 03 Oct';
+const VER='v15 • 03 Oct';
 let AC=null,SRC=null,lastVE='';
 function unlock(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}}
 document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);
