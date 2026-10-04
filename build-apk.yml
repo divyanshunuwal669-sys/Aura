@@ -1,0 +1,446 @@
+name: Build Aura APK
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Build APK
+        run: |
+          mkdir -p www
+          cp index.html manifest.json sw.js icon.svg www/
+          npm init -y
+          npm i @capacitor/core @capacitor/cli @capacitor/android @capacitor/local-notifications @capacitor/app-launcher @capacitor-community/speech-recognition @capacitor-community/text-to-speech @capawesome/capacitor-volume @capawesome/capacitor-torch @capgo/capacitor-brightness --legacy-peer-deps
+          npx cap init Aura com.divyanshu.aura --web-dir=www
+          npx cap add android
+          D=android/app/src/main/java/com/divyanshu/aura
+          mkdir -p $D
+          cat > $D/AuraNativePlugin.java << 'EOF'
+          package com.divyanshu.aura;
+
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.pm.PackageManager;
+          import android.content.pm.ResolveInfo;
+          import android.media.AudioManager;
+          import android.net.Uri;
+          import android.os.Build;
+          import android.provider.Settings;
+          import android.view.KeyEvent;
+          import com.getcapacitor.JSArray;
+          import com.getcapacitor.JSObject;
+          import com.getcapacitor.Plugin;
+          import com.getcapacitor.PluginCall;
+          import com.getcapacitor.PluginMethod;
+          import com.getcapacitor.annotation.CapacitorPlugin;
+          import java.util.List;
+
+          @CapacitorPlugin(name = "AuraNative")
+          public class AuraNativePlugin extends Plugin {
+            private static final String WS = "com.divyanshu.aura.WakeService";
+
+            @Override
+            public void load() {
+              try {
+                Intent i = getActivity().getIntent();
+                if (i != null && (i.getBooleanExtra("aura_wake", false) || "aura.WAKE".equals(i.getAction()))) {
+                  i.removeExtra("aura_wake");
+                  i.setAction(Intent.ACTION_MAIN);
+                  notifyListeners("wake", new JSObject(), true);
+                }
+              } catch (Throwable t) { }
+            }
+
+            @Override
+            protected void handleOnNewIntent(Intent intent) {
+              super.handleOnNewIntent(intent);
+              try {
+                if (intent != null && (intent.getBooleanExtra("aura_wake", false) || "aura.WAKE".equals(intent.getAction()))) {
+                  intent.removeExtra("aura_wake");
+                  notifyListeners("wake", new JSObject(), true);
+                }
+              } catch (Throwable t) { }
+            }
+
+            @Override
+            protected void handleOnResume() {
+              super.handleOnResume();
+              wakeAction("FG");
+            }
+
+            @Override
+            protected void handleOnPause() {
+              super.handleOnPause();
+              wakeAction("BG");
+            }
+
+            private void wakeAction(String a) {
+              try {
+                Context c = getContext();
+                if (!c.getSharedPreferences("aura", Context.MODE_PRIVATE).getBoolean("wake", false)) return;
+                Intent i = new Intent(c, Class.forName(WS));
+                i.setAction(a);
+                c.startService(i);
+              } catch (Throwable t) { }
+            }
+
+            @PluginMethod
+            public void launch(PluginCall call) {
+              String pkg = call.getString("package");
+              if (pkg == null) { call.reject("package missing"); return; }
+              Intent i = getContext().getPackageManager().getLaunchIntentForPackage(pkg);
+              if (i == null) { call.reject("app launch nahi ho sakta"); return; }
+              i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+              getContext().startActivity(i);
+              call.resolve();
+            }
+
+            @PluginMethod
+            public void listApps(PluginCall call) {
+              PackageManager pm = getContext().getPackageManager();
+              Intent main = new Intent(Intent.ACTION_MAIN, null);
+              main.addCategory(Intent.CATEGORY_LAUNCHER);
+              List<ResolveInfo> list = pm.queryIntentActivities(main, 0);
+              JSArray arr = new JSArray();
+              for (ResolveInfo ri : list) {
+                JSObject o = new JSObject();
+                o.put("name", ri.loadLabel(pm).toString());
+                o.put("package", ri.activityInfo.packageName);
+                arr.put(o);
+              }
+              JSObject r = new JSObject();
+              r.put("apps", arr);
+              call.resolve(r);
+            }
+
+            @PluginMethod
+            public void media(PluginCall call) {
+              String k = call.getString("key", "");
+              int code;
+              if ("play".equals(k)) code = KeyEvent.KEYCODE_MEDIA_PLAY;
+              else if ("pause".equals(k)) code = KeyEvent.KEYCODE_MEDIA_PAUSE;
+              else if ("toggle".equals(k)) code = KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE;
+              else if ("next".equals(k)) code = KeyEvent.KEYCODE_MEDIA_NEXT;
+              else if ("prev".equals(k)) code = KeyEvent.KEYCODE_MEDIA_PREVIOUS;
+              else if ("stop".equals(k)) code = KeyEvent.KEYCODE_MEDIA_STOP;
+              else { call.reject("unknown key"); return; }
+              try {
+                AudioManager am = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
+                am.dispatchMediaKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, code));
+                am.dispatchMediaKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, code));
+                call.resolve();
+              } catch (Throwable t) {
+                call.reject("media key nahi gaya: " + t.getMessage());
+              }
+            }
+
+            @PluginMethod
+            public void wakeStart(PluginCall call) {
+              try {
+                Context c = getContext();
+                boolean force = call.getBoolean("force", false);
+                boolean canOverlay = Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(c);
+                if (!canOverlay && !force) {
+                  JSObject r = new JSObject();
+                  r.put("overlay", false);
+                  call.resolve(r);
+                  return;
+                }
+                JSArray arr = call.getArray("phrases");
+                StringBuilder sb = new StringBuilder();
+                if (arr != null) {
+                  for (int k = 0; k < arr.length(); k++) {
+                    if (k > 0) sb.append("|");
+                    sb.append(arr.getString(k));
+                  }
+                }
+                c.getSharedPreferences("aura", Context.MODE_PRIVATE).edit()
+                  .putString("phrases", sb.toString()).putBoolean("wake", true).apply();
+                Intent i = new Intent(c, Class.forName(WS));
+                i.setAction("START");
+                if (Build.VERSION.SDK_INT >= 26) c.startForegroundService(i); else c.startService(i);
+                wakeAction("FG");
+                JSObject r = new JSObject();
+                r.put("overlay", canOverlay);
+                r.put("started", true);
+                call.resolve(r);
+              } catch (ClassNotFoundException e) {
+                call.reject("Hey Aura module is build mein nahi hai");
+              } catch (Throwable t) {
+                call.reject("Hey Aura start nahi hua: " + t.getMessage());
+              }
+            }
+
+            @PluginMethod
+            public void wakeStop(PluginCall call) {
+              try {
+                Context c = getContext();
+                c.getSharedPreferences("aura", Context.MODE_PRIVATE).edit().putBoolean("wake", false).apply();
+                Intent i = new Intent(c, Class.forName(WS));
+                i.setAction("STOP");
+                c.startService(i);
+              } catch (Throwable t) { }
+              call.resolve();
+            }
+
+            @PluginMethod
+            public void wakeOverlaySettings(PluginCall call) {
+              try {
+                Intent i = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                  Uri.parse("package:" + getContext().getPackageName()));
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(i);
+              } catch (Throwable t) { }
+              call.resolve();
+            }
+          }
+          EOF
+          cat > $D/MainActivity.java << 'EOF'
+          package com.divyanshu.aura;
+
+          import android.os.Bundle;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+            @Override
+            public void onCreate(Bundle savedInstanceState) {
+              registerPlugin(AuraNativePlugin.class);
+              super.onCreate(savedInstanceState);
+            }
+          }
+          EOF
+          cat > $D/WakeService.java << 'EOF'
+          package com.divyanshu.aura;
+
+          import android.app.Notification;
+          import android.app.NotificationChannel;
+          import android.app.NotificationManager;
+          import android.app.PendingIntent;
+          import android.app.Service;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.pm.ServiceInfo;
+          import android.media.AudioManager;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.os.Handler;
+          import android.os.IBinder;
+          import android.os.Looper;
+          import android.speech.RecognitionListener;
+          import android.speech.RecognizerIntent;
+          import android.speech.SpeechRecognizer;
+          import java.util.ArrayList;
+
+          public class WakeService extends Service {
+            private static final String CH = "aura_wake";
+            private final Handler h = new Handler(Looper.getMainLooper());
+            private SpeechRecognizer sr;
+            private AudioManager am;
+            private boolean fg = false;
+            private boolean muted = false;
+            private boolean alive = true;
+            private long lastWake = 0;
+            private String[] phrases = new String[] { "hey aura" };
+
+            @Override
+            public IBinder onBind(Intent intent) { return null; }
+
+            @Override
+            public int onStartCommand(Intent intent, int flags, int startId) {
+              String a = intent != null ? intent.getAction() : null;
+              if ("STOP".equals(a)) {
+                alive = false;
+                stopListen();
+                mute(false);
+                try { stopForeground(true); } catch (Throwable t) { }
+                stopSelf();
+                return START_NOT_STICKY;
+              }
+              try {
+                startFg();
+              } catch (Throwable t) {
+                alive = false;
+                stopSelf();
+                return START_NOT_STICKY;
+              }
+              loadPhrases();
+              if ("FG".equals(a)) {
+                fg = true;
+                stopListen();
+                mute(false);
+              } else if ("BG".equals(a)) {
+                fg = false;
+                listenSoon(400);
+              } else {
+                listenSoon(400);
+              }
+              return START_STICKY;
+            }
+
+            private void loadPhrases() {
+              try {
+                String s = getSharedPreferences("aura", Context.MODE_PRIVATE).getString("phrases", "hey aura");
+                if (s != null && s.length() > 0) phrases = s.split("\\|");
+              } catch (Throwable t) { }
+            }
+
+            private void startFg() {
+              NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+              if (Build.VERSION.SDK_INT >= 26) {
+                nm.createNotificationChannel(new NotificationChannel(CH, "Aura Hey Aura", NotificationManager.IMPORTANCE_LOW));
+              }
+              Intent open = getPackageManager().getLaunchIntentForPackage(getPackageName());
+              PendingIntent pi = PendingIntent.getActivity(this, 0, open, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+              Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, CH) : new Notification.Builder(this);
+              b.setContentTitle("Aura sun rahi hai");
+              b.setContentText("Hey Aura bolo");
+              b.setSmallIcon(android.R.drawable.ic_btn_speak_now);
+              b.setContentIntent(pi);
+              b.setOngoing(true);
+              Notification n = b.build();
+              if (Build.VERSION.SDK_INT >= 30) startForeground(77, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
+              else startForeground(77, n);
+            }
+
+            private final Runnable listenR = new Runnable() {
+              public void run() { if (alive && !fg) startListen(); }
+            };
+
+            private void listenSoon(long ms) {
+              h.removeCallbacks(listenR);
+              h.postDelayed(listenR, ms);
+            }
+
+            private void startListen() {
+              try {
+                if (!SpeechRecognizer.isRecognitionAvailable(this)) return;
+                stopListen();
+                mute(true);
+                sr = SpeechRecognizer.createSpeechRecognizer(this);
+                sr.setRecognitionListener(new RecognitionListener() {
+                  public void onReadyForSpeech(Bundle p) { }
+                  public void onBeginningOfSpeech() { }
+                  public void onRmsChanged(float v) { }
+                  public void onBufferReceived(byte[] b) { }
+                  public void onEndOfSpeech() { }
+                  public void onError(int e) {
+                    if (e == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) { alive = false; stopSelf(); }
+                    else if (e == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) listenSoon(2000);
+                    else listenSoon(700);
+                  }
+                  public void onResults(Bundle r) { if (!check(r)) listenSoon(300); }
+                  public void onPartialResults(Bundle r) { check(r); }
+                  public void onEvent(int t, Bundle b) { }
+                });
+                Intent it = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                it.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                it.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN");
+                it.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+                it.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true);
+                sr.startListening(it);
+              } catch (Throwable t) {
+                listenSoon(3000);
+              }
+            }
+
+            private void stopListen() {
+              try {
+                if (sr != null) {
+                  sr.cancel();
+                  sr.destroy();
+                }
+              } catch (Throwable t) { }
+              sr = null;
+            }
+
+            private void mute(boolean m) {
+              try {
+                if (am == null) am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                if (m && !muted) {
+                  am.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_MUTE, 0);
+                  muted = true;
+                } else if (!m && muted) {
+                  am.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_UNMUTE, 0);
+                  muted = false;
+                }
+              } catch (Throwable t) { }
+            }
+
+            private static String norm(String s) {
+              if (s == null) return "";
+              return s.toLowerCase().replaceAll("[^\\p{L}\\p{M}\\p{N} ]", " ").replaceAll("\\s+", " ").trim();
+            }
+
+            private boolean check(Bundle r) {
+              if (r == null) return false;
+              ArrayList<String> l = r.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+              if (l == null) return false;
+              for (String s : l) {
+                String n = norm(s);
+                for (String p : phrases) {
+                  String q = norm(p);
+                  if (q.length() > 2 && n.contains(q)) {
+                    onWake();
+                    return true;
+                  }
+                }
+              }
+              return false;
+            }
+
+            private void onWake() {
+              long now = System.currentTimeMillis();
+              if (now - lastWake < 6000) return;
+              lastWake = now;
+              stopListen();
+              mute(false);
+              try {
+                Intent i = new Intent();
+                i.setClassName(getPackageName(), getPackageName() + ".MainActivity");
+                i.setAction("aura.WAKE");
+                i.putExtra("aura_wake", true);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                startActivity(i);
+              } catch (Throwable t) { }
+              h.postDelayed(new Runnable() {
+                public void run() { if (alive && !fg) listenSoon(200); }
+              }, 15000);
+            }
+
+            @Override
+            public void onDestroy() {
+              alive = false;
+              h.removeCallbacksAndMessages(null);
+              stopListen();
+              mute(false);
+              super.onDestroy();
+            }
+          }
+          EOF
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i 's#<application#<uses-permission android:name="android.permission.RECORD_AUDIO"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/><uses-permission android:name="android.permission.USE_EXACT_ALARM"/><uses-permission android:name="android.permission.WRITE_SETTINGS"/><uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/><uses-permission android:name="android.permission.FLASHLIGHT"/><uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/><uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/><uses-permission android:name="android.permission.VIBRATE"/><queries><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent><intent><action android:name="android.speech.RecognitionService"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries><application#' $M
+          sed -i 's#</application>#<!--AURA_X1--><service android:name=".WakeService" android:exported="false" android:foregroundServiceType="microphone"/><!--AURA_X2--></application>#' $M
+          npx cap sync android
+          cd android && mkdir -p ~/.android && cp ../debug.keystore ~/.android/debug.keystore && chmod +x gradlew
+          if ./gradlew assembleDebug; then
+            echo "FULL build: launcher + media + Hey Aura" > build-info.txt
+          else
+            echo "=== FULL build fail, LITE retry (Hey Aura nahi) ==="
+            rm -f app/src/main/java/com/divyanshu/aura/WakeService.java
+            sed -i 's#<!--AURA_X1-->.*<!--AURA_X2-->##' app/src/main/AndroidManifest.xml
+            ./gradlew assembleDebug
+            echo "LITE build: launcher + media (Hey Aura nahi)" > build-info.txt
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Aura-APK
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/build-info.txt

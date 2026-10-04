@@ -61,7 +61,7 @@ html.gf .u{background:linear-gradient(135deg,#ec4899,#be185d)}
 html.gf .a{border-left-color:#f472b6;box-shadow:0 0 14px #f472b622}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
 </style></head><body>
-<header><div id="orb"></div><h1>Aura</h1><button class="ic" id="gfb" style="display:none">&#128150;</button><button class="ic" id="cl">&#128222;</button><button class="ic" id="mod">&#128188;</button><button class="ic" id="lst">&#128203;</button><button class="ic" id="vol">&#128266;</button><button class="ic" id="gear">&#9881;</button></header>
+<header><div id="orb"></div><h1>Aura</h1><button class="ic" id="gfb" style="display:none">&#128150;</button><button class="ic" id="hey" style="display:none">&#127897;</button><button class="ic" id="cl">&#128222;</button><button class="ic" id="mod">&#128188;</button><button class="ic" id="lst">&#128203;</button><button class="ic" id="vol">&#128266;</button><button class="ic" id="gear">&#9881;</button></header>
 <div id="st"><span class="wv"><i></i><i></i><i></i><i></i><i></i></span>Mic on hai... bolo</div>
 <div id="log"></div>
 <footer><button class="k" id="mic">&#127908;</button><input id="m" placeholder="Aura se baat karo..."><button class="k" id="go">&#10148;</button></footer>
@@ -74,10 +74,37 @@ html.gf .a{border-left-color:#f472b6;box-shadow:0 0 14px #f472b622}
 <input class="gfonly" id="un" placeholder="Tumhe kis naam se bulaye? (jaise Rahul)">
 <input class="gfonly" id="gn" placeholder="Girlfriend mode mein uska naam (jaise Aura)">
 <input id="ct" placeholder="Tumhara sheher (mausam ke liye)">
+<input id="wp" style="display:none" placeholder="Hey Aura wake phrase (khali = hey aura)">
 <textarea id="ru" rows="7" placeholder="Aura ke liye apne rules likho. Jaise: Mujhe bhai bulana. Hamesha 2 line mein jawab dena. Subah mausam batana."></textarea>
 <button class="k" id="tv">🔊 Awaaz test</button>
+<button class="k" id="secb">🔐 Security aur backup</button>
 <button class="k" id="save">Save karo</button>
 <p id="ver"></p>
+</div>
+<div id="lk" class="ov" style="z-index:20;justify-content:center;align-items:stretch" hidden>
+<h2 style="margin:0;text-align:center">🔒 Aura locked</h2>
+<input id="lp" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN daalo" style="text-align:center;font-size:22px;letter-spacing:6px">
+<p id="lm" style="text-align:center;min-height:20px;color:#fca5a5"></p>
+<button class="k" id="lu">Unlock</button>
+<button class="k" id="lb" hidden>👆 Fingerprint se kholo</button>
+</div>
+<div id="sec" class="ov" hidden>
+<h2 style="margin:0">🔐 Security aur backup</h2>
+<p id="sm"></p>
+<p><b>PIN lock</b> (4 se 8 ank). App band hone ya 30 second background mein rehne par lock ho jata hai.</p>
+<input id="pold" type="password" inputmode="numeric" placeholder="Purana PIN (agar PIN laga hai)">
+<input id="pnew" type="password" inputmode="numeric" placeholder="Naya PIN">
+<div class="tabs"><button class="cl" id="pset">PIN lagao / badlo</button><button class="cl" id="prem">PIN hatao</button><button class="cl" id="plk">Abhi lock karo</button></div>
+<label style="font-size:14px;line-height:1.5"><input type="checkbox" id="pwp" style="width:auto"> 10 galat PIN par saara data apne aap mita do (dhyan: bachche ya galti se bhi mit sakta hai)</label>
+<p><b>Encrypted backup</b> (password ke bina koi nahi khol sakta). Password bhoolne par backup wapas nahi aayega.</p>
+<input id="bpw" type="password" placeholder="Backup password (kam se kam 6 akshar)">
+<div class="tabs"><button class="cl" id="bk">Backup banao</button><button class="cl" id="bc">Copy karo</button><button class="cl" id="bf">File save karo</button></div>
+<textarea id="bt" rows="3" readonly placeholder="Backup yahan aayega. Kisi safe jagah save kar lo."></textarea>
+<p><b>Restore</b> (abhi ka data badal jayega)</p>
+<textarea id="rt" rows="3" placeholder="Backup text yahan paste karo"></textarea>
+<input id="rf" type="file" accept=".aura,.txt" style="font-size:13px">
+<input id="rpw" type="password" placeholder="Backup password">
+<div class="tabs"><button class="cl" id="rs">Restore karo</button><button class="cl" id="secx">Band karo</button></div>
 </div>
 <div id="pn" class="ov" hidden>
 <div class="tabs"><button data-t="rem">⏰ Reminders</button><button data-t="todo">☑ To-do</button><button data-t="note">📝 Notes</button><button data-t="app">📱 Apps</button><button data-t="con">👤 Contacts</button><button data-t="mem">🧠 Yaad</button></div>
@@ -90,7 +117,7 @@ const J=(k,d)=>{try{return JSON.parse(S(k))||d}catch(e){return d}},W=(k,v)=>loca
 const fmt=d=>`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 const NAT=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
 const rp=n=>{try{return Capacitor.registerPlugin(n)}catch(e){return null}};
-const CP=NAT?{SpeechRecognition:rp('SpeechRecognition'),TextToSpeech:rp('TextToSpeech'),LocalNotifications:rp('LocalNotifications'),AuraNative:rp('AuraNative'),AppLauncher:rp('AppLauncher'),Volume:rp('Volume'),Torch:rp('Torch'),CapgoBrightness:rp('CapgoBrightness')}:{};
+const CP=NAT?{SpeechRecognition:rp('SpeechRecognition'),TextToSpeech:rp('TextToSpeech'),LocalNotifications:rp('LocalNotifications'),AuraNative:rp('AuraNative'),BiometricAuth:rp('BiometricAuth'),AppLauncher:rp('AppLauncher'),Volume:rp('Volume'),Torch:rp('Torch'),CapgoBrightness:rp('CapgoBrightness')}:{};
 const CAT=[["whatsapp","com.whatsapp","whatsapp://send"],["whatsapp business","com.whatsapp.w4b",""],["telegram","org.telegram.messenger","tg://"],["signal","org.thoughtcrime.securesms","sgnl://"],["instagram","com.instagram.android","instagram://"],["facebook","com.facebook.katana","fb://"],["messenger","com.facebook.orca","fb-messenger://"],["twitter","com.twitter.android","twitter://"],["x","com.twitter.android","twitter://"],["snapchat","com.snapchat.android","snapchat://"],["tiktok","com.zhiliaoapp.musically","snssdk1233://"],["youtube","com.google.android.youtube","vnd.youtube://"],["youtube music","com.google.android.apps.youtube.music",""],["spotify","com.spotify.music","spotify://"],["netflix","com.netflix.mediaclient","nflx://"],["prime video","com.amazon.avod.thirdpartyclient","aiv://"],["amazon","in.amazon.mShop.android.shopping","https://www.amazon.in"],["flipkart","com.flipkart.android","flipkart://"],["linkedin","com.linkedin.android","linkedin://"],["pinterest","com.pinterest","pinterest://"],["reddit","com.reddit.frontpage","reddit://"],["discord","com.discord","discord://"],["zoom","us.zoom.videomeetings","zoomus://"],["meet","com.google.android.apps.meetings","https://meet.google.com"],["teams","com.microsoft.teams","msteams://"],["skype","com.skype.raider","skype:"],["uber","com.ubercab","uber://"],["ola","com.olacabs.customer","olacabs://"],["swiggy","in.swiggy.android","swiggy://"],["zomato","com.application.zomato","zomato://"],["shazam","com.shazam.android","shazam://"],["gmail","com.google.android.gm","mailto:"],["maps","com.google.android.apps.maps","geo:0,0"],["chrome","com.android.chrome","https://www.google.com"],["google","com.google.android.googlequicksearchbox","https://www.google.com"],["drive","com.google.android.apps.docs","https://drive.google.com"],["photos","com.google.android.apps.photos","https://photos.google.com"],["calendar","com.google.android.calendar","content://com.android.calendar/time/"],["translate","com.google.android.apps.translate","https://translate.google.com"],["play store","com.android.vending","market://search?q="],["wikipedia","org.wikipedia","https://www.wikipedia.org"],["phone","com.google.android.dialer","tel:"],["messages","com.google.android.apps.messaging","sms:"],["truecaller","com.truecaller",""],["hotstar","in.startv.hotstar",""],["zangi","com.beint.zangi",""]];
 let gf=localStorage.getItem('gf')=='1',mode=localStorage.getItem('mode')||'kaam',speakOn=true,viaMic=false,rec=null,lis=false,tab='rem',EX='',hist=J('hist',[]),rems=J('rem',[]),todos=J('todo',[]),notes=J('note',[]),mem=J('mem',[]),cons=J('con',[]),apps=(()=>{let a=J('app',null)||[];CAT.forEach(c=>{if(!a.some(x=>x.n.toLowerCase()==c[0]))a.push({n:c[0],v:c[1]})});return a})();
 function setGf(on){gf=on;localStorage.setItem('gf',on?'1':'0');document.documentElement.classList.toggle('gf',on);$('gfb').classList.toggle('on',on)}
@@ -115,6 +142,9 @@ function typeText(el,t){el.textContent='';el.classList.add('cur');let i=0,s=t.le
 async function quick(t){const l=t.toLowerCase(),up=/\b(up|badha|badhao|badhana|zyada|tez|high|increase|louder)\b/.test(l),dn=/\b(down|kam|ghata|ghatao|ghatana|low|decrease|halka|dheere)\b/.test(l),mx=/\b(full|max|maximum|poora|puri)\b/.test(l),mn=/\b(mute|zero|silent|min)\b/.test(l),nm=l.match(/(\d{1,3})\s*(%|percent)?/);
 const lvl=c=>mx?1:mn?0:nm&&+nm[1]<=100?nm[1]/100:up?Math.min(1,c+.15):dn?Math.max(0,c-.15):null,pc=v=>Math.round(v*100)+'%';
 try{
+const mm=l.replace(/[^\p{L}\p{N} ]/gu,' ').replace(/\s+/g,' ').trim(),W_='(?:music|gana|song|video|track)',K_='(?: kar(?:o| do|do))?';
+const mk=new RegExp('^(?:aura )?(?:'+W_+' )?(?:pause|roko|ruko|rok do)(?: '+W_+')?'+K_+'$').test(mm)||new RegExp('^'+W_+' (?:band|stop)'+K_+'$').test(mm)?'pause':new RegExp('^(?:aura )?(?:'+W_+' )?(?:play|resume|chalao|chala do|chalu karo|chalu kar do|shuru karo)(?: '+W_+')?'+K_+'$').test(mm)?'play':new RegExp('^(?:aura )?(?:next|agla|agle|skip)(?: '+W_+')?(?: (?:lagao|chalao|karo|kar do))?$').test(mm)?'next':new RegExp('^(?:aura )?(?:previous|prev|pichla|pichle)(?: '+W_+')?(?: (?:lagao|chalao|karo|kar do))?$').test(mm)?'prev':'';
+if(mk){if(!NAT||!CP.AuraNative)return 'Media control sirf Aura APK mein chalega.';await CP.AuraNative.media({key:mk});return {pause:'Pause kar diya.',play:'Play kar diya.',next:'Agla gana.',prev:'Pichla gana.'}[mk]}
 if(!NAT&&/\b(volume|brightness|torch|flashlight|roshni|ujala)\b/.test(l))return 'Ye control sirf Aura APK mein chalega. Browser ko phone ke volume, brightness aur torch par access nahi milta.';
 if(/\b(volume|awaaz|aawaz)\b/.test(l)&&CP.Volume){const c=(await CP.Volume.getVolume()).volume,v=lvl(c);if(v===null)return false;await CP.Volume.setVolume({volume:v});return 'Volume '+pc(v)}
 if(/\b(brightness|roshni|ujala)\b/.test(l)&&CP.CapgoBrightness){const B=CP.CapgoBrightness;let c=.5;try{c=(await B.getSystemBrightness()).brightness}catch(e){}const v=lvl(c);if(v===null)return false;
@@ -149,7 +179,7 @@ function card(txt,yes){const d=add('','a'),s=document.createElement('div'),b=doc
 function guard(t){let m=t,f=0;m=m.replace(/\b(?:\d[ -]?){13,19}\b/g,()=>{f=1;return'[HIDDEN]'});
 m=m.replace(/\b(otp|pin|cvv|password|passcode)\b([^.\n]{0,20}?)\s((?=\S*[\d@#$!%^&*])[A-Za-z0-9@#$!%^&*]{4,})/gi,(a,k,mid)=>{f=1;return k+mid+' [HIDDEN]'});
 m=m.replace(/\b\d{4,8}\b(?=[^.\n]{0,15}\botp\b)/gi,()=>{f=1;return'[HIDDEN]'});return[m,f]}
-const VER='v21 • 04 Oct';
+const VER='v23 • 04 Oct';
 let AC=null,SRC=null,lastVE='';
 function unlock(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}}
 document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);
@@ -263,5 +293,60 @@ if(!SR){add('Is browser mein mic support nahi hai, Chrome use karo.','a');return
 const r=new SR();r.lang='hi-IN';rec=r;stopTalk();
 r.onstart=micOn;r.onresult=e=>{viaMic=true;$('m').value=e.results[0][0].transcript;send()};r.onend=r.onerror=micOff;r.start()};
 if(!NAT&&'serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
-if(NAT)setTimeout(loadInst,800);setGf(gf);setMode(mode);typeText(add('','a'),S('gk')||S('qk')?'Hii! Main Aura hoon. Kya scene hai? ['+VER+']':'Hii! Main Aura hoon. Pehle ⚙️ mein apni API key daalo, phir baat karte hain.');
+const enc=new TextEncoder(),dec=new TextDecoder();
+const B64=u=>{u=new Uint8Array(u);let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)};
+const UB=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const pwKey=pw=>crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveBits','deriveKey']);
+async function pinH(pin,salt){return B64(await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},await pwKey(pin),256))}
+async function aesKey(pw,salt){return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:310000,hash:'SHA-256'},await pwKey(pw),{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+const SKIP=['pinh','pins','pinf','pinu','pinwipe'];
+async function mkBackup(pw){const o={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!SKIP.includes(k))o[k]=localStorage.getItem(k)}
+const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),key=await aesKey(pw,salt);
+const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(JSON.stringify(o)));return 'AURABK1.'+B64(salt)+'.'+B64(iv)+'.'+B64(ct)}
+async function openBackup(txt,pw){const p=txt.trim().split('.');if(p[0]!='AURABK1'||p.length!=4)throw new Error('format');const key=await aesKey(pw,UB(p[1]));
+return JSON.parse(dec.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:UB(p[2])},key,UB(p[3]))))}
+async function setPin(pin){const salt=crypto.getRandomValues(new Uint8Array(16));localStorage.setItem('pins',B64(salt));localStorage.setItem('pinh',await pinH(pin,salt));localStorage.setItem('pinf','0')}
+const chkPin=async pin=>(await pinH(pin,UB(S('pins'))))===S('pinh');
+function wipeAll(){try{CP.LocalNotifications&&CP.LocalNotifications.cancel({notifications:rems.filter(r=>r.id).map(r=>({id:r.id}))}).catch(()=>{})}catch(e){}localStorage.clear();location.reload()}
+async function bio(){const B=CP.BiometricAuth;if(!NAT||!B)return;try{const i=await B.checkBiometry();if(!i||!i.isAvailable)return;$('lb').hidden=false;await B.authenticate({reason:'Aura kholne ke liye',cancelTitle:'PIN use karo',allowDeviceCredential:false});$('lk').hidden=true}catch(e){}}
+function lockNow(){if(!S('pinh'))return;if(call.on)callStop();stopTalk();$('lk').hidden=false;$('lp').value='';$('lm').textContent='';bio()}
+let bgT=0;document.addEventListener('visibilitychange',()=>{if(document.hidden)bgT=Date.now();else if(S('pinh')&&bgT&&Date.now()-bgT>30000)lockNow()});
+$('lu').onclick=async()=>{const now=Date.now(),u=+S('pinu')||0;if(now<u){$('lm').textContent='Bahut galat try. '+Math.ceil((u-now)/1000)+' second baad try karo.';return}
+const pin=$('lp').value.trim();if(pin&&await chkPin(pin)){localStorage.setItem('pinf','0');$('lk').hidden=true;$('lp').value=''}
+else{const f=(+S('pinf')||0)+1;localStorage.setItem('pinf',f);if(S('pinwipe')=='1'&&f>=10){wipeAll();return}
+if(f%5==0){localStorage.setItem('pinu',Date.now()+60000*(f/5));$('lm').textContent='5 galat PIN. Kuch der ruko.'}else $('lm').textContent='Galat PIN ('+f+')';$('lp').value=''}};
+$('lp').onkeydown=e=>{if(e.key=='Enter')$('lu').onclick()};
+const sm=t=>$('sm').textContent=t;
+function secInfo(){sm(S('pinh')?'🔒 PIN laga hai.':'PIN abhi nahi laga.');$('pwp').checked=S('pinwipe')=='1'}
+$('secb').onclick=()=>{$('set').hidden=true;$('sec').hidden=false;secInfo();$('bf').hidden=NAT};
+$('secx').onclick=()=>$('sec').hidden=true;
+$('pset').onclick=async()=>{const n=$('pnew').value.trim();if(!/^\d{4,8}$/.test(n)){sm('Naya PIN 4 se 8 ank ka hona chahiye.');return}
+if(S('pinh')&&!(await chkPin($('pold').value.trim()))){sm('Purana PIN galat hai.');return}
+await setPin(n);$('pold').value=$('pnew').value='';secInfo();sm('✅ PIN lag gaya. Ise yaad rakhna, bhoolne par app ka data mitana padega.')};
+$('prem').onclick=async()=>{if(!S('pinh')){sm('PIN laga hi nahi hai.');return}if(!(await chkPin($('pold').value.trim()))){sm('Purana PIN galat hai.');return}
+['pinh','pins','pinf','pinu','pinwipe'].forEach(k=>localStorage.removeItem(k));$('pold').value=$('pnew').value='';secInfo();sm('PIN hata diya.')};
+$('plk').onclick=()=>{if(!S('pinh')){sm('Pehle PIN lagao.');return}$('sec').hidden=true;lockNow()};
+$('pwp').onchange=()=>{if($('pwp').checked&&!S('pinh')){$('pwp').checked=false;sm('Pehle PIN lagao.');return}if($('pwp').checked)localStorage.setItem('pinwipe','1');else localStorage.removeItem('pinwipe')};
+$('bk').onclick=async()=>{const pw=$('bpw').value;if(pw.length<6){sm('Password kam se kam 6 akshar ka rakho.');return}
+try{const t=await mkBackup(pw);$('bt').value=t;sm('✅ Backup ban gaya. Copy ya file save karo.')}catch(e){sm('Backup nahi bana: '+(e.message||e))}};
+$('bc').onclick=async()=>{const t=$('bt').value;if(!t){sm('Pehle Backup banao.');return}try{await navigator.clipboard.writeText(t);sm('✅ Copy ho gaya. Kisi safe jagah paste karke save karo.')}catch(e){$('bt').select();sm('Text select kar diya, ab long-press karke Copy karo.')}};
+$('bf').onclick=()=>{const t=$('bt').value;if(!t){sm('Pehle Backup banao.');return}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'}));a.download='aura-backup.aura';a.click()};
+$('rf').onchange=async()=>{const f=$('rf').files[0];if(f)$('rt').value=await f.text()};
+$('rs').onclick=async()=>{const t=$('rt').value.trim(),pw=$('rpw').value;if(!t||!pw){sm('Backup text aur password dono chahiye.');return}
+let o;try{o=await openBackup(t,pw)}catch(e){sm('Galat password ya kharab backup.');return}
+if(!confirm('Restore karne par abhi ka sara data badal jayega. Pakka?'))return;
+const keep={};SKIP.forEach(k=>{if(S(k))keep[k]=S(k)});localStorage.clear();Object.entries(keep).forEach(([k,v])=>localStorage.setItem(k,v));Object.entries(o).forEach(([k,v])=>localStorage.setItem(k,v));location.reload()};
+const WPD=['hey aura','hay aura','hey ora','हे ऑरा','हे आउरा','हे औरा','हे आरा','हेलो ऑरा','hello aura','ae aura'];
+function wph(){const c=S('wp').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);return c.length?c:WPD}
+async function heyOn(silent){const A=CP.AuraNative;if(!A)return;try{
+if(CP.SpeechRecognition){let pm=await CP.SpeechRecognition.checkPermissions();if(pm.speechRecognition!=='granted')pm=await CP.SpeechRecognition.requestPermissions();if(pm.speechRecognition!=='granted'){if(!silent)add('Hey Aura ke liye mic permission chahiye.','a');return}}
+const r=await A.wakeStart({phrases:wph()});
+if(r&&r.overlay===false){if(!silent)card('Background se Aura kholne ke liye "Display over other apps" permission chahiye. Settings kholu? Allow karke 🎙 phir dabao.',()=>A.wakeOverlaySettings());return}
+localStorage.setItem('wake','1');$('hey').classList.add('on');if(!silent)add('🎙 Hey Aura on. Phone mein "'+wph()[0]+'" bolo. Upar notification dikhega, battery thodi zyada lagegi.','a')}catch(e){if(!silent)add('Hey Aura error: '+(e.message||e),'a')}}
+async function heyOff(){try{await CP.AuraNative.wakeStop()}catch(e){}localStorage.setItem('wake','0');$('hey').classList.remove('on');add('🎙 Hey Aura band.','a')}
+if(NAT&&CP.AuraNative){$('hey').style.display='';$('wp').style.display='';$('wp').value=S('wp');$('wp').onchange=()=>{localStorage.setItem('wp',$('wp').value.trim());if(S('wake')=='1')heyOn(true)};
+$('hey').onclick=()=>S('wake')=='1'?heyOff():heyOn(false);
+try{CP.AuraNative.addListener('wake',()=>{if(!$('lk').hidden||call.on)return;callToggle()})}catch(e){}
+if(S('wake')=='1')setTimeout(()=>heyOn(true),1200)}
+if(NAT)setTimeout(loadInst,800);lockNow();setGf(gf);setMode(mode);typeText(add('','a'),S('gk')||S('qk')?'Hii! Main Aura hoon. Kya scene hai? ['+VER+']':'Hii! Main Aura hoon. Pehle ⚙️ mein apni API key daalo, phir baat karte hain.');
 </script></body></html>
