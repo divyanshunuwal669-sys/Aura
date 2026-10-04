@@ -51,6 +51,8 @@ input{flex:1;min-width:0;padding:12px;border-radius:22px;border:0;background:#25
 .row{display:flex;gap:8px;align-items:center;padding:10px 12px;margin:6px 0;background:#25253d;border-radius:12px;line-height:1.4}
 .row span{flex:1}
 .row button{border:0;background:none;font-size:18px}
+.gfonly{display:none}
+html.gf .gfonly{display:block}
 .ic.on{background:#ec4899;box-shadow:0 0 12px #ec4899aa}
 html.gf body{background:linear-gradient(135deg,#1c0a1d,#3a0f2e,#2a0d24,#1c0a1d);background-size:300% 300%}
 html.gf #orb{background:conic-gradient(#f472b6,#fb7185,#c084fc,#f472b6);box-shadow:0 0 22px #f472b6aa}
@@ -59,7 +61,7 @@ html.gf .u{background:linear-gradient(135deg,#ec4899,#be185d)}
 html.gf .a{border-left-color:#f472b6;box-shadow:0 0 14px #f472b622}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
 </style></head><body>
-<header><div id="orb"></div><h1>Aura</h1><button class="ic" id="gfb">&#128150;</button><button class="ic" id="cl">&#128222;</button><button class="ic" id="mod">&#128188;</button><button class="ic" id="lst">&#128203;</button><button class="ic" id="vol">&#128266;</button><button class="ic" id="gear">&#9881;</button></header>
+<header><div id="orb"></div><h1>Aura</h1><button class="ic" id="gfb" style="display:none">&#128150;</button><button class="ic" id="cl">&#128222;</button><button class="ic" id="mod">&#128188;</button><button class="ic" id="lst">&#128203;</button><button class="ic" id="vol">&#128266;</button><button class="ic" id="gear">&#9881;</button></header>
 <div id="st"><span class="wv"><i></i><i></i><i></i><i></i><i></i></span>Mic on hai... bolo</div>
 <div id="log"></div>
 <footer><button class="k" id="mic">&#127908;</button><input id="m" placeholder="Aura se baat karo..."><button class="k" id="go">&#10148;</button></footer>
@@ -69,8 +71,8 @@ html.gf .a{border-left-color:#f472b6;box-shadow:0 0 14px #f472b622}
 <input id="qk" type="password" placeholder="Groq API key">
 <input id="gk" type="password" placeholder="Gemini API key">
 <input id="dv" placeholder="Tumhara naam (Aura ka developer)">
-<input id="un" placeholder="Tumhe kis naam se bulaye? (jaise Rahul)">
-<input id="gn" placeholder="Girlfriend mode mein uska naam (jaise Aura)">
+<input class="gfonly" id="un" placeholder="Tumhe kis naam se bulaye? (jaise Rahul)">
+<input class="gfonly" id="gn" placeholder="Girlfriend mode mein uska naam (jaise Aura)">
 <input id="ct" placeholder="Tumhara sheher (mausam ke liye)">
 <textarea id="ru" rows="7" placeholder="Aura ke liye apne rules likho. Jaise: Mujhe bhai bulana. Hamesha 2 line mein jawab dena. Subah mausam batana."></textarea>
 <button class="k" id="tv">🔊 Awaaz test</button>
@@ -147,7 +149,7 @@ function card(txt,yes){const d=add('','a'),s=document.createElement('div'),b=doc
 function guard(t){let m=t,f=0;m=m.replace(/\b(?:\d[ -]?){13,19}\b/g,()=>{f=1;return'[HIDDEN]'});
 m=m.replace(/\b(otp|pin|cvv|password|passcode)\b([^.\n]{0,20}?)\s((?=\S*[\d@#$!%^&*])[A-Za-z0-9@#$!%^&*]{4,})/gi,(a,k,mid)=>{f=1;return k+mid+' [HIDDEN]'});
 m=m.replace(/\b\d{4,8}\b(?=[^.\n]{0,15}\botp\b)/gi,()=>{f=1;return'[HIDDEN]'});return[m,f]}
-const VER='v20 • 03 Oct';
+const VER='v21 • 04 Oct';
 let AC=null,SRC=null,lastVE='';
 function unlock(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}}
 document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);
