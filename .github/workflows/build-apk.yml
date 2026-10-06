@@ -21,10 +21,13 @@ jobs:
           npx cap init Aura com.divyanshu.aura --web-dir=www
           npx cap add android
           D=android/app/src/main/java/com/divyanshu/aura
-          mkdir -p $D
+          R=android/app/src/main/res
+          mkdir -p $D $R/xml $R/values
           cat > $D/AuraNativePlugin.java << 'EOF'
           package com.divyanshu.aura;
 
+          import android.app.Activity;
+          import android.app.SearchManager;
           import android.content.Context;
           import android.content.Intent;
           import android.content.pm.PackageManager;
@@ -32,8 +35,10 @@ jobs:
           import android.media.AudioManager;
           import android.net.Uri;
           import android.os.Build;
+          import android.provider.MediaStore;
           import android.provider.Settings;
           import android.view.KeyEvent;
+          import android.view.WindowManager;
           import com.getcapacitor.JSArray;
           import com.getcapacitor.JSObject;
           import com.getcapacitor.Plugin;
@@ -53,6 +58,7 @@ jobs:
                 if (i != null && (i.getBooleanExtra("aura_wake", false) || "aura.WAKE".equals(i.getAction()))) {
                   i.removeExtra("aura_wake");
                   i.setAction(Intent.ACTION_MAIN);
+                  lockShow(true);
                   notifyListeners("wake", new JSObject(), true);
                 }
               } catch (Throwable t) { }
@@ -64,6 +70,7 @@ jobs:
               try {
                 if (intent != null && (intent.getBooleanExtra("aura_wake", false) || "aura.WAKE".equals(intent.getAction()))) {
                   intent.removeExtra("aura_wake");
+                  lockShow(true);
                   notifyListeners("wake", new JSObject(), true);
                 }
               } catch (Throwable t) { }
@@ -78,7 +85,28 @@ jobs:
             @Override
             protected void handleOnPause() {
               super.handleOnPause();
+              lockShow(false);
               wakeAction("BG");
+            }
+
+
+            private void lockShow(final boolean on) {
+              try {
+                final Activity a = getActivity();
+                a.runOnUiThread(new Runnable() {
+                  public void run() {
+                    try {
+                      if (Build.VERSION.SDK_INT >= 27) {
+                        a.setShowWhenLocked(on);
+                        a.setTurnScreenOn(on);
+                      } else {
+                        int f = WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON;
+                        if (on) a.getWindow().addFlags(f); else a.getWindow().clearFlags(f);
+                      }
+                    } catch (Throwable t) { }
+                  }
+                });
+              } catch (Throwable t) { }
             }
 
             private void wakeAction(String a) {
@@ -222,6 +250,111 @@ jobs:
                 call.reject("link khul nahi paya: " + t.getMessage());
               }
             }
+
+            @PluginMethod
+            public void bringFront(PluginCall call) {
+              try {
+                Context c = getContext();
+                Intent i = c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                c.startActivity(i);
+                call.resolve();
+              } catch (Throwable t) {
+                call.reject("Aura aage nahi aa payi: " + t.getMessage());
+              }
+            }
+
+            @PluginMethod
+            public void playSearch(PluginCall call) {
+              String q = call.getString("query");
+              if (q == null || q.trim().length() == 0) { call.reject("query missing"); return; }
+              Context c = getContext();
+              String[] pk = new String[] { "com.google.android.apps.youtube.music", "com.spotify.music" };
+              for (String p : pk) {
+                try {
+                  Intent i = new Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH);
+                  i.setPackage(p);
+                  i.putExtra(MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*");
+                  i.putExtra(SearchManager.QUERY, q);
+                  i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                  if (i.resolveActivity(c.getPackageManager()) != null) {
+                    c.startActivity(i);
+                    JSObject r = new JSObject();
+                    r.put("played", true);
+                    r.put("app", p);
+                    call.resolve(r);
+                    return;
+                  }
+                } catch (Throwable t) { }
+              }
+              try {
+                c.getSharedPreferences("aura", Context.MODE_PRIVATE).edit().putLong("play_until", System.currentTimeMillis() + 25000).apply();
+                Intent v = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(q)));
+                v.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try {
+                  v.setPackage("com.google.android.youtube");
+                  c.startActivity(v);
+                } catch (Throwable e2) {
+                  v.setPackage(null);
+                  c.startActivity(v);
+                }
+                JSObject r = new JSObject();
+                r.put("played", false);
+                call.resolve(r);
+              } catch (Throwable t) {
+                call.reject("gana nahi khul paya: " + t.getMessage());
+              }
+            }
+
+            @PluginMethod
+            public void armSend(PluginCall call) {
+              String t = call.getString("text", "");
+              getContext().getSharedPreferences("aura", Context.MODE_PRIVATE).edit()
+                .putString("send_text", t).putLong("send_until", System.currentTimeMillis() + 25000).apply();
+              call.resolve();
+            }
+
+            @PluginMethod
+            public void accessStatus(PluginCall call) {
+              boolean on = false;
+              try {
+                String s = Settings.Secure.getString(getContext().getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+                on = s != null && s.contains(getContext().getPackageName()) && s.contains("SendService");
+              } catch (Throwable t) { }
+              JSObject r = new JSObject();
+              r.put("enabled", on);
+              call.resolve(r);
+            }
+
+            @PluginMethod
+            public void accessSettings(PluginCall call) {
+              try {
+                Intent i = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(i);
+              } catch (Throwable t) { }
+              call.resolve();
+            }
+
+            @PluginMethod
+            public void batterySettings(PluginCall call) {
+              try {
+                Intent i = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(i);
+              } catch (Throwable t) { }
+              call.resolve();
+            }
+
+            @PluginMethod
+            public void setBrain(PluginCall call) {
+              android.content.SharedPreferences.Editor e = getContext().getSharedPreferences("aura", Context.MODE_PRIVATE).edit();
+              String[] ks = new String[] { "gk", "qk", "dev", "uname", "rules" };
+              for (String k : ks) e.putString(k, call.getString(k, ""));
+              e.putBoolean("bg", call.getBoolean("bg", true));
+              e.apply();
+              call.resolve();
+            }
           }
           EOF
           cat > $D/MainActivity.java << 'EOF'
@@ -245,20 +378,43 @@ jobs:
           import android.app.NotificationChannel;
           import android.app.NotificationManager;
           import android.app.PendingIntent;
+          import android.app.SearchManager;
           import android.app.Service;
           import android.content.Context;
           import android.content.Intent;
+          import android.content.SharedPreferences;
+          import android.content.pm.PackageManager;
+          import android.content.pm.ResolveInfo;
           import android.content.pm.ServiceInfo;
           import android.media.AudioManager;
+          import android.net.Uri;
           import android.os.Build;
           import android.os.Bundle;
           import android.os.Handler;
           import android.os.IBinder;
           import android.os.Looper;
+          import android.provider.MediaStore;
           import android.speech.RecognitionListener;
           import android.speech.RecognizerIntent;
           import android.speech.SpeechRecognizer;
+          import android.speech.tts.TextToSpeech;
+          import android.speech.tts.UtteranceProgressListener;
+          import android.view.KeyEvent;
+          import java.io.BufferedReader;
+          import java.io.InputStream;
+          import java.io.InputStreamReader;
+          import java.io.OutputStream;
+          import java.net.HttpURLConnection;
+          import java.net.URL;
+          import java.text.SimpleDateFormat;
           import java.util.ArrayList;
+          import java.util.Date;
+          import java.util.List;
+          import java.util.Locale;
+          import java.util.regex.Matcher;
+          import java.util.regex.Pattern;
+          import org.json.JSONArray;
+          import org.json.JSONObject;
 
           public class WakeService extends Service {
             private static final String CH = "aura_wake";
@@ -268,7 +424,14 @@ jobs:
             private boolean fg = false;
             private boolean muted = false;
             private boolean alive = true;
+            private boolean session = false;
+            private boolean after = false;
+            private boolean ttsReady = false;
+            private int empty = 0;
             private long lastWake = 0;
+            private String pendingText = null;
+            private TextToSpeech tts;
+            private final ArrayList<String> hist = new ArrayList<String>();
             private String[] phrases = new String[] { "hey aura" };
 
             @Override
@@ -279,7 +442,9 @@ jobs:
               String a = intent != null ? intent.getAction() : null;
               if ("STOP".equals(a)) {
                 alive = false;
+                session = false;
                 stopListen();
+                stopTts();
                 mute(false);
                 try { stopForeground(true); } catch (Throwable t) { }
                 stopSelf();
@@ -295,20 +460,24 @@ jobs:
               loadPhrases();
               if ("FG".equals(a)) {
                 fg = true;
+                session = false;
                 stopListen();
+                stopTts();
                 mute(false);
               } else if ("BG".equals(a)) {
                 fg = false;
-                listenSoon(400);
+                if (!session) listenSoon(400);
               } else {
-                listenSoon(400);
+                if (!session) listenSoon(400);
               }
               return START_STICKY;
             }
 
+            private SharedPreferences sp() { return getSharedPreferences("aura", Context.MODE_PRIVATE); }
+
             private void loadPhrases() {
               try {
-                String s = getSharedPreferences("aura", Context.MODE_PRIVATE).getString("phrases", "hey aura");
+                String s = sp().getString("phrases", "hey aura");
                 if (s != null && s.length() > 0) phrases = s.split("\\|");
               } catch (Throwable t) { }
             }
@@ -332,7 +501,7 @@ jobs:
             }
 
             private final Runnable listenR = new Runnable() {
-              public void run() { if (alive && !fg) startListen(); }
+              public void run() { if (alive && !fg && !session) startListen(); }
             };
 
             private void listenSoon(long ms) {
@@ -340,6 +509,7 @@ jobs:
               h.postDelayed(listenR, ms);
             }
 
+            // ---------- wake word listening ----------
             private void startListen() {
               try {
                 if (!SpeechRecognizer.isRecognitionAvailable(this)) return;
@@ -353,12 +523,13 @@ jobs:
                   public void onBufferReceived(byte[] b) { }
                   public void onEndOfSpeech() { }
                   public void onError(int e) {
+                    if (session) return;
                     if (e == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) { alive = false; stopSelf(); }
                     else if (e == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) listenSoon(2000);
                     else listenSoon(700);
                   }
-                  public void onResults(Bundle r) { if (!check(r)) listenSoon(300); }
-                  public void onPartialResults(Bundle r) { check(r); }
+                  public void onResults(Bundle r) { if (!session && !check(r)) listenSoon(300); }
+                  public void onPartialResults(Bundle r) { if (!session) check(r); }
                   public void onEvent(int t, Bundle b) { }
                 });
                 Intent it = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
@@ -422,7 +593,23 @@ jobs:
               if (now - lastWake < 6000) return;
               lastWake = now;
               stopListen();
-              mute(false);
+              boolean bg = sp().getBoolean("bg", true);
+              boolean hasKey = sp().getString("gk", "").length() > 5 || sp().getString("qk", "").length() > 5;
+              if (bg && hasKey) {
+                session = true;
+                empty = 0;
+                mute(false);
+                speak("Haan, boliye.", true);
+              } else {
+                mute(false);
+                launchAura();
+                h.postDelayed(new Runnable() {
+                  public void run() { if (alive && !fg && !session) listenSoon(200); }
+                }, 15000);
+              }
+            }
+
+            private void launchAura() {
               try {
                 Intent i = new Intent();
                 i.setClassName(getPackageName(), getPackageName() + ".MainActivity");
@@ -431,34 +618,603 @@ jobs:
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
                 startActivity(i);
               } catch (Throwable t) { }
-              h.postDelayed(new Runnable() {
-                public void run() { if (alive && !fg) listenSoon(200); }
-              }, 15000);
+            }
+
+            // ---------- background voice session ----------
+            private final Runnable afterSpeak = new Runnable() {
+              public void run() {
+                if (!alive || !session) return;
+                if (after) listenCmd(); else endSession();
+              }
+            };
+
+            private void endSession() {
+              session = false;
+              stopListen();
+              stopTts();
+              mute(false);
+              hist.clear();
+              if (alive && !fg) listenSoon(900);
+            }
+
+            private void stopTts() {
+              try { if (tts != null) tts.stop(); } catch (Throwable t) { }
+            }
+
+            private void speak(String t, boolean thenListen) {
+              after = thenListen;
+              pendingText = t;
+              if (tts == null) {
+                try {
+                  tts = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+                    public void onInit(int status) {
+                      ttsReady = status == TextToSpeech.SUCCESS;
+                      if (ttsReady) {
+                        try {
+                          tts.setLanguage(new Locale("en", "IN"));
+                          tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+                            public void onStart(String id) { }
+                            public void onDone(String id) { h.post(afterSpeak); }
+                            public void onError(String id) { h.post(afterSpeak); }
+                          });
+                        } catch (Throwable e) { ttsReady = false; }
+                      }
+                      h.post(new Runnable() { public void run() { flushSpeak(); } });
+                    }
+                  });
+                } catch (Throwable e) {
+                  ttsReady = false;
+                  h.post(afterSpeak);
+                }
+              } else if (ttsReady) {
+                flushSpeak();
+              }
+            }
+
+            private void flushSpeak() {
+              String t = pendingText;
+              pendingText = null;
+              if (t == null) return;
+              if (!ttsReady || tts == null) { h.post(afterSpeak); return; }
+              try {
+                tts.speak(t, TextToSpeech.QUEUE_FLUSH, new Bundle(), "aura");
+              } catch (Throwable e) {
+                h.post(afterSpeak);
+              }
+            }
+
+            private void listenCmd() {
+              try {
+                stopListen();
+                mute(true);
+                sr = SpeechRecognizer.createSpeechRecognizer(this);
+                sr.setRecognitionListener(new RecognitionListener() {
+                  public void onReadyForSpeech(Bundle p) { }
+                  public void onBeginningOfSpeech() { }
+                  public void onRmsChanged(float v) { }
+                  public void onBufferReceived(byte[] b) { }
+                  public void onEndOfSpeech() { }
+                  public void onPartialResults(Bundle r) { }
+                  public void onEvent(int t, Bundle b) { }
+                  public void onError(int e) {
+                    if (!session) return;
+                    if (e == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) { endSession(); return; }
+                    emptyTurn();
+                  }
+                  public void onResults(Bundle r) {
+                    if (!session) return;
+                    ArrayList<String> l = r == null ? null : r.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                    if (l == null || l.size() == 0 || l.get(0).trim().length() == 0) { emptyTurn(); return; }
+                    empty = 0;
+                    handleCmd(l.get(0).trim());
+                  }
+                });
+                Intent it = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                it.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                it.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN");
+                it.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+                sr.startListening(it);
+              } catch (Throwable t) {
+                endSession();
+              }
+            }
+
+            private void emptyTurn() {
+              empty++;
+              if (empty >= 2) {
+                endSession();
+              } else {
+                h.postDelayed(new Runnable() { public void run() { if (alive && session) listenCmd(); } }, 400);
+              }
+            }
+
+            private void handleCmd(String raw) {
+              String n = norm(raw);
+              if (n.matches("(bas|bas itna|band karo|band kar do|bye|ok bye|alvida|shukriya|dhanyavad|thank you|thanks|that s all)")) {
+                speak("Theek hai. Jab chahiye Hey Aura bolna.", false);
+                return;
+              }
+              int key = mediaKey(n);
+              if (key != 0) {
+                sendKey(key);
+                speak("Ho gaya.", false);
+                return;
+              }
+              if (n.matches("(aura |app )?(me|mein|men) (le chalo|chalo|aao|aa jao|wapas aao)|(aura |app )?wapas (chalo|aao)")) {
+                speak("Aura khol rahi hoon.", false);
+                h.postDelayed(new Runnable() { public void run() { openSelf(); } }, 900);
+                return;
+              }
+              String song = songQuery(n);
+              if (song != null) {
+                boolean played = playSong(song);
+                speak(played ? "Gana chala rahi hoon." : "YouTube par dhoondh rahi hoon.", false);
+                return;
+              }
+              String app = appName(n);
+              if (app != null) {
+                String label = openByName(app);
+                if (label != null) speak(label + " khol rahi hoon.", false);
+                else speak(app + " naam ka app mujhe nahi mila.", true);
+                return;
+              }
+              if (n.matches(".*\\b(yaad|remind|reminder|note|todo|whatsapp|message|sms|call|delete|mitao|bhejo|bhej do|payment|pay)\\b.*")) {
+                speak("Ye kaam confirm karke hota hai, isliye Aura app khol rahi hoon.", false);
+                h.postDelayed(new Runnable() { public void run() { launchAura(); } }, 1500);
+                return;
+              }
+              askAi(raw);
+            }
+
+            // ---------- local commands ----------
+            private int mediaKey(String n) {
+              String w = "(?:music|gana|song|video|track)";
+              if (n.matches("(?:aura )?(?:" + w + " )?(?:pause|roko|ruko|rok do)(?: " + w + ")?(?: kar(?:o| do|do))?") || n.matches(w + " (?:band|stop)(?: kar(?:o| do|do))?")) return KeyEvent.KEYCODE_MEDIA_PAUSE;
+              if (n.matches("(?:aura )?(?:" + w + " )?(?:play|resume|chalao|chala do|chalu karo|chalu kar do|shuru karo)(?: " + w + ")?(?: kar(?:o| do|do))?")) return KeyEvent.KEYCODE_MEDIA_PLAY;
+              if (n.matches("(?:aura )?(?:next|agla|agle|skip)(?: " + w + ")?(?: (?:lagao|chalao|karo|kar do))?")) return KeyEvent.KEYCODE_MEDIA_NEXT;
+              if (n.matches("(?:aura )?(?:previous|prev|pichla|pichle)(?: " + w + ")?(?: (?:lagao|chalao|karo|kar do))?")) return KeyEvent.KEYCODE_MEDIA_PREVIOUS;
+              return 0;
+            }
+
+            private void sendKey(int code) {
+              try {
+                if (am == null) am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                am.dispatchMediaKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, code));
+                am.dispatchMediaKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, code));
+              } catch (Throwable t) { }
+            }
+
+            private String songQuery(String n) {
+              String[] pats = new String[] {
+                "(?:aura )?play (.{2,})",
+                "(?:aura )?(.{2,}?) (?:gana|song|music) (?:play|bajao|chalao|laga|lagao)(?: kar(?:o)?| do)?",
+                "(?:aura )?(.{2,}?) (?:play kar(?:o)?|play kar do|bajao|bajana)"
+              };
+              for (String p : pats) {
+                Matcher m = Pattern.compile(p).matcher(n);
+                if (m.matches()) {
+                  String q = m.group(1).replaceAll("\\s+(ka|ki|ke|ka koi)$", "").trim();
+                  if (q.length() > 1 && !q.matches("(music|gana|song|video|track|youtube|spotify|karo|kar do)")) return q;
+                }
+              }
+              return null;
+            }
+
+            private boolean playSong(String q) {
+              String[] pk = new String[] { "com.google.android.apps.youtube.music", "com.spotify.music" };
+              for (String p : pk) {
+                try {
+                  Intent i = new Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH);
+                  i.setPackage(p);
+                  i.putExtra(MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*");
+                  i.putExtra(SearchManager.QUERY, q);
+                  i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                  if (i.resolveActivity(getPackageManager()) != null) {
+                    startActivity(i);
+                    return true;
+                  }
+                } catch (Throwable t) { }
+              }
+              try {
+                sp().edit().putLong("play_until", System.currentTimeMillis() + 25000).apply();
+                Intent v = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(q)));
+                v.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try {
+                  v.setPackage("com.google.android.youtube");
+                  startActivity(v);
+                } catch (Throwable e) {
+                  v.setPackage(null);
+                  startActivity(v);
+                }
+              } catch (Throwable t) { }
+              return false;
+            }
+
+            private String appName(String n) {
+              Matcher m = Pattern.compile("(?:open )?(.+?) (?:kholo|khol do|kholna|open karo|open kar do|\u0916\u094b\u0932\u094b|\u0916\u094b\u0932 \u0926\u094b)").matcher(n);
+              if (m.matches()) return m.group(1).trim();
+              m = Pattern.compile("(?:open|kholo|\u0913\u092a\u0928) (.+)").matcher(n);
+              if (m.matches()) return m.group(1).trim();
+              return null;
+            }
+
+            private static String alias(String q) {
+              String[][] a = new String[][] {
+                { "insta", "instagram" }, { "yt", "youtube" }, { "yutube", "youtube" }, { "utube", "youtube" }, { "u tube", "youtube" },
+                { "whatsap", "whatsapp" }, { "watsapp", "whatsapp" }, { "whats app", "whatsapp" }, { "fb", "facebook" }, { "snap", "snapchat" },
+                { "यूट्यूब", "youtube" }, { "व्हाट्सएप", "whatsapp" },
+                { "इंस्टाग्राम", "instagram" }, { "फेसबुक", "facebook" },
+                { "टेलीग्राम", "telegram" }, { "क्रोम", "chrome" },
+                { "कैमरा", "camera" }, { "सेटिंग्स", "settings" }, { "गैलरी", "gallery" },
+                { "कैलकुलेटर", "calculator" }, { "फोन", "phone" }, { "मैसेज", "messages" }
+              };
+              for (String[] x : a) if (q.equals(x[0])) return x[1];
+              return q;
+            }
+
+            private static int lev(String a, String b) {
+              int[] p = new int[b.length() + 1];
+              for (int j = 0; j <= b.length(); j++) p[j] = j;
+              for (int i = 1; i <= a.length(); i++) {
+                int[] c = new int[b.length() + 1];
+                c[0] = i;
+                for (int j = 1; j <= b.length(); j++) {
+                  int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
+                  c[j] = Math.min(Math.min(c[j - 1] + 1, p[j] + 1), p[j - 1] + cost);
+                }
+                p = c;
+              }
+              return p[b.length()];
+            }
+
+            private String openByName(String q0) {
+              try {
+                String q = alias(norm(q0)).replace(" ", "");
+                if (q.length() == 0) return null;
+                PackageManager pm = getPackageManager();
+                Intent main = new Intent(Intent.ACTION_MAIN, null);
+                main.addCategory(Intent.CATEGORY_LAUNCHER);
+                List<ResolveInfo> list = pm.queryIntentActivities(main, 0);
+                String bestPkg = null;
+                String bestLabel = null;
+                double best = 0;
+                for (ResolveInfo ri : list) {
+                  String label = ri.loadLabel(pm).toString();
+                  String ln = norm(label).replace(" ", "");
+                  if (ln.length() == 0) continue;
+                  double sc = 0;
+                  if (ln.equals(q)) sc = 100;
+                  else if (ln.startsWith(q)) sc = 80;
+                  else if (ln.contains(q)) sc = 60;
+                  else if (ln.length() > 3 && q.contains(ln)) sc = 50;
+                  else if (q.length() >= 4 && lev(ln, q) <= (q.length() >= 7 ? 2 : 1)) sc = 40;
+                  if (sc > 0) {
+                    sc -= ln.length() / 100.0;
+                    if (sc > best) { best = sc; bestPkg = ri.activityInfo.packageName; bestLabel = label; }
+                  }
+                }
+                if (bestPkg == null) return null;
+                Intent i = pm.getLaunchIntentForPackage(bestPkg);
+                if (i == null) return null;
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(i);
+                return bestLabel;
+              } catch (Throwable t) {
+                return null;
+              }
+            }
+
+            private void openSelf() {
+              try {
+                Intent i = getPackageManager().getLaunchIntentForPackage(getPackageName());
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(i);
+              } catch (Throwable t) { }
+            }
+
+            // ---------- AI answer ----------
+            private void askAi(final String text) {
+              final String qk = sp().getString("qk", "");
+              final String gk = sp().getString("gk", "");
+              final String sys = buildSys();
+              final ArrayList<String> hcopy = new ArrayList<String>(hist);
+              new Thread(new Runnable() {
+                public void run() {
+                  String ans = null;
+                  if (qk.length() > 5) ans = callGroq(qk, sys, hcopy, text);
+                  if ((ans == null || ans.length() == 0) && gk.length() > 5) ans = callGemini(gk, sys, hcopy, text);
+                  final String out = clean(ans);
+                  h.post(new Runnable() {
+                    public void run() {
+                      if (!session) return;
+                      if (out.length() == 0) {
+                        speak("Abhi jawab nahi mil paya. Dobara Hey Aura bolo.", false);
+                      } else {
+                        hist.add(text);
+                        hist.add(out);
+                        while (hist.size() > 8) hist.remove(0);
+                        speak(out, true);
+                      }
+                    }
+                  });
+                }
+              }).start();
+            }
+
+            private String buildSys() {
+              SharedPreferences s = sp();
+              String dev = s.getString("dev", "");
+              String un = s.getString("uname", "");
+              String rules = s.getString("rules", "");
+              StringBuilder b = new StringBuilder();
+              b.append("Tum Aura ho, ek personal AI assistant. Roman Hinglish mein bolo, sirf 1 se 3 chhote vakya, seedha aur dost jaisa. ");
+              b.append("Ye jawab bolkar sunaya jayega, isliye emoji, markdown, list ya tags mat likho. ");
+              b.append("Payment ka koi kaam kabhi mat karo. OTP, password ya card details kabhi yaad mat rakho. ");
+              if (un.length() > 0) b.append("User ko ").append(un).append(" bulao. ");
+              else b.append("User ko Boss bulao, par har vakya mein nahi. ");
+              if (dev.length() > 0) b.append("Tumhe ").append(dev).append(" ne banaya hai. Developer ke baare mein puchhe to sirf yahi naam batao. ");
+              if (rules.length() > 0) b.append("User ke rules: ").append(rules.length() > 500 ? rules.substring(0, 500) : rules).append(" ");
+              b.append("Abhi ka samay: ").append(new SimpleDateFormat("EEEE, d MMMM yyyy, HH:mm", Locale.ENGLISH).format(new Date())).append(".");
+              return b.toString();
+            }
+
+            private static String clean(String s) {
+              if (s == null) return "";
+              s = s.replaceAll("\\[\\[.*?\\]\\]", "").replaceAll("[*_#`~]", "").replaceAll("\\s+", " ").trim();
+              if (s.length() > 600) s = s.substring(0, 600);
+              return s;
+            }
+
+            private static String post(String url, String[][] headers, String body) {
+              HttpURLConnection c = null;
+              try {
+                c = (HttpURLConnection) new URL(url).openConnection();
+                c.setConnectTimeout(10000);
+                c.setReadTimeout(20000);
+                c.setRequestMethod("POST");
+                c.setDoOutput(true);
+                c.setRequestProperty("Content-Type", "application/json");
+                for (String[] hd : headers) c.setRequestProperty(hd[0], hd[1]);
+                OutputStream os = c.getOutputStream();
+                os.write(body.getBytes("UTF-8"));
+                os.close();
+                if (c.getResponseCode() != 200) return null;
+                InputStream is = c.getInputStream();
+                BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) sb.append(line);
+                br.close();
+                return sb.toString();
+              } catch (Throwable t) {
+                return null;
+              } finally {
+                if (c != null) c.disconnect();
+              }
+            }
+
+            private static String callGroq(String key, String sys, ArrayList<String> hist, String text) {
+              try {
+                JSONArray msgs = new JSONArray();
+                msgs.put(new JSONObject().put("role", "system").put("content", sys));
+                for (int i = 0; i + 1 < hist.size(); i += 2) {
+                  msgs.put(new JSONObject().put("role", "user").put("content", hist.get(i)));
+                  msgs.put(new JSONObject().put("role", "assistant").put("content", hist.get(i + 1)));
+                }
+                msgs.put(new JSONObject().put("role", "user").put("content", text));
+                JSONObject body = new JSONObject();
+                body.put("model", "llama-3.3-70b-versatile");
+                body.put("messages", msgs);
+                body.put("max_tokens", 220);
+                String r = post("https://api.groq.com/openai/v1/chat/completions", new String[][] { { "Authorization", "Bearer " + key } }, body.toString());
+                if (r == null) return null;
+                return new JSONObject(r).getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content");
+              } catch (Throwable t) {
+                return null;
+              }
+            }
+
+            private static String callGemini(String key, String sys, ArrayList<String> hist, String text) {
+              try {
+                JSONArray cs = new JSONArray();
+                for (int i = 0; i + 1 < hist.size(); i += 2) {
+                  cs.put(new JSONObject().put("role", "user").put("parts", new JSONArray().put(new JSONObject().put("text", hist.get(i)))));
+                  cs.put(new JSONObject().put("role", "model").put("parts", new JSONArray().put(new JSONObject().put("text", hist.get(i + 1)))));
+                }
+                cs.put(new JSONObject().put("role", "user").put("parts", new JSONArray().put(new JSONObject().put("text", text))));
+                JSONObject body = new JSONObject();
+                body.put("system_instruction", new JSONObject().put("parts", new JSONArray().put(new JSONObject().put("text", sys))));
+                body.put("contents", cs);
+                String[] models = new String[] { "gemini-flash-lite-latest", "gemini-flash-latest" };
+                for (String m : models) {
+                  String r = post("https://generativelanguage.googleapis.com/v1beta/models/" + m + ":generateContent", new String[][] { { "x-goog-api-key", key } }, body.toString());
+                  if (r == null) continue;
+                  JSONArray parts = new JSONObject(r).getJSONArray("candidates").getJSONObject(0).getJSONObject("content").getJSONArray("parts");
+                  StringBuilder sb = new StringBuilder();
+                  for (int i = 0; i < parts.length(); i++) sb.append(parts.getJSONObject(i).optString("text", ""));
+                  if (sb.length() > 0) return sb.toString();
+                }
+                return null;
+              } catch (Throwable t) {
+                return null;
+              }
             }
 
             @Override
             public void onDestroy() {
               alive = false;
+              session = false;
               h.removeCallbacksAndMessages(null);
               stopListen();
+              try { if (tts != null) { tts.stop(); tts.shutdown(); } } catch (Throwable t) { }
               mute(false);
               super.onDestroy();
             }
           }
           EOF
+          cat > $D/SendService.java << 'EOF'
+          package com.divyanshu.aura;
+
+          import android.accessibilityservice.AccessibilityService;
+          import android.content.Context;
+          import android.content.SharedPreferences;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.view.accessibility.AccessibilityEvent;
+          import android.view.accessibility.AccessibilityNodeInfo;
+          import java.util.List;
+
+          public class SendService extends AccessibilityService {
+            private long lastTry = 0;
+
+            @Override
+            public void onInterrupt() { }
+
+            @Override
+            public void onAccessibilityEvent(AccessibilityEvent e) {
+              try {
+                SharedPreferences sp = getSharedPreferences("aura", Context.MODE_PRIVATE);
+                long until = sp.getLong("send_until", 0);
+                long pu = sp.getLong("play_until", 0);
+                if (until == 0 && pu == 0) return;
+                long now = System.currentTimeMillis();
+                if (pu != 0 && now > pu) { sp.edit().putLong("play_until", 0).apply(); pu = 0; }
+                if (until != 0 && now > until) { sp.edit().putLong("send_until", 0).putString("send_text", "").apply(); until = 0; }
+                if (until == 0 && pu == 0) return;
+                if (now - lastTry < 350) return;
+                lastTry = now;
+                CharSequence pk = e.getPackageName();
+                AccessibilityNodeInfo root = getRootInActiveWindow();
+                if (root == null) return;
+                if (pu != 0 && pk != null && "com.google.android.youtube".contentEquals(pk)) {
+                  AccessibilityNodeInfo v = findVideo(root, 0);
+                  if (v != null) {
+                    AccessibilityNodeInfo t = v;
+                    int g = 0;
+                    while (t != null && !t.isClickable() && g < 5) { t = t.getParent(); g++; }
+                    if (t != null && t.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                      sp.edit().putLong("play_until", 0).apply();
+                    }
+                  }
+                  return;
+                }
+                if (until == 0) return;
+                boolean msgApp = pk != null && !"com.google.android.youtube".contentEquals(pk);
+                if (!msgApp) return;
+                String text = sp.getString("send_text", "");
+                AccessibilityNodeInfo ed = findEditable(root);
+                if (ed == null) return;
+                boolean has = hasRealText(ed);
+                if (!has) {
+                  if (text != null && text.length() > 0) {
+                    Bundle b = new Bundle();
+                    b.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text);
+                    ed.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, b);
+                  }
+                  return;
+                }
+                AccessibilityNodeInfo send = findSend(root, 0);
+                if (send == null) return;
+                AccessibilityNodeInfo t2 = send;
+                int guard = 0;
+                while (t2 != null && !t2.isClickable() && guard < 4) { t2 = t2.getParent(); guard++; }
+                if (t2 != null && t2.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                  sp.edit().putLong("send_until", 0).putString("send_text", "").apply();
+                }
+              } catch (Throwable t) { }
+            }
+
+            private AccessibilityNodeInfo findVideo(AccessibilityNodeInfo n, int depth) {
+              if (n == null || depth > 30) return null;
+              CharSequence d = n.getContentDescription();
+              if (d != null) {
+                String ds = d.toString().toLowerCase();
+                boolean video = ds.contains("play video") || ds.contains("\u0935\u0940\u0921\u093f\u092f\u094b \u091a\u0932\u093e\u090f\u0902");
+                if (video && !ds.contains("sponsored") && !ds.contains("shorts")) return n;
+              }
+              for (int i = 0; i < n.getChildCount(); i++) {
+                AccessibilityNodeInfo r = findVideo(n.getChild(i), depth + 1);
+                if (r != null) return r;
+              }
+              return null;
+            }
+
+            private boolean hasRealText(AccessibilityNodeInfo n) {
+              CharSequence c = n.getText();
+              if (c == null || c.length() == 0) return false;
+              if (Build.VERSION.SDK_INT >= 26 && n.isShowingHintText()) return false;
+              return true;
+            }
+
+            private AccessibilityNodeInfo findEditable(AccessibilityNodeInfo n) {
+              if (n == null) return null;
+              if (n.isEditable()) return n;
+              for (int i = 0; i < n.getChildCount(); i++) {
+                AccessibilityNodeInfo r = findEditable(n.getChild(i));
+                if (r != null) return r;
+              }
+              return null;
+            }
+
+            private AccessibilityNodeInfo findSend(AccessibilityNodeInfo n, int depth) {
+              if (n == null || depth > 25) return null;
+              CharSequence d = n.getContentDescription();
+              CharSequence id = n.getViewIdResourceName();
+              String ds = d == null ? "" : d.toString().toLowerCase();
+              String is = id == null ? "" : id.toString().toLowerCase();
+              if (ds.equals("send") || ds.equals("send message") || ds.equals("send sms") || ds.equals("send mms")
+                  || ds.equals("भेजें") || is.endsWith(":id/send") || is.endsWith(":id/conversation_send_button")
+                  || is.endsWith(":id/send_button") || is.endsWith(":id/send_btn")) {
+                return n;
+              }
+              for (int i = 0; i < n.getChildCount(); i++) {
+                AccessibilityNodeInfo r = findSend(n.getChild(i), depth + 1);
+                if (r != null) return r;
+              }
+              return null;
+            }
+          }
+          EOF
+          cat > $R/xml/aura_access.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+              android:accessibilityEventTypes="typeWindowContentChanged|typeWindowStateChanged"
+              android:accessibilityFeedbackType="feedbackGeneric"
+              android:accessibilityFlags="flagDefault|flagReportViewIds"
+              android:canRetrieveWindowContent="true"
+              android:notificationTimeout="200"
+              android:packageNames="com.whatsapp,com.whatsapp.w4b,com.google.android.apps.messaging,com.samsung.android.messaging,com.android.mms,com.google.android.youtube"
+              android:description="@string/aura_access_desc" />
+          EOF
+          cat > $R/values/aura_strings.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="aura_access_desc">Aura sirf aapki confirm ki hui WhatsApp ya SMS ko Send dabati hai aur YouTube mein pehla gana chalati hai. Kuch aur nahi padhti ya karti.</string>
+          </resources>
+          EOF
           M=android/app/src/main/AndroidManifest.xml
           sed -i 's#<application#<uses-permission android:name="android.permission.RECORD_AUDIO"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/><uses-permission android:name="android.permission.USE_EXACT_ALARM"/><uses-permission android:name="android.permission.WRITE_SETTINGS"/><uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/><uses-permission android:name="android.permission.FLASHLIGHT"/><uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/><uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/><uses-permission android:name="android.permission.VIBRATE"/><queries><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent><intent><action android:name="android.speech.RecognitionService"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries><application#' $M
-          sed -i 's#</application>#<!--AURA_X1--><service android:name=".WakeService" android:exported="false" android:foregroundServiceType="microphone"/><!--AURA_X2--></application>#' $M
+          sed -i 's#</application>#<!--AURA_X1--><service android:name=".WakeService" android:exported="false" android:foregroundServiceType="microphone"/><!--AURA_X2--><!--AURA_Y1--><service android:name=".SendService" android:exported="true" android:label="Aura Auto-Send" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"><intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter><meta-data android:name="android.accessibilityservice" android:resource="@xml/aura_access"/></service><!--AURA_Y2--></application>#' $M
           npx cap sync android
           cd android && mkdir -p ~/.android && cp ../debug.keystore ~/.android/debug.keystore && chmod +x gradlew
+          J=app/src/main/java/com/divyanshu/aura
+          RR=app/src/main/res
+          MM=app/src/main/AndroidManifest.xml
           if ./gradlew assembleDebug; then
-            echo "FULL build: launcher + media + Hey Aura" > build-info.txt
+            echo "FULL build: launcher + media + Hey Aura + Auto-Send" > build-info.txt
           else
-            echo "=== FULL build fail, LITE retry (Hey Aura nahi) ==="
-            rm -f app/src/main/java/com/divyanshu/aura/WakeService.java
-            sed -i 's#<!--AURA_X1-->.*<!--AURA_X2-->##' app/src/main/AndroidManifest.xml
-            ./gradlew assembleDebug
-            echo "LITE build: launcher + media (Hey Aura nahi)" > build-info.txt
+            echo "=== FULL fail: retry without Auto-Send ==="
+            rm -f $J/SendService.java $RR/xml/aura_access.xml $RR/values/aura_strings.xml
+            sed -i 's#<!--AURA_Y1-->.*<!--AURA_Y2-->##' $MM
+            if ./gradlew assembleDebug; then
+              echo "MEDIUM build: launcher + media + Hey Aura (Auto-Send nahi)" > build-info.txt
+            else
+              echo "=== MEDIUM fail: retry LITE ==="
+              rm -f $J/WakeService.java
+              sed -i 's#<!--AURA_X1-->.*<!--AURA_X2-->##' $MM
+              ./gradlew assembleDebug
+              echo "LITE build: launcher + media (Hey Aura, Auto-Send nahi)" > build-info.txt
+            fi
           fi
       - uses: actions/upload-artifact@v4
         with:
