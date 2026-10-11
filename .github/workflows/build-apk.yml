@@ -355,6 +355,84 @@ jobs:
               e.apply();
               call.resolve();
             }
+
+            private static String settingsAction(String k) {
+              if ("wifi".equals(k)) return "android.settings.WIFI_SETTINGS";
+              if ("bluetooth".equals(k)) return "android.settings.BLUETOOTH_SETTINGS";
+              if ("display".equals(k)) return "android.settings.DISPLAY_SETTINGS";
+              if ("sound".equals(k)) return "android.settings.SOUND_SETTINGS";
+              if ("battery".equals(k)) return "android.intent.action.POWER_USAGE_SUMMARY";
+              if ("location".equals(k)) return "android.settings.LOCATION_SOURCE_SETTINGS";
+              if ("airplane".equals(k)) return "android.settings.AIRPLANE_MODE_SETTINGS";
+              if ("data".equals(k)) return "android.settings.DATA_ROAMING_SETTINGS";
+              if ("apps".equals(k)) return "android.settings.APPLICATION_SETTINGS";
+              if ("storage".equals(k)) return "android.settings.INTERNAL_STORAGE_SETTINGS";
+              if ("security".equals(k)) return "android.settings.SECURITY_SETTINGS";
+              if ("accessibility".equals(k)) return "android.settings.ACCESSIBILITY_SETTINGS";
+              if ("developer".equals(k)) return "android.settings.APPLICATION_DEVELOPMENT_SETTINGS";
+              if ("date".equals(k)) return "android.settings.DATE_SETTINGS";
+              if ("language".equals(k)) return "android.settings.LOCALE_SETTINGS";
+              if ("nfc".equals(k)) return "android.settings.NFC_SETTINGS";
+              if ("vpn".equals(k)) return "android.settings.VPN_SETTINGS";
+              if ("privacy".equals(k)) return "android.settings.PRIVACY_SETTINGS";
+              if ("about".equals(k)) return "android.settings.DEVICE_INFO_SETTINGS";
+              if ("cast".equals(k)) return "android.settings.CAST_SETTINGS";
+              if ("keyboard".equals(k)) return "android.settings.INPUT_METHOD_SETTINGS";
+              if ("hotspot".equals(k)) return "android.settings.WIRELESS_SETTINGS";
+              return "android.settings.SETTINGS";
+            }
+
+            @PluginMethod
+            public void openSettings(PluginCall call) {
+              String k = call.getString("page", "main");
+              Context c = getContext();
+              try {
+                Intent i = new Intent(settingsAction(k));
+                if ("hotspot".equals(k)) i.setClassName("com.android.settings", "com.android.settings.TetherSettings");
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try {
+                  c.startActivity(i);
+                } catch (Throwable e1) {
+                  Intent f = new Intent(settingsAction("hotspot".equals(k) ? "hotspot" : k));
+                  f.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                  try {
+                    c.startActivity(f);
+                  } catch (Throwable e2) {
+                    Intent g = new Intent("android.settings.SETTINGS");
+                    g.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    c.startActivity(g);
+                  }
+                }
+                call.resolve();
+              } catch (Throwable t) {
+                call.reject("settings nahi khuli: " + t.getMessage());
+              }
+            }
+
+            @PluginMethod
+            public void autoRun(PluginCall call) {
+              String pkg = call.getString("package");
+              if (pkg == null || pkg.length() == 0) { call.reject("package missing"); return; }
+              String lp = pkg.toLowerCase();
+              String[] bl = new String[] { "paisa", "phonepe", "paytm", "bhim", "upi", "bank", "wallet", "razorpay", "cred.club", "payment", "pay" };
+              for (String b : bl) {
+                if (lp.contains(b)) { call.reject("Payment ya bank app mein Aura kuch nahi karti."); return; }
+              }
+              Context c = getContext();
+              Intent i = c.getPackageManager().getLaunchIntentForPackage(pkg);
+              if (i == null) { call.reject("app launch nahi ho sakta"); return; }
+              c.getSharedPreferences("aura", Context.MODE_PRIVATE).edit()
+                .putString("auto_pkg", pkg)
+                .putString("auto_mode", call.getString("mode", "search"))
+                .putString("auto_q", call.getString("q", ""))
+                .putString("auto_msg", call.getString("msg", ""))
+                .putInt("auto_stage", 0)
+                .putInt("auto_tries", 0)
+                .putLong("auto_until", System.currentTimeMillis() + 45000).apply();
+              i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+              c.startActivity(i);
+              call.resolve();
+            }
           }
           EOF
           cat > $D/MainActivity.java << 'EOF'
@@ -394,6 +472,7 @@ jobs:
           import android.os.IBinder;
           import android.os.Looper;
           import android.provider.MediaStore;
+          import android.provider.Settings;
           import android.speech.RecognitionListener;
           import android.speech.RecognizerIntent;
           import android.speech.SpeechRecognizer;
@@ -751,6 +830,18 @@ jobs:
                 speak(played ? "Gana chala rahi hoon." : "YouTube par dhoondh rahi hoon.", false);
                 return;
               }
+              String sk = settingsKey(n);
+              if (sk != null) {
+                openSettingsPage(sk);
+                speak("Settings khol rahi hoon.", false);
+                return;
+              }
+              Matcher sm = Pattern.compile("(?:aura )?(.+?) (?:me|mein|men|par|pe) (.{2,}?) (?:search karo|search kar do|search|dhundo|dhoondo|dhundh do|khojo)").matcher(n);
+              if (!sm.matches()) sm = Pattern.compile("(?:aura )?(.+?) (?:me|mein|men|par|pe) search (?:karo|kar do) (.{2,})").matcher(n);
+              if (sm.matches()) {
+                speak(appSearch(sm.group(1).trim(), sm.group(2).trim()), false);
+                return;
+              }
               String app = appName(n);
               if (app != null) {
                 String label = openByName(app);
@@ -867,7 +958,7 @@ jobs:
               return p[b.length()];
             }
 
-            private String openByName(String q0) {
+            private String[] findPkg(String q0) {
               try {
                 String q = alias(norm(q0)).replace(" ", "");
                 if (q.length() == 0) return null;
@@ -894,13 +985,148 @@ jobs:
                   }
                 }
                 if (bestPkg == null) return null;
-                Intent i = pm.getLaunchIntentForPackage(bestPkg);
+                return new String[] { bestPkg, bestLabel };
+              } catch (Throwable t) {
+                return null;
+              }
+            }
+
+            private String openByName(String q0) {
+              try {
+                String[] r = findPkg(q0);
+                if (r == null) return null;
+                Intent i = getPackageManager().getLaunchIntentForPackage(r[0]);
                 if (i == null) return null;
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(i);
-                return bestLabel;
+                return r[1];
               } catch (Throwable t) {
                 return null;
+              }
+            }
+
+            private boolean accessOn() {
+              try {
+                String s = Settings.Secure.getString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+                return s != null && s.contains(getPackageName()) && s.contains("SendService");
+              } catch (Throwable t) {
+                return false;
+              }
+            }
+
+            private static boolean blockedPkg(String pkg) {
+              String p = pkg.toLowerCase();
+              String[] bl = new String[] { "paisa", "phonepe", "paytm", "bhim", "upi", "bank", "wallet", "razorpay", "cred.club", "payment", "pay" };
+              for (String b : bl) if (p.contains(b)) return true;
+              return false;
+            }
+
+            // returns spoken reply
+            private String appSearch(String app, String q) {
+              if (app.matches("(youtube|yt)")) {
+                try {
+                  Intent v = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=" + Uri.encode(q)));
+                  v.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                  v.setPackage("com.google.android.youtube");
+                  startActivity(v);
+                  return "YouTube par " + q + " dhoondh rahi hoon.";
+                } catch (Throwable t) { }
+              }
+              String[] r = findPkg(app);
+              if (r == null) return app + " naam ka app mujhe nahi mila.";
+              if (blockedPkg(r[0])) return "Payment ya bank app mein main kuch nahi karti.";
+              if (!accessOn()) return "Kisi app ke andar search karne ke liye Aura mein Accessibility on karna hoga.";
+              try {
+                Intent i = getPackageManager().getLaunchIntentForPackage(r[0]);
+                if (i == null) return r[1] + " khul nahi paya.";
+                sp().edit().putString("auto_pkg", r[0]).putString("auto_mode", "search").putString("auto_q", q)
+                  .putString("auto_msg", "").putInt("auto_stage", 0).putInt("auto_tries", 0)
+                  .putLong("auto_until", System.currentTimeMillis() + 45000).apply();
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(i);
+                return r[1] + " mein " + q + " search kar rahi hoon.";
+              } catch (Throwable t) {
+                return "Search nahi ho paya.";
+              }
+            }
+
+            private static final String[][] SET_KEYS = new String[][] {
+              { "wifi", "wifi", "wi fi", "\u0935\u093e\u0908\u092b\u093e\u0908" },
+              { "bluetooth", "bluetooth", "\u092c\u094d\u0932\u0942\u091f\u0942\u0925" },
+              { "hotspot", "hotspot", "\u0939\u0949\u091f\u0938\u094d\u092a\u0949\u091f" },
+              { "airplane", "airplane", "flight mode" },
+              { "nfc", "nfc" },
+              { "vpn", "vpn" },
+              { "location", "location", "gps", "\u0932\u094b\u0915\u0947\u0936\u0928" },
+              { "battery", "battery", "\u092c\u0948\u091f\u0930\u0940" },
+              { "display", "display", "brightness", "\u0921\u093f\u0938\u094d\u092a\u094d\u0932\u0947" },
+              { "sound", "sound", "volume setting" },
+              { "data", "mobile data", "data usage" },
+              { "apps", "apps", "app setting" },
+              { "storage", "storage", "\u0938\u094d\u091f\u094b\u0930\u0947\u091c" },
+              { "security", "security", "lock screen" },
+              { "accessibility", "accessibility" },
+              { "developer", "developer" },
+              { "date", "date", "time setting" },
+              { "language", "language" },
+              { "privacy", "privacy" },
+              { "about", "about phone", "device info", "phone info" },
+              { "cast", "cast", "screen mirroring" },
+              { "keyboard", "keyboard" }
+            };
+
+            private String settingsKey(String n) {
+              boolean isSet = n.contains("setting") || n.contains("\u0938\u0947\u091f\u093f\u0902\u0917");
+              boolean verb = n.matches(".*\\b(kholo|khol do|kholna|open|dikhao|dikha do|jao)\\b.*") || n.contains("\u0916\u094b\u0932\u094b") || n.contains("\u0916\u094b\u0932 \u0926\u094b");
+              if (!isSet && !verb) return null;
+              for (int i = 0; i < SET_KEYS.length; i++) {
+                String[] row = SET_KEYS[i];
+                for (int j = 1; j < row.length; j++) {
+                  if (n.contains(row[j])) {
+                    if (isSet || i < 8) return row[0];
+                  }
+                }
+              }
+              return isSet ? "main" : null;
+            }
+
+            private static String settingsAction(String k) {
+              if ("wifi".equals(k)) return "android.settings.WIFI_SETTINGS";
+              if ("bluetooth".equals(k)) return "android.settings.BLUETOOTH_SETTINGS";
+              if ("display".equals(k)) return "android.settings.DISPLAY_SETTINGS";
+              if ("sound".equals(k)) return "android.settings.SOUND_SETTINGS";
+              if ("battery".equals(k)) return "android.intent.action.POWER_USAGE_SUMMARY";
+              if ("location".equals(k)) return "android.settings.LOCATION_SOURCE_SETTINGS";
+              if ("airplane".equals(k)) return "android.settings.AIRPLANE_MODE_SETTINGS";
+              if ("data".equals(k)) return "android.settings.DATA_ROAMING_SETTINGS";
+              if ("apps".equals(k)) return "android.settings.APPLICATION_SETTINGS";
+              if ("storage".equals(k)) return "android.settings.INTERNAL_STORAGE_SETTINGS";
+              if ("security".equals(k)) return "android.settings.SECURITY_SETTINGS";
+              if ("accessibility".equals(k)) return "android.settings.ACCESSIBILITY_SETTINGS";
+              if ("developer".equals(k)) return "android.settings.APPLICATION_DEVELOPMENT_SETTINGS";
+              if ("date".equals(k)) return "android.settings.DATE_SETTINGS";
+              if ("language".equals(k)) return "android.settings.LOCALE_SETTINGS";
+              if ("nfc".equals(k)) return "android.settings.NFC_SETTINGS";
+              if ("vpn".equals(k)) return "android.settings.VPN_SETTINGS";
+              if ("privacy".equals(k)) return "android.settings.PRIVACY_SETTINGS";
+              if ("about".equals(k)) return "android.settings.DEVICE_INFO_SETTINGS";
+              if ("cast".equals(k)) return "android.settings.CAST_SETTINGS";
+              if ("keyboard".equals(k)) return "android.settings.INPUT_METHOD_SETTINGS";
+              if ("hotspot".equals(k)) return "android.settings.WIRELESS_SETTINGS";
+              return "android.settings.SETTINGS";
+            }
+
+            private void openSettingsPage(String k) {
+              try {
+                Intent i = new Intent(settingsAction(k));
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(i);
+              } catch (Throwable t) {
+                try {
+                  Intent g = new Intent("android.settings.SETTINGS");
+                  g.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                  startActivity(g);
+                } catch (Throwable t2) { }
               }
             }
 
@@ -1062,13 +1288,26 @@ jobs:
           import android.os.Bundle;
           import android.view.accessibility.AccessibilityEvent;
           import android.view.accessibility.AccessibilityNodeInfo;
-          import java.util.List;
 
           public class SendService extends AccessibilityService {
             private long lastTry = 0;
+            private static final String YT = "com.google.android.youtube";
+            private static final String[] MSG = new String[] { "com.whatsapp", "com.whatsapp.w4b", "com.google.android.apps.messaging", "com.samsung.android.messaging", "com.android.mms" };
+            private static final String[] BLOCK = new String[] { "paisa", "phonepe", "paytm", "bhim", "upi", "bank", "wallet", "razorpay", "cred.club", "payment", "pay" };
 
             @Override
             public void onInterrupt() { }
+
+            private static boolean blocked(String pkg) {
+              String p = pkg.toLowerCase();
+              for (String b : BLOCK) if (p.contains(b)) return true;
+              return false;
+            }
+
+            private static boolean isMsgApp(String pkg) {
+              for (String m : MSG) if (m.equals(pkg)) return true;
+              return false;
+            }
 
             @Override
             public void onAccessibilityEvent(AccessibilityEvent e) {
@@ -1076,60 +1315,189 @@ jobs:
                 SharedPreferences sp = getSharedPreferences("aura", Context.MODE_PRIVATE);
                 long until = sp.getLong("send_until", 0);
                 long pu = sp.getLong("play_until", 0);
-                if (until == 0 && pu == 0) return;
+                long au = sp.getLong("auto_until", 0);
+                if (until == 0 && pu == 0 && au == 0) return;
                 long now = System.currentTimeMillis();
                 if (pu != 0 && now > pu) { sp.edit().putLong("play_until", 0).apply(); pu = 0; }
                 if (until != 0 && now > until) { sp.edit().putLong("send_until", 0).putString("send_text", "").apply(); until = 0; }
-                if (until == 0 && pu == 0) return;
+                if (au != 0 && now > au) { sp.edit().putLong("auto_until", 0).apply(); au = 0; }
+                if (until == 0 && pu == 0 && au == 0) return;
                 if (now - lastTry < 350) return;
                 lastTry = now;
-                CharSequence pk = e.getPackageName();
+                CharSequence pkc = e.getPackageName();
+                if (pkc == null) return;
+                String pkg = pkc.toString();
+                if (pkg.equals(getPackageName())) return;
                 AccessibilityNodeInfo root = getRootInActiveWindow();
                 if (root == null) return;
-                if (pu != 0 && pk != null && "com.google.android.youtube".contentEquals(pk)) {
+
+                if (au != 0 && pkg.equals(sp.getString("auto_pkg", "")) && !blocked(pkg)) {
+                  auto(sp, root);
+                  return;
+                }
+                if (pu != 0 && pkg.equals(YT)) {
                   AccessibilityNodeInfo v = findVideo(root, 0);
-                  if (v != null) {
-                    AccessibilityNodeInfo t = v;
-                    int g = 0;
-                    while (t != null && !t.isClickable() && g < 5) { t = t.getParent(); g++; }
-                    if (t != null && t.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-                      sp.edit().putLong("play_until", 0).apply();
-                    }
-                  }
+                  if (v != null && click(v)) sp.edit().putLong("play_until", 0).apply();
                   return;
                 }
-                if (until == 0) return;
-                boolean msgApp = pk != null && !"com.google.android.youtube".contentEquals(pk);
-                if (!msgApp) return;
-                String text = sp.getString("send_text", "");
-                AccessibilityNodeInfo ed = findEditable(root);
-                if (ed == null) return;
-                boolean has = hasRealText(ed);
-                if (!has) {
-                  if (text != null && text.length() > 0) {
-                    Bundle b = new Bundle();
-                    b.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text);
-                    ed.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, b);
+                if (until != 0 && isMsgApp(pkg)) {
+                  String text = sp.getString("send_text", "");
+                  AccessibilityNodeInfo ed = findEditable(root, 0);
+                  if (ed == null) return;
+                  if (!hasRealText(ed)) {
+                    if (text != null && text.length() > 0) setText(ed, text);
+                    return;
                   }
-                  return;
-                }
-                AccessibilityNodeInfo send = findSend(root, 0);
-                if (send == null) return;
-                AccessibilityNodeInfo t2 = send;
-                int guard = 0;
-                while (t2 != null && !t2.isClickable() && guard < 4) { t2 = t2.getParent(); guard++; }
-                if (t2 != null && t2.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-                  sp.edit().putLong("send_until", 0).putString("send_text", "").apply();
+                  AccessibilityNodeInfo send = findSend(root, 0);
+                  if (send != null && click(send)) sp.edit().putLong("send_until", 0).putString("send_text", "").apply();
                 }
               } catch (Throwable t) { }
             }
 
+            // ---------- generic in-app search / chat ----------
+            private void done(SharedPreferences sp) {
+              sp.edit().putLong("auto_until", 0).putInt("auto_stage", 0).putInt("auto_tries", 0).apply();
+            }
+
+            private void auto(SharedPreferences sp, AccessibilityNodeInfo root) {
+              String mode = sp.getString("auto_mode", "search");
+              String q = sp.getString("auto_q", "");
+              String msg = sp.getString("auto_msg", "");
+              int stage = sp.getInt("auto_stage", 0);
+              int tries = sp.getInt("auto_tries", 0) + 1;
+              sp.edit().putInt("auto_tries", tries).apply();
+              if (tries > 45) { done(sp); return; }
+
+              if (stage == 0) {
+                AccessibilityNodeInfo ed = findField(root, 0, true);
+                if (ed == null && tries >= 5) ed = findField(root, 0, false);
+                if (ed != null) {
+                  if (!sameText(ed, q)) { setText(ed, q); return; }
+                  submit(ed, root);
+                  if ("chat".equals(mode)) sp.edit().putInt("auto_stage", 1).putInt("auto_tries", 0).apply();
+                  else done(sp);
+                  return;
+                }
+                AccessibilityNodeInfo aff = findAffordance(root, 0);
+                if (aff != null) click(aff);
+                return;
+              }
+              if (stage == 1) {
+                if (tries < 3) return;
+                AccessibilityNodeInfo r = findNameNode(root, q.toLowerCase(), 0);
+                if (r != null && click(r)) sp.edit().putInt("auto_stage", 2).putInt("auto_tries", 0).apply();
+                return;
+              }
+              AccessibilityNodeInfo c = findField(root, 0, false);
+              if (c == null || isSearchy(info(c))) return;
+              if (!sameText(c, msg)) { setText(c, msg); return; }
+              AccessibilityNodeInfo send = findSend(root, 0);
+              if (send != null && click(send)) done(sp);
+            }
+
+            private static String info(AccessibilityNodeInfo n) {
+              StringBuilder b = new StringBuilder();
+              CharSequence t = n.getText();
+              if (t != null) b.append(t).append(' ');
+              CharSequence d = n.getContentDescription();
+              if (d != null) b.append(d).append(' ');
+              if (Build.VERSION.SDK_INT >= 26) {
+                CharSequence h = n.getHintText();
+                if (h != null) b.append(h).append(' ');
+              }
+              String id = n.getViewIdResourceName();
+              if (id != null) b.append(id);
+              return b.toString().toLowerCase();
+            }
+
+            private static boolean isSearchy(String s) {
+              return s.contains("search") || s.contains("find") || s.contains("query") || s.contains("खोज");
+            }
+
+            private AccessibilityNodeInfo findField(AccessibilityNodeInfo n, int depth, boolean searchOnly) {
+              if (n == null || depth > 30) return null;
+              if (n.isEditable() && (!searchOnly || isSearchy(info(n)))) return n;
+              for (int i = 0; i < n.getChildCount(); i++) {
+                AccessibilityNodeInfo r = findField(n.getChild(i), depth + 1, searchOnly);
+                if (r != null) return r;
+              }
+              return null;
+            }
+
+            private AccessibilityNodeInfo findAffordance(AccessibilityNodeInfo n, int depth) {
+              if (n == null || depth > 30) return null;
+              if (!n.isEditable()) {
+                String s = info(n);
+                if (s.length() < 70 && isSearchy(s) && (n.isClickable() || hasClickableParent(n))) return n;
+              }
+              for (int i = 0; i < n.getChildCount(); i++) {
+                AccessibilityNodeInfo r = findAffordance(n.getChild(i), depth + 1);
+                if (r != null) return r;
+              }
+              return null;
+            }
+
+            private boolean hasClickableParent(AccessibilityNodeInfo n) {
+              AccessibilityNodeInfo p = n.getParent();
+              int g = 0;
+              while (p != null && g < 4) {
+                if (p.isClickable()) return true;
+                p = p.getParent();
+                g++;
+              }
+              return false;
+            }
+
+            private AccessibilityNodeInfo findNameNode(AccessibilityNodeInfo n, String name, int depth) {
+              if (n == null || depth > 30 || name.length() == 0) return null;
+              if (!n.isEditable()) {
+                CharSequence t = n.getText();
+                if (t != null && t.toString().toLowerCase().contains(name) && !isSearchy(info(n))) return n;
+              }
+              for (int i = 0; i < n.getChildCount(); i++) {
+                AccessibilityNodeInfo r = findNameNode(n.getChild(i), name, depth + 1);
+                if (r != null) return r;
+              }
+              return null;
+            }
+
+            private boolean sameText(AccessibilityNodeInfo n, String s) {
+              if (!hasRealText(n)) return false;
+              return n.getText().toString().trim().equals(s.trim());
+            }
+
+            private boolean setText(AccessibilityNodeInfo n, String s) {
+              n.performAction(AccessibilityNodeInfo.ACTION_FOCUS);
+              Bundle b = new Bundle();
+              b.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, s);
+              return n.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, b);
+            }
+
+            private boolean click(AccessibilityNodeInfo n) {
+              AccessibilityNodeInfo t = n;
+              int g = 0;
+              while (t != null && !t.isClickable() && g < 5) { t = t.getParent(); g++; }
+              return t != null && t.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+            }
+
+            private void submit(AccessibilityNodeInfo ed, AccessibilityNodeInfo root) {
+              boolean ok = false;
+              if (Build.VERSION.SDK_INT >= 30) {
+                ok = ed.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.getId());
+              }
+              if (!ok) {
+                AccessibilityNodeInfo b = findAffordance(root, 0);
+                if (b != null) click(b);
+              }
+            }
+
+            // ---------- helpers used by older flows ----------
             private AccessibilityNodeInfo findVideo(AccessibilityNodeInfo n, int depth) {
               if (n == null || depth > 30) return null;
               CharSequence d = n.getContentDescription();
               if (d != null) {
                 String ds = d.toString().toLowerCase();
-                boolean video = ds.contains("play video") || ds.contains("\u0935\u0940\u0921\u093f\u092f\u094b \u091a\u0932\u093e\u090f\u0902");
+                boolean video = ds.contains("play video") || ds.contains("वीडियो चलाएं");
                 if (video && !ds.contains("sponsored") && !ds.contains("shorts")) return n;
               }
               for (int i = 0; i < n.getChildCount(); i++) {
@@ -1146,14 +1514,8 @@ jobs:
               return true;
             }
 
-            private AccessibilityNodeInfo findEditable(AccessibilityNodeInfo n) {
-              if (n == null) return null;
-              if (n.isEditable()) return n;
-              for (int i = 0; i < n.getChildCount(); i++) {
-                AccessibilityNodeInfo r = findEditable(n.getChild(i));
-                if (r != null) return r;
-              }
-              return null;
+            private AccessibilityNodeInfo findEditable(AccessibilityNodeInfo n, int depth) {
+              return findField(n, depth, false);
             }
 
             private AccessibilityNodeInfo findSend(AccessibilityNodeInfo n, int depth) {
@@ -1183,13 +1545,12 @@ jobs:
               android:accessibilityFlags="flagDefault|flagReportViewIds"
               android:canRetrieveWindowContent="true"
               android:notificationTimeout="200"
-              android:packageNames="com.whatsapp,com.whatsapp.w4b,com.google.android.apps.messaging,com.samsung.android.messaging,com.android.mms,com.google.android.youtube"
               android:description="@string/aura_access_desc" />
           EOF
           cat > $R/values/aura_strings.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <string name="aura_access_desc">Aura sirf aapki confirm ki hui WhatsApp ya SMS ko Send dabati hai aur YouTube mein pehla gana chalati hai. Kuch aur nahi padhti ya karti.</string>
+              <string name="aura_access_desc">Aura sirf tab kaam karti hai jab aap bolkar ya likhkar kahein: kisi app mein search karna, message bhejna (aapke confirm ke baad), ya YouTube ka pehla gana chalana. Payment aur bank apps mein kuch nahi karti.</string>
           </resources>
           EOF
           M=android/app/src/main/AndroidManifest.xml
