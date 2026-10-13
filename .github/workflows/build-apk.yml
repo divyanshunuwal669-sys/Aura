@@ -2312,31 +2312,38 @@ jobs:
           J=app/src/main/java/com/divyanshu/aura
           RR=app/src/main/res
           MM=app/src/main/AndroidManifest.xml
-          if ./gradlew assembleDebug; then
+          if ./gradlew assembleDebug > gl1.log 2>&1; then
             echo "FULL build: launcher + media + Hey Aura + Auto-Send + Screen-control" > build-info.txt
           else
             echo "=== FULL fail: retry without Screen-control ==="
             rm -f $J/AgentCore.java
-            if ./gradlew assembleDebug; then
+            if ./gradlew assembleDebug > gl2.log 2>&1; then
               echo "BUILD 2: Hey Aura + Auto-Send (Screen-control nahi)" > build-info.txt
             else
               echo "=== retry without Auto-Send ==="
               rm -f $J/SendService.java $RR/xml/aura_access.xml $RR/values/aura_strings.xml
               sed -i 's#<!--AURA_Y1-->.*<!--AURA_Y2-->##' $MM
-              if ./gradlew assembleDebug; then
+              if ./gradlew assembleDebug > gl3.log 2>&1; then
                 echo "BUILD 3: Hey Aura (Auto-Send, Screen-control nahi)" > build-info.txt
               else
                 echo "=== retry LITE ==="
                 rm -f $J/WakeService.java
                 sed -i 's#<!--AURA_X1-->.*<!--AURA_X2-->##' $MM
-                ./gradlew assembleDebug
+                ./gradlew assembleDebug > gl4.log 2>&1 || { tail -80 gl4.log; exit 1; }
                 echo "LITE build: launcher + media (Hey Aura, Auto-Send, Screen-control nahi)" > build-info.txt
               fi
             fi
           fi
+      - name: Collect errors
+        if: always()
+        run: |
+          cd android
+          for f in gl1 gl2 gl3 gl4; do [ -f $f.log ] && { echo "##### $f"; grep -E "error:|Exception|FAILED|What went wrong" -A3 $f.log | head -60; } >> build-errors.txt; done
+          cat build-errors.txt 2>/dev/null | head -150 || true
       - uses: actions/upload-artifact@v4
         with:
           name: Aura-APK
           path: |
             android/app/build/outputs/apk/debug/app-debug.apk
             android/build-info.txt
+            android/build-errors.txt
