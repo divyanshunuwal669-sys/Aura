@@ -349,7 +349,7 @@ jobs:
             @PluginMethod
             public void setBrain(PluginCall call) {
               android.content.SharedPreferences.Editor e = getContext().getSharedPreferences("aura", Context.MODE_PRIVATE).edit();
-              String[] ks = new String[] { "gk", "qk", "dev", "uname", "rules", "autoc" };
+              String[] ks = new String[] { "gk", "ek", "ev", "qk", "dev", "uname", "rules", "autoc" };
               for (String k : ks) e.putString(k, call.getString(k, ""));
               e.putBoolean("bg", call.getBoolean("bg", true));
               e.apply();
@@ -846,7 +846,9 @@ jobs:
             // Gemini natural voice first (needs internet); phone TTS as fallback
             private void speak(final String t, final boolean thenListen) {
               final String gk = sp().getString("gk", "");
-              if (gk.length() < 6 || System.currentTimeMillis() < gemFailUntil || t == null || t.length() == 0) {
+              final String ek = sp().getString("ek", "");
+              final String ev = sp().getString("ev", "");
+              if ((gk.length() < 6 && ek.length() < 6) || System.currentTimeMillis() < gemFailUntil || t == null || t.length() == 0) {
                 localSpeak(t, thenListen);
                 return;
               }
@@ -855,7 +857,11 @@ jobs:
               final int my = ++speakGen;
               new Thread(new Runnable() {
                 public void run() {
-                  final byte[] pcm = geminiTts(gk, t.length() > 500 ? t.substring(0, 500) : t);
+                  String tt = t.length() > 500 ? t.substring(0, 500) : t;
+                  byte[] p0 = null;
+                  if (ek.length() >= 6) p0 = elevenTts(ek, ev, tt);
+                  if (p0 == null && gk.length() >= 6) p0 = geminiTts(gk, tt);
+                  final byte[] pcm = p0;
                   if (my != speakGen) return;
                   if (pcm == null) {
                     gemFailUntil = System.currentTimeMillis() + 60000;
@@ -865,6 +871,35 @@ jobs:
                   playPcm(pcm, my);
                 }
               }).start();
+            }
+
+            private byte[] elevenTts(String key, String voice, String text) {
+              try {
+                String v = voice.length() > 5 ? voice : "21m00Tcm4TlvDq8ikWAM";
+                JSONObject body = new JSONObject().put("text", text).put("model_id", "eleven_flash_v2_5");
+                HttpURLConnection c = (HttpURLConnection) new URL("https://api.elevenlabs.io/v1/text-to-speech/" + Uri.encode(v) + "?output_format=pcm_24000").openConnection();
+                c.setConnectTimeout(5000);
+                c.setReadTimeout(12000);
+                c.setRequestMethod("POST");
+                c.setDoOutput(true);
+                c.setRequestProperty("Content-Type", "application/json");
+                c.setRequestProperty("xi-api-key", key);
+                OutputStream os = c.getOutputStream();
+                os.write(body.toString().getBytes("UTF-8"));
+                os.close();
+                if (c.getResponseCode() != 200) { c.disconnect(); return null; }
+                InputStream is = c.getInputStream();
+                java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
+                byte[] buf = new byte[8192];
+                int n;
+                while ((n = is.read(buf)) > 0) bo.write(buf, 0, n);
+                is.close();
+                c.disconnect();
+                byte[] d = bo.toByteArray();
+                return d.length > 2000 ? d : null;
+              } catch (Throwable e) {
+                return null;
+              }
             }
 
             private byte[] geminiTts(String key, String text) {
