@@ -70,6 +70,8 @@ html.gf .a{border-left-color:#f472b6;box-shadow:0 0 14px #f472b622}
 <p>Keys sirf is phone mein save hoti hain. Groq tez hai, Gemini backup hai. Ek bhi chalegi.</p>
 <input id="qk" type="password" placeholder="Groq API key">
 <input id="gk" type="password" placeholder="Gemini API key">
+<input id="ek" type="password" placeholder="ElevenLabs API key (natural awaaz, optional)">
+<input id="ev" placeholder="ElevenLabs Voice ID (khali = default)">
 <input id="dv" placeholder="Tumhara naam (Aura ka developer)">
 <input class="gfonly" id="un" placeholder="Tumhe kis naam se bulaye? (jaise Rahul)">
 <input class="gfonly" id="gn" placeholder="Girlfriend mode mein uska naam (jaise Aura)">
@@ -240,16 +242,19 @@ const fin=v=>{if(dn)return;dn=1;if(pend&&pend.fin===fin)pend=null;b.remove();s.t
 function guard(t){let m=t,f=0;m=m.replace(/\b(?:\d[ -]?){13,19}\b/g,()=>{f=1;return'[HIDDEN]'});
 m=m.replace(/\b(otp|pin|cvv|password|passcode)\b([^.\n]{0,20}?)\s((?=\S*[\d@#$!%^&*])[A-Za-z0-9@#$!%^&*]{4,})/gi,(a,k,mid)=>{f=1;return k+mid+' [HIDDEN]'});
 m=m.replace(/\b\d{4,8}\b(?=[^.\n]{0,15}\botp\b)/gi,()=>{f=1;return'[HIDDEN]'});return[m,f]}
-const VER='v30 • 11 Oct';
+const VER='v31 • 18 Oct';
 let AC=null,SRC=null,lastVE='';
 function unlock(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}}
 document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);
 function pcmPlay(b64,done){const bin=atob(b64),n=bin.length>>1,f=new Float32Array(n);for(let i=0;i<n;i++){let v=bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8);if(v>=32768)v-=65536;f[i]=v/32768}
 const buf=AC.createBuffer(1,n,24000);buf.copyToChannel(f,0);SRC=AC.createBufferSource();SRC.buffer=buf;SRC.connect(AC.destination);SRC.onended=done;SRC.start()}
+function ab64(b){let s='';const u=new Uint8Array(b);for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)}
+async function etts(t){try{const v=S('ev')||'21m00Tcm4TlvDq8ikWAM';const r=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+encodeURIComponent(v)+'?output_format=pcm_24000',{method:'POST',headers:{'Content-Type':'application/json','xi-api-key':S('ek')},body:JSON.stringify({text:t,model_id:'eleven_flash_v2_5'}),signal:AbortSignal.timeout(12000)});if(!r.ok){lastVE='eleven '+r.status;return null}const b=await r.arrayBuffer();return b.byteLength>2000?ab64(b):null}catch(e){lastVE='eleven: '+(e.message||'fail');return null}}
 async function gtts(t){for(const m of ['gemini-3.8-flash-tts','gemini-3.8-flash-lite-tts','gemini-2.5-flash-preview-tts'])for(const vn of(gf?['Leda','Kore']:['Kore'])){try{
 const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':S('gk')},body:JSON.stringify({contents:[{parts:[{text:t}]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:vn}}}}}),signal:AbortSignal.timeout(15000)});
 const j=await r.json();if(!r.ok){lastVE=m+' '+r.status;continue}const d=j.candidates[0].content.parts[0].inlineData.data;if(d)return d}catch(e){lastVE=m+': '+(e.message||'fail')}}return null}
 async function webSay(t,d){stopTalk();document.body.className='talk';
+if(S('ek')){unlock();const a=await etts(t.slice(0,500));if(a&&AC){try{pcmPlay(a,d);return}catch(e){lastVE='play '+(e.message||'')}}}
 if(S('gk')){unlock();const a=await gtts(t.slice(0,500));if(a&&AC){try{pcmPlay(a,d);return}catch(e){lastVE='play '+(e.message||'')}}}
 if(!window.speechSynthesis){d();return}
 const vs=speechSynthesis.getVoices(),v=vs.find(x=>/en[-_]IN/i.test(x.lang))||vs.find(x=>/hi[-_]IN/i.test(x.lang))||vs.find(x=>/^en/i.test(x.lang)),u=new SpeechSynthesisUtterance(t);
@@ -320,8 +325,8 @@ $('vol').onclick=function(){speakOn=!speakOn;this.innerHTML=speakOn?'&#128266;':
 $('tv').onclick=()=>{$('set').hidden=true;lastVE='';add('Awaaz test chal raha hai...','a');const w=speakOn;speakOn=true;say('Namaste, main Aura hoon. Meri awaaz aa rahi hai?');speakOn=w;
 setTimeout(()=>add(lastVE?'Natural voice nahi chali ('+lastVE+'), phone ki voice use hui.':'Test ho gaya. Awaaz nahi aayi to phone ka media volume check karo.','a'),7000)};
 $('ver').textContent='Version: '+VER+(NAT?' (APK)':' (Web)');
-$('gear').onclick=()=>{$('qk').value=S('qk');$('gk').value=S('gk');$('ct').value=S('city');$('dv').value=S('dev');$('un').value=S('uname');$('gn').value=S('gname');$('ru').value=S('rules');$('set').hidden=false};
-$('save').onclick=()=>{localStorage.setItem('qk',$('qk').value.trim());localStorage.setItem('gk',$('gk').value.trim());localStorage.setItem('city',$('ct').value.trim());localStorage.setItem('dev',$('dv').value.trim());localStorage.setItem('uname',$('un').value.trim());localStorage.setItem('gname',$('gn').value.trim());localStorage.setItem('rules',$('ru').value.trim());if(NAT)setTimeout(()=>{try{setBrain()}catch(e){}},50);$('set').hidden=true;
+$('gear').onclick=()=>{$('qk').value=S('qk');$('gk').value=S('gk');$('ek').value=S('ek');$('ev').value=S('ev');$('ct').value=S('city');$('dv').value=S('dev');$('un').value=S('uname');$('gn').value=S('gname');$('ru').value=S('rules');$('set').hidden=false};
+$('save').onclick=()=>{localStorage.setItem('qk',$('qk').value.trim());localStorage.setItem('gk',$('gk').value.trim());localStorage.setItem('ek',$('ek').value.trim());localStorage.setItem('ev',$('ev').value.trim());localStorage.setItem('city',$('ct').value.trim());localStorage.setItem('dev',$('dv').value.trim());localStorage.setItem('uname',$('un').value.trim());localStorage.setItem('gname',$('gn').value.trim());localStorage.setItem('rules',$('ru').value.trim());if(NAT)setTimeout(()=>{try{setBrain()}catch(e){}},50);$('set').hidden=true;
 if(NAT&&CP.LocalNotifications)CP.LocalNotifications.requestPermissions().catch(()=>{});else if('Notification'in window)Notification.requestPermission();
 add('Save ho gaya. Ab baat karo!','a')};
 const call={on:0,sp:0,st:'idle',empty:0,busy:0};
@@ -407,7 +412,7 @@ const keep={};SKIP.forEach(k=>{if(S(k))keep[k]=S(k)});localStorage.clear();Objec
 const cfl=()=>$('cfm').textContent=autoC()?'✅ Confirm: OFF (seedha kar degi, haan nahi poochegi)':'🔒 Confirm: ON (pehle haan poochegi)';cfl();$('cfm').onclick=()=>{localStorage.setItem('autoc',autoC()?'0':'1');cfl();if(NAT)setBrain();add(autoC()?'Confirm OFF. Message, call aur search ab seedha honge. Delete aur memory ke liye abhi bhi poochungi.':'Confirm ON. Message aur call se pehle poochungi.','a')};
 const WPD=['hey aura','hay aura','hey ora','हे ऑरा','हे आउरा','हे औरा','हे आरा','हेलो ऑरा','hello aura','ae aura'];
 function wph(){const c=S('wp').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);return c.length?c:WPD}
-function setBrain(){try{return CP.AuraNative.setBrain({gk:S('gk'),qk:S('qk'),dev:S('dev'),uname:S('uname'),rules:S('rules'),bg:S('bgm')!='0',autoc:S('autoc')})}catch(e){}}
+function setBrain(){try{return CP.AuraNative.setBrain({gk:S('gk'),ek:S('ek'),ev:S('ev'),qk:S('qk'),dev:S('dev'),uname:S('uname'),rules:S('rules'),bg:S('bgm')!='0',autoc:S('autoc')})}catch(e){}}
 async function heyOn(silent){const A=CP.AuraNative;if(!A)return;try{
 if(CP.SpeechRecognition){let pm=await CP.SpeechRecognition.checkPermissions();if(pm.speechRecognition!=='granted')pm=await CP.SpeechRecognition.requestPermissions();if(pm.speechRecognition!=='granted'){if(!silent)add('Hey Aura ke liye mic permission chahiye.','a');return}}
 await setBrain();const r=await A.wakeStart({phrases:wph()});
