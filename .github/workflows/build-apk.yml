@@ -349,7 +349,7 @@ jobs:
             @PluginMethod
             public void setBrain(PluginCall call) {
               android.content.SharedPreferences.Editor e = getContext().getSharedPreferences("aura", Context.MODE_PRIVATE).edit();
-              String[] ks = new String[] { "gk", "ek", "ev", "qk", "dev", "uname", "rules", "autoc" };
+              String[] ks = new String[] { "gk", "ek", "ev", "smk", "smv", "qk", "dev", "uname", "rules", "autoc" };
               for (String k : ks) e.putString(k, call.getString(k, ""));
               e.putBoolean("bg", call.getBoolean("bg", true));
               e.apply();
@@ -848,7 +848,9 @@ jobs:
               final String gk = sp().getString("gk", "");
               final String ek = sp().getString("ek", "");
               final String ev = sp().getString("ev", "");
-              if ((gk.length() < 6 && ek.length() < 6) || System.currentTimeMillis() < gemFailUntil || t == null || t.length() == 0) {
+              final String smk = sp().getString("smk", "");
+              final String smv = sp().getString("smv", "");
+              if ((gk.length() < 6 && ek.length() < 6 && smk.length() < 6) || System.currentTimeMillis() < gemFailUntil || t == null || t.length() == 0) {
                 localSpeak(t, thenListen);
                 return;
               }
@@ -859,7 +861,8 @@ jobs:
                 public void run() {
                   String tt = t.length() > 500 ? t.substring(0, 500) : t;
                   byte[] p0 = null;
-                  if (ek.length() >= 6) p0 = elevenTts(ek, ev, tt);
+                  if (smk.length() >= 6) p0 = sarvamTts(smk, smv, tt);
+                  if (p0 == null && ek.length() >= 6) p0 = elevenTts(ek, ev, tt);
                   if (p0 == null && gk.length() >= 6) p0 = geminiTts(gk, tt);
                   final byte[] pcm = p0;
                   if (my != speakGen) return;
@@ -871,6 +874,41 @@ jobs:
                   playPcm(pcm, my);
                 }
               }).start();
+            }
+
+            private byte[] sarvamTts(String key, String speaker, String text) {
+              try {
+                JSONObject body = new JSONObject().put("text", text).put("language_code", "hi-IN").put("model", "bulbul:v3")
+                  .put("speaker", (speaker.length() > 1 ? speaker : "priya").toLowerCase()).put("speech_sample_rate", 24000).put("output_audio_codec", "wav");
+                HttpURLConnection c = (HttpURLConnection) new URL("https://api.sarvam.ai/text-to-speech").openConnection();
+                c.setConnectTimeout(5000);
+                c.setReadTimeout(12000);
+                c.setRequestMethod("POST");
+                c.setDoOutput(true);
+                c.setRequestProperty("Content-Type", "application/json");
+                c.setRequestProperty("api-subscription-key", key);
+                OutputStream os = c.getOutputStream();
+                os.write(body.toString().getBytes("UTF-8"));
+                os.close();
+                if (c.getResponseCode() != 200) { c.disconnect(); return null; }
+                BufferedReader br = new BufferedReader(new InputStreamReader(c.getInputStream(), "UTF-8"));
+                StringBuilder sb = new StringBuilder();
+                String ln;
+                while ((ln = br.readLine()) != null) sb.append(ln);
+                br.close();
+                c.disconnect();
+                byte[] w = Base64.decode(new JSONObject(sb.toString()).getJSONArray("audios").getString(0), Base64.DEFAULT);
+                int off = 44;
+                for (int i = 12; i < Math.min(w.length - 8, 400); i++) {
+                  if (w[i] == 'd' && w[i + 1] == 'a' && w[i + 2] == 't' && w[i + 3] == 'a') { off = i + 8; break; }
+                }
+                if (w.length - off < 2000) return null;
+                byte[] pcm = new byte[w.length - off];
+                System.arraycopy(w, off, pcm, 0, pcm.length);
+                return pcm;
+              } catch (Throwable e) {
+                return null;
+              }
             }
 
             private byte[] elevenTts(String key, String voice, String text) {
