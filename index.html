@@ -264,18 +264,18 @@ function pcmPlay(b64,done){const bin=atob(b64),n=bin.length>>1,f=new Float32Arra
 const buf=AC.createBuffer(1,n,24000);buf.copyToChannel(f,0);SRC=AC.createBufferSource();SRC.buffer=buf;SRC.connect(AC.destination);SRC.onended=done;SRC.start()}
 function ab64(b){let s='';const u=new Uint8Array(b);for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)}
 async function etts(t){try{const v=S('ev')||'21m00Tcm4TlvDq8ikWAM';const r=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+encodeURIComponent(v)+'?output_format=pcm_24000',{method:'POST',headers:{'Content-Type':'application/json','xi-api-key':S('ek')},body:JSON.stringify({text:t,model_id:'eleven_flash_v2_5'}),signal:AbortSignal.timeout(12000)});if(!r.ok){lastVE='eleven '+r.status;return null}const b=await r.arrayBuffer();return b.byteLength>2000?ab64(b):null}catch(e){lastVE='eleven: '+(e.message||'fail');return null}}
-async function gtts(t){for(const m of ['gemini-3.8-flash-tts','gemini-3.8-flash-lite-tts','gemini-2.5-flash-preview-tts'])for(const vn of(gf?['Leda','Kore']:['Kore'])){try{
+async function gtts(t){for(const m of ['gemini-3.8-flash-tts','gemini-3.8-flash-lite-tts','gemini-2.5-flash-preview-tts'])for(const vn of ['Aoede','Kore']){try{
 const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':S('gk')},body:JSON.stringify({contents:[{parts:[{text:t}]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:vn}}}}}),signal:AbortSignal.timeout(15000)});
 const j=await r.json();if(!r.ok){lastVE=m+' '+r.status;continue}const d=j.candidates[0].content.parts[0].inlineData.data;if(d)return d}catch(e){lastVE=m+': '+(e.message||'fail')}}return null}
 async function webSay(t,d){stopTalk();document.body.className='talk';
 if(S('ek')){unlock();const a=await etts(t.slice(0,500));if(a&&AC){try{pcmPlay(a,d);return}catch(e){lastVE='play '+(e.message||'')}}}
 if(S('gk')){unlock();const a=await gtts(t.slice(0,500));if(a&&AC){try{pcmPlay(a,d);return}catch(e){lastVE='play '+(e.message||'')}}}
 if(!window.speechSynthesis){d();return}
-const vs=speechSynthesis.getVoices(),v=vs.find(x=>/en[-_]IN/i.test(x.lang))||vs.find(x=>/hi[-_]IN/i.test(x.lang))||vs.find(x=>/^en/i.test(x.lang)),u=new SpeechSynthesisUtterance(t);
-if(v){u.voice=v;u.lang=v.lang}else u.lang='en-IN';u.rate=1.1;u.onend=u.onerror=d;speechSynthesis.cancel();speechSynthesis.resume();speechSynthesis.speak(u)}
+const vs=speechSynthesis.getVoices(),v=vs.find(x=>/female|girl|kavya|aditi|priya|zira|samantha/i.test(x.name)&&/hi|en/i.test(x.lang))||vs.find(x=>/hi[-_]IN/i.test(x.lang)&&!/male|david/i.test(x.name))||vs.find(x=>/en[-_]IN/i.test(x.lang)&&!/male|david/i.test(x.name))||vs.find(x=>/hi/i.test(x.lang))||vs.find(x=>/^en/i.test(x.lang)),u=new SpeechSynthesisUtterance(t);
+if(v){u.voice=v;u.lang=v.lang}else u.lang='hi-IN';u.rate=1.0;u.pitch=1.18;u.onend=u.onerror=d;speechSynthesis.cancel();speechSynthesis.resume();speechSynthesis.speak(u)}
 function stopTalk(){try{SRC&&SRC.stop()}catch(e){}try{CP.TextToSpeech&&CP.TextToSpeech.stop()}catch(e){}if(window.speechSynthesis)speechSynthesis.cancel()}
 function say(t){if(!speakOn&&!call.on){return}t=t.replace(/[*_#`]/g,'');call.sp=1;if(call.on)cs('speak');const d=()=>{document.body.className='';call.sp=0;if(call.on)setTimeout(callListen,450)};
-if(NAT&&CP.TextToSpeech){stopTalk();document.body.className='talk';CP.TextToSpeech.speak({text:t,lang:'en-IN',rate:1.1,pitch:1,volume:1}).then(d).catch(e=>{d();add('Awaaz error: '+(e.message||e),'a')});return}
+if(NAT&&CP.TextToSpeech){stopTalk();document.body.className='talk';CP.TextToSpeech.speak({text:t,lang:'hi-IN',rate:1.0,pitch:1.18,volume:1}).then(d).catch(()=>{CP.TextToSpeech.speak({text:t,lang:'en-IN',rate:1.0,pitch:1.18,volume:1}).then(d).catch(e=>{d();add('Awaaz error: '+(e.message||e),'a')})});return}
 webSay(t,d)}
 function sched(d,x,id){if(!NAT||!CP.LocalNotifications)return;CP.LocalNotifications.schedule({notifications:[{id,title:'Aura ⏰',body:x,schedule:{at:new Date(d.replace(' ','T')),allowWhileIdle:true}}]}).catch(()=>{})}
 function notify(t){say('Reminder. '+t);add('⏰ '+t,'a');if(!NAT&&'Notification'in window&&Notification.permission=='granted'){navigator.serviceWorker.ready.then(r=>r.showNotification('Aura ⏰',{body:t,vibrate:[200,100,200]})).catch(()=>{})}}
