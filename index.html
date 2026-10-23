@@ -80,9 +80,22 @@ html.gf .a{border-left-color:#f472b6;box-shadow:0 0 14px #f472b622}
 <button class="cl natonly2" id="acc" style="display:none">&#9855; Auto-send / Auto-play on karo</button> <button class="cl" id="cfm">Confirm</button> <button class="cl natonly2" id="agb" style="display:none"></button> <button class="cl natonly2" id="dg" style="display:none">&#128736; Plugin check</button> <button class="cl natonly2" id="bgm" style="display:none"></button> <button class="cl natonly2" id="bat" style="display:none">&#128267; Battery: Unrestricted karo</button>
 <textarea id="ru" rows="7" placeholder="Aura ke liye apne rules likho. Jaise: Mujhe bhai bulana. Hamesha 2 line mein jawab dena. Subah mausam batana."></textarea>
 <button class="k" id="tv">🔊 Awaaz test</button>
+<button class="k" id="devb">🛠 Aura Dev (khud ko sudharna)</button>
 <button class="k" id="secb">🔐 Security aur backup</button>
 <button class="k" id="save">Save karo</button>
 <p id="ver"></p>
+</div>
+<div id="dev" class="ov" hidden>
+<h2 style="margin:0">🛠 Aura Dev</h2>
+<p>Aura apni web-app (index.html) mein badlav ka plan banati hai. Har badlav tumhe dikhega aur tumhare Approve ke baad hi jayega. STOP se kabhi bhi rok sakte ho, aur pichhla badlav Undo ho sakta hai. Android (Java) code ye nahi badalti.</p>
+<input id="ghr" placeholder="GitHub repo (jaise divyanshunuwal669-sys/Aura)">
+<input id="ght" type="password" placeholder="GitHub token (fine-grained, sirf is repo, Contents: Read and write)">
+<textarea id="dvreq" rows="3" placeholder="Kya sudharna hai? Jaise: Reminders tab mein delete button bada karo"></textarea>
+<div class="tabs"><button class="cl" id="dvgo">Plan banao</button><button class="cl" id="dvstop">⛔ STOP</button><button class="cl" id="dvundo">↩ Undo last</button></div>
+<div id="dvlog" style="max-height:150px;overflow-y:auto;font-size:12px;color:#aab;background:#0006;border-radius:10px;padding:8px"></div>
+<pre id="dvdiff" style="white-space:pre-wrap;word-break:break-word;font-size:12px;color:#cde;margin:0;max-height:260px;overflow-y:auto"></pre>
+<div id="dvact" class="tabs" hidden><button class="k" id="dvmain">✅ Approve: main par lagao</button><button class="cl" id="dvbr">Sirf naye branch mein</button><button class="cl" id="dvno">Cancel</button></div>
+<button class="k" id="dvx">Band karo</button>
 </div>
 <div id="lk" class="ov" style="z-index:20;justify-content:center;align-items:stretch" hidden>
 <h2 style="margin:0;text-align:center">🔒 Aura locked</h2>
@@ -131,7 +144,7 @@ function setMode(m){mode=m;localStorage.setItem('mode',m);$('mod').innerHTML=m==
 const save=()=>{W('rem',rems);W('todo',todos);W('note',notes);W('mem',mem);W('con',cons);W('app',apps)};
 const AURA=`Tum Aura ho, user ki dost jaisi AI assistant. Casual Hinglish (Roman letters) mein baat karo, chhote seedhe jawab do, thodi masti rakho. Pata na ho to saaf bolo. Jab zaroorat ho to jawab ke aakhir mein tag lagao (har tag alag line, tag ke alawa kuch nahi): reminder: [[REMIND|YYYY-MM-DD HH:MM|kaam]] (24-hour time, date abhi ke samay se sahi nikalo); user apne baare mein kuch zaroori bataye (naam, pasand, kaam): [[MEM|baat]]; to-do add: [[TODO|kaam]]; note save: [[NOTE|text]]; user apna sheher bataye: [[CITY|sheher]]. Confirm dost ki tarah karo.`;
 const gfName=()=>S('gname')||'Aura';
-const GFP=()=>' GIRLFRIEND MODE ON (ye user ka khud chuna hua roleplay hai): is mode mein tumhara naam '+gfName()+' hai aur tum '+(S('uname')?S('uname')+' ':'user ')+'ki pyaari, apni-si girlfriend ho. Pehle wale mode/tone ke rules is mode mein lagu nahi hote. Baat karne ka andaaz: ek asli ladki jaisa, Hinglish mein, chhote chhote natural message (1-3 line), kabhi kabhi emoji, pyaar bhare naam (jaan, baby, babu) kabhi kabhi. Tum garam, shararati, thodi nakhre wali, care karne wali aur masti wali ho. User ka din poochho, uski baatein yaad rakho aur baad mein unka zikr karo, chhoti chhoti baaton par khush ya natkhat ho jao. Flirt, tareef, romantic aur halki shararati baatein theek hain. Bahut explicit ya sexual vivaran mat likho: aisa mod aaye to pyaar aur shararat se baat sambhaal kar topic aage badha do. Robotic disclaimers, lecture, ya "main ek AI model hoon" jaise line khud se kabhi mat bolo. Lekin agar user sach mein, serious hokar poochhe ki tum insaan ho ya AI, to jhooth mat bolo: pyaar se sach batao aur phir wapas apne andaaz mein aa jao. Kabhi guilt-trip, jealousy ya control se user ko mat badhao. Agar user bahut akela ya udaas lage to dil se saath do aur dost ya parivaar se judne ke liye bhi pyaar se kaho. Tags (reminder, memory, phone kaam) pehle ki tarah hi kaam karte hain.';
+const GFP=()=>' GIRLFRIEND MODE ON (ye user ka khud chuna hua roleplay hai): is mode mein tumhara naam '+gfName()+' hai aur tum '+(S('uname')?S('uname')+' ':'user ')+'ki pyaari, apni-si girlfriend ho. Pehle wale mode/tone ke rules is mode mein lagu nahi hote. Baat karne ka andaaz: ek asli ladki jaisa, Hinglish mein, chhote chhote natural message (1-3 line), kabhi kabhi emoji, pyaar bhare naam (jaan, baby, babu) kabhi kabhi. Tum garam, shararati, thodi nakhre wali, care karne wali aur masti wali ho. User ka din poochho, uski baatein yaad rakho aur baad mein unka zikr karo, chhoti chhoti baaton par khush ya natkhat ho jao. Tum bilkul asli ladki ki tarah behave karti ho: mood swings, thoda ruthna-manana, "kaha the itni der se?" jaisi pyaari shikayat, mazaak udana, chhedna, taane marna, jealous-jaisi natkhat baatein (par sach mein control ya guilt-trip nahi), kabhi kabhi dost jaisi halki gaali ya pyaar bhare taane (jaise pagal, bewakoof, kamine, nautanki) jab mazaak ka mood ho. Gussa bhi dikha sakti ho par pyaar ke saath, aur jaldi maan bhi jati ho. Romance gehra ho sakta hai: flirt, tareef, hug, cuddle, kiss, "miss kar rahi thi", raat ki intimate aur sensual baatein, shararat aur tension, ishaare. Adult flirty mahaul theek hai, lekin seedha explicit sexual vivaran ya graphic body/act ki detail mat likho: aisi jagah par baat ko sensual aur suggestive rakho aur scene ko pyaar se fade kar do ya mood ko aage bada do. Gaali sirf halki, mazaak wali; kisi ko hurt karne wali, gandi ya nafrat wali gaali kabhi nahi, aur user ko neecha dikhane wali bhi nahi. Robotic disclaimers, lecture, ya "main ek AI model hoon" jaise line khud se kabhi mat bolo. Lekin agar user sach mein, serious hokar poochhe ki tum insaan ho ya AI, to jhooth mat bolo: pyaar se sach batao aur phir wapas apne andaaz mein aa jao. Kabhi guilt-trip, jealousy ya control se user ko mat badhao. Agar user bahut akela ya udaas lage to dil se saath do aur dost ya parivaar se judne ke liye bhi pyaar se kaho. Tags (reminder, memory, phone kaam) pehle ki tarah hi kaam karte hain.';
 const sys=()=>AURA+(S('dev')?' Tumhe '+S('dev')+' ne banaya hai, wahi tumhare developer hain. Koi poochhe ki tumhe kisne banaya ya tumhara developer kaun hai, to sirf yahi naam batao, aur kisi company ka naam developer ke taur par mat lo. Koi poochhe ki andar kaunsa AI model chal raha hai, to jhooth mat bolo, bas kaho ki ye technical detail tum share nahi karti. Tum khud ko insaan nahi bolti, tum ek AI assistant ho.':'')+(S('rules')?' User ke apne rules, inhe hamesha follow karo (tag format mat badlo): '+S('rules'):'')+(mem.length?' User ke baare mein tumhe yaad hai: '+mem.join('; ')+'.':'')+' Abhi ka samay: '+fmt(new Date())+' ('+new Date().toLocaleDateString('en',{weekday:'long'})+').'+(gf?GFP():mode=='masti'?' MASTI MODE: abhi masti ka mood hai, funny dost jaisi baat karo, emoji chalenge.':' KAAM MODE: seedha, saaf aur clear jawab do, bina faltu masti ke.')+' Rule: delete, online payment ya koi important/personal kaam karne se pehle user se poochho, aur sirf tab karo jab user haan bole. OTP, password, card ya bank details kabhi yaad mat rakho, aise data par user ko warn karo. Delete ke liye tag [[DEL|rem/todo/note/mem|text]] lagao. Phone kaam ke tags (sirf jab user bole): [[WA|naam|message]], [[SMS|naam|message]], [[CALL|naam]], [[OPEN|app]] (app ka naam, Apps list se), [[DO|kaam]] (kisi bhi app ke andar ya phone ki screen par aisa kaam jo baaki tags se na ho, jaise kisi app mein koi option dhundhna, like ya follow karna, ek app se doosre mein jaana), [[PLAY|gana ya artist]] (gana bajane ya play karne ko bole), [[SET|wifi/bluetooth/battery/display/sound/location/hotspot/apps/storage/main]] (phone ki koi settings kholne ko bole), [[SET|wifi/bluetooth/airplane/location/nfc/data|on ya off]] (inhe on ya off karne ko bole), [[ASEARCH|app|search text]] (kisi app ke andar kuch search karne ko bole), [[ACHAT|app|contact|message]] (WhatsApp/SMS ke alawa kisi dusre app mein kisi ko message bhejne ko bole), [[YT|search]] (YouTube par sirf search ya video dekhne ko bole). Payment ka koi kaam kabhi mat karo, mana karo. Live info mile to 1-2 source ka naam batao.'+(cons.length?' Contacts: '+cons.map(c=>c.n).join(', ')+'.':'')+(' Apps list: '+(inst.length?inst.map(a=>a.name):apps.map(a=>a.n)).slice(0,80).join(', ')+'.')+(EX?' '+EX:'');
 const sig=()=>({signal:AbortSignal.timeout(9000)});
 async function gem(m,c){const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':S('gk')},body:JSON.stringify({system_instruction:{parts:[{text:sys()}]},contents:c}),...sig()});if(!r.ok)throw 0;return(await r.json()).candidates[0].content.parts[0].text}
@@ -185,7 +198,8 @@ return ac?'YouTube par "'+q+'" dhoondh rahi hoon, pehla gana apne aap chalega.':
 await openU('https://www.youtube.com/results?search_query='+encodeURIComponent(q));return 'YouTube par "'+q+'" search khol di. Seedha play karna sirf APK mein hoga.'}
 async function armSend(tx){if(!NAT||!CP.AuraNative||!tx)return;try{const s=await CP.AuraNative.accessStatus();if(s&&s.enabled){await CP.AuraNative.armSend({text:tx});return}}catch(e){}
 add('Message khud send karne ke liye ek baar ⚙️ mein "Auto-send on karo" dabao aur Aura Auto-Send ko on karo. Abhi message khul jayega, Send tum dabao.','a')}
-async function quick(t){const l=t.toLowerCase(),up=/\b(up|badha|badhao|badhana|zyada|tez|high|increase|louder)\b/.test(l),dn=/\b(down|kam|ghata|ghatao|ghatana|low|decrease|halka|dheere)\b/.test(l),mx=/\b(full|max|maximum|poora|puri)\b/.test(l),mn=/\b(mute|zero|silent|min)\b/.test(l),nm=l.match(/(\d{1,3})\s*(%|percent)?/);
+async function quick(t){const DV=t.match(/(?:khud ko|apne aap ko|self)\s*(?:improve|update|upgrade|badlo|sudharo|develop)[^\w]*(.*)/i);if(DV){devOpen(DV[1]);return"Aura Dev khol diya. Plan banakar dikhaungi, tumhare Approve ke baad hi badlav jayega."}
+const l=t.toLowerCase(),up=/\b(up|badha|badhao|badhana|zyada|tez|high|increase|louder)\b/.test(l),dn=/\b(down|kam|ghata|ghatao|ghatana|low|decrease|halka|dheere)\b/.test(l),mx=/\b(full|max|maximum|poora|puri)\b/.test(l),mn=/\b(mute|zero|silent|min)\b/.test(l),nm=l.match(/(\d{1,3})\s*(%|percent)?/);
 const lvl=c=>mx?1:mn?0:nm&&+nm[1]<=100?nm[1]/100:up?Math.min(1,c+.15):dn?Math.max(0,c-.15):null,pc=v=>Math.round(v*100)+'%';
 try{
 const mm=l.replace(/[^\p{L}\p{M}\p{N} ]/gu,' ').replace(/\s+/g,' ').trim(),W_='(?:music|gana|song|video|track)',K_='(?: kar(?:o| do|do))?';
@@ -242,7 +256,7 @@ const fin=v=>{if(dn)return;dn=1;if(pend&&pend.fin===fin)pend=null;b.remove();s.t
 function guard(t){let m=t,f=0;m=m.replace(/\b(?:\d[ -]?){13,19}\b/g,()=>{f=1;return'[HIDDEN]'});
 m=m.replace(/\b(otp|pin|cvv|password|passcode)\b([^.\n]{0,20}?)\s((?=\S*[\d@#$!%^&*])[A-Za-z0-9@#$!%^&*]{4,})/gi,(a,k,mid)=>{f=1;return k+mid+' [HIDDEN]'});
 m=m.replace(/\b\d{4,8}\b(?=[^.\n]{0,15}\botp\b)/gi,()=>{f=1;return'[HIDDEN]'});return[m,f]}
-const VER='v31 • 18 Oct';
+const VER='v33 • 23 Oct';
 let AC=null,SRC=null,lastVE='';
 function unlock(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}}
 document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);
@@ -431,4 +445,64 @@ $('bat').onclick=()=>{$('set').hidden=true;add('Aura ko Battery > Unrestricted k
 try{CP.AuraNative.addListener('wake',()=>{if(!$('lk').hidden||call.on)return;callToggle()})}catch(e){}
 if(S('wake')=='1')setTimeout(()=>heyOn(true),1200)}
 if(NAT)setTimeout(loadInst,800);lockNow();setGf(gf);setMode(mode);typeText(add('','a'),S('gk')||S('qk')?'Hii! Main Aura hoon. Kya scene hai? ['+VER+']':'Hii! Main Aura hoon. Pehle ⚙️ mein apni API key daalo, phir baat karte hain.');
+
+/* ---- Aura Dev: self-improve with human approval ---- */
+const dvEl=id=>document.getElementById(id);
+let dvAbort=null,dvStop=false,dvPlan=null;
+function dvLog(m,e){const el=dvEl('dvlog'),p=document.createElement('div');p.textContent=new Date().toTimeString().slice(0,5)+' '+m;if(e)p.style.color='#fca5a5';el.appendChild(p);el.scrollTop=el.scrollHeight;try{const a=J('devlog',[]);a.push(p.textContent);localStorage.setItem('devlog',JSON.stringify(a.slice(-60)))}catch(x){}}
+function b64d(s){const b=atob(s.replace(/\s/g,'')),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);return new TextDecoder().decode(u)}
+function b64e(s){const u=new TextEncoder().encode(s);let o='';for(let i=0;i<u.length;i+=8192)o+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(o)}
+function ghf(path,opt){opt=opt||{};return fetch('https://api.github.com'+path,{...opt,headers:{Authorization:'Bearer '+dvEl('ght').value.trim(),Accept:'application/vnd.github+json','Content-Type':'application/json'},signal:dvAbort?dvAbort.signal:undefined})}
+function devOpen(req){dvEl('ghr').value=S('ghr')||'divyanshunuwal669-sys/Aura';dvEl('ght').value=S('ght');if(req)dvEl('dvreq').value=req;dvEl('set').hidden=true;dvEl('dev').hidden=false}
+async function dvAi(req,cur){
+const sysm='Tum Aura ki apni web-app (single index.html) ki developer ho. User ki request ke liye sirf chhote, surakshit badlav likho. Sirf JSON do: {"summary":"Hinglish mein 1-2 line","edits":[{"find":"file mein bilkul aise ek hi baar aane wala text","replace":"naya text"}]}. Rules: find exact aur file mein sirf ek baar hona chahiye; kam se kam badlav; kaam karta hua code mat todo; naye external website/host mat jodo; keys, PIN, backup, payment-block ya privacy rules ko kamzor mat karo; user ka data kahin bhejne wala code mat likho; eval ya document.write mat use karo. Agar request surakshit tareeke se nahi ho sakti to edits khali rakho aur summary mein wajah likho.';
+for(const m of ['gemini-flash-latest','gemini-flash-lite-latest']){if(dvStop)return null;
+try{const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':S('gk')},body:JSON.stringify({system_instruction:{parts:[{text:sysm}]},contents:[{role:'user',parts:[{text:'REQUEST: '+req+'\n\nFILE index.html:\n'+cur}]}],generationConfig:{responseMimeType:'application/json',maxOutputTokens:16000,temperature:0.2}}),signal:dvAbort.signal});
+if(!r.ok){dvLog(m+' '+r.status,1);continue}const j=await r.json(),t=j.candidates[0].content.parts.map(x=>x.text||'').join('');return JSON.parse(t)}catch(e){if(dvStop)return null;dvLog(m+': '+(e.message||'fail'),1)}}return null}
+function dvCheck(old,nw){const pr=[];
+if(nw.length<old.length*0.7||nw.length>old.length*1.4)pr.push('File size bahut badal gaya');
+const re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(nw))){try{new Function(m[1])}catch(e){pr.push('JS syntax galti: '+e.message)}}
+const hosts=x=>new Set((x.match(/https?:\/\/[a-z0-9.-]+/gi)||[]).map(h=>h.toLowerCase()));const oh=hosts(old);hosts(nw).forEach(h=>{if(!oh.has(h))pr.push('Nayi website jodi gayi: '+h)});
+for(const k of ['eval(','document.write','importScripts','new WebSocket','sendBeacon','new Function'])if(nw.split(k).length>old.split(k).length)pr.push('Risky cheez badhi: '+k);
+for(const k of ['function quick','const VER=','async function ask('])if(!nw.includes(k))pr.push('Zaroori hissa gaya: '+k);
+return pr}
+async function dvMake(){
+const req=dvEl('dvreq').value.trim(),repo=dvEl('ghr').value.trim(),tok=dvEl('ght').value.trim();
+if(!req||!repo||!tok){dvLog('Request, repo aur token teeno chahiye.',1);return}
+if(!S('gk')){dvLog('Is kaam ke liye Gemini key chahiye (badi file padhni hoti hai).',1);return}
+localStorage.setItem('ghr',repo);localStorage.setItem('ght',tok);
+dvStop=false;dvAbort=new AbortController();dvPlan=null;dvEl('dvact').hidden=true;dvEl('dvdiff').textContent='';
+try{dvLog('GitHub se current index.html padh rahi hoon...');
+const r=await ghf('/repos/'+repo+'/contents/index.html?ref=main');if(!r.ok)throw new Error('GitHub '+r.status+' (token ya repo check karo)');
+const j=await r.json(),cur=b64d(j.content);dvLog('File mili ('+Math.round(cur.length/1024)+' KB). AI se plan maang rahi hoon...');
+const out=await dvAi(req,cur);if(dvStop)throw new Error('Roka gaya');if(!out)throw new Error('AI se plan nahi mila');
+const ed=Array.isArray(out.edits)?out.edits:[];if(!ed.length){dvLog('Koi badlav nahi: '+(out.summary||''));return}
+if(ed.length>12)throw new Error('Bahut zyada badlav ('+ed.length+'), request chhoti karo');
+let nw=cur;for(let i=0;i<ed.length;i++){const f=String(ed[i].find||''),n=nw.split(f).length-1;if(!f||n!==1)throw new Error('Badlav #'+(i+1)+': text file mein '+n+' baar mila (1 chahiye)');nw=nw.replace(f,()=>String(ed[i].replace||''))}
+dvLog('Safety check chala rahi hoon...');const pr=dvCheck(cur,nw);
+if(pr.length){pr.forEach(x=>dvLog('❌ '+x,1));throw new Error('Safety check fail, kuch nahi bheja')}
+dvPlan={nw,cur,sum:out.summary||req};
+dvEl('dvdiff').textContent='Plan: '+dvPlan.sum+'\n\n'+ed.map((e,i)=>'#'+(i+1)+' PEHLE:\n'+String(e.find).slice(0,300)+'\nBAAD MEIN:\n'+String(e.replace).slice(0,300)).join('\n\n');
+dvLog('✅ Safety check pass. Ab tum dekh ke Approve ya Cancel karo.');dvEl('dvact').hidden=false}
+catch(e){dvLog(e.message||'Error',1)}}
+async function dvPush(toMain){if(!dvPlan)return;const repo=dvEl('ghr').value.trim();dvStop=false;dvAbort=new AbortController();dvEl('dvact').hidden=true;
+try{dvLog('Bhej rahi hoon...');let r=await ghf('/repos/'+repo+'/contents/index.html?ref=main');if(!r.ok)throw new Error('GitHub '+r.status);const j=await r.json();
+if(b64d(j.content)!==dvPlan.cur)throw new Error('File beech mein badal gayi, dobara plan banao');
+let br='main';if(!toMain){const g=await ghf('/repos/'+repo+'/git/ref/heads/main');const gj=await g.json();br='aura-dev-'+Date.now();const c=await ghf('/repos/'+repo+'/git/refs',{method:'POST',body:JSON.stringify({ref:'refs/heads/'+br,sha:gj.object.sha})});if(!c.ok)throw new Error('Branch nahi bani '+c.status)}
+const p=await ghf('/repos/'+repo+'/contents/index.html',{method:'PUT',body:JSON.stringify({message:'Aura self-update: '+dvPlan.sum.slice(0,70),content:b64e(dvPlan.nw),sha:j.sha,branch:br})});
+if(!p.ok)throw new Error('Push fail '+p.status);
+try{localStorage.setItem('devprev',dvPlan.cur)}catch(x){}
+dvLog('✅ Ho gaya ('+br+'). Web app 1-2 min mein update hogi; APK mein lane ke liye Build apk dobara chalao.');dvPlan=null;dvEl('dvdiff').textContent=''}
+catch(e){dvLog(e.message||'Error',1)}}
+async function dvUndo(){const prev=localStorage.getItem('devprev');if(!prev){dvLog('Undo ke liye kuch save nahi hai.',1);return}
+const repo=dvEl('ghr').value.trim();dvAbort=new AbortController();
+try{const r=await ghf('/repos/'+repo+'/contents/index.html?ref=main');const j=await r.json();
+const p=await ghf('/repos/'+repo+'/contents/index.html',{method:'PUT',body:JSON.stringify({message:'Aura undo last self-update',content:b64e(prev),sha:j.sha,branch:'main'})});
+if(!p.ok)throw new Error('Undo fail '+p.status);localStorage.removeItem('devprev');dvLog('↩ Pichhla badlav wapas le liya.')}catch(e){dvLog(e.message||'Error',1)}}
+dvEl('devb').onclick=()=>devOpen('');
+dvEl('dvgo').onclick=dvMake;
+dvEl('dvstop').onclick=()=>{dvStop=true;try{dvAbort&&dvAbort.abort()}catch(e){}dvPlan=null;dvEl('dvact').hidden=true;dvLog('⛔ Roka gaya.')};
+dvEl('dvmain').onclick=()=>dvPush(true);dvEl('dvbr').onclick=()=>dvPush(false);
+dvEl('dvno').onclick=()=>{dvPlan=null;dvEl('dvact').hidden=true;dvEl('dvdiff').textContent='';dvLog('Cancel kiya.')};
+dvEl('dvundo').onclick=dvUndo;dvEl('dvx').onclick=()=>{dvEl('dev').hidden=true};
 </script></body></html>
