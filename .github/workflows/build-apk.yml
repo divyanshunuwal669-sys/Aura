@@ -149,6 +149,30 @@ jobs:
             }
 
             @PluginMethod
+            public void deviceStats(PluginCall call) {
+              try {
+                Class<?> c = Class.forName("com.divyanshu.aura.HudNative");
+                String r = (String) c.getMethod("stats", Context.class).invoke(null, getContext());
+                call.resolve(new JSObject(r));
+              } catch (Throwable t) {
+                call.reject("stats unavailable");
+              }
+            }
+
+            @PluginMethod
+            public void appIcon(PluginCall call) {
+              try {
+                Class<?> c = Class.forName("com.divyanshu.aura.HudNative");
+                String r = (String) c.getMethod("icon", Context.class, String.class).invoke(null, getContext(), call.getString("pkg", ""));
+                JSObject o = new JSObject();
+                o.put("png", r);
+                call.resolve(o);
+              } catch (Throwable t) {
+                call.reject("icon unavailable");
+              }
+            }
+
+            @PluginMethod
             public void media(PluginCall call) {
               String k = call.getString("key", "");
               int code;
@@ -2470,6 +2494,93 @@ jobs:
             }
           }
           EOF
+          cat > $D/HudNative.java << 'EOF'
+          package com.divyanshu.aura;
+
+          import android.app.ActivityManager;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.IntentFilter;
+          import android.graphics.Bitmap;
+          import android.graphics.Canvas;
+          import android.graphics.drawable.Drawable;
+          import android.net.ConnectivityManager;
+          import android.net.Network;
+          import android.net.NetworkCapabilities;
+          import android.os.BatteryManager;
+          import android.os.Build;
+          import android.os.Environment;
+          import android.os.StatFs;
+          import android.os.SystemClock;
+          import android.util.Base64;
+          import java.io.ByteArrayOutputStream;
+          import org.json.JSONObject;
+
+          // Device stats + app icons for the AURA HUD. Read-only, no personal data.
+          public class HudNative {
+            public static String stats(Context c) {
+              JSONObject o = new JSONObject();
+              try {
+                Intent b = c.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+                if (b != null) {
+                  int lv = b.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+                  int sc = b.getIntExtra(BatteryManager.EXTRA_SCALE, 100);
+                  o.put("bat", sc > 0 ? lv * 100 / sc : -1);
+                  o.put("temp", b.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10.0);
+                  int st = b.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+                  o.put("chg", st == BatteryManager.BATTERY_STATUS_CHARGING || st == BatteryManager.BATTERY_STATUS_FULL);
+                }
+              } catch (Throwable t) { }
+              try {
+                ActivityManager am = (ActivityManager) c.getSystemService(Context.ACTIVITY_SERVICE);
+                ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
+                am.getMemoryInfo(mi);
+                o.put("ramTotal", mi.totalMem);
+                o.put("ramFree", mi.availMem);
+              } catch (Throwable t) { }
+              try {
+                StatFs sf = new StatFs(Environment.getDataDirectory().getPath());
+                o.put("stTotal", sf.getTotalBytes());
+                o.put("stFree", sf.getAvailableBytes());
+              } catch (Throwable t) { }
+              try {
+                o.put("up", SystemClock.elapsedRealtime() / 1000);
+                o.put("rel", Build.VERSION.RELEASE);
+                o.put("model", Build.MODEL);
+              } catch (Throwable t) { }
+              try {
+                ConnectivityManager cm = (ConnectivityManager) c.getSystemService(Context.CONNECTIVITY_SERVICE);
+                Network n = cm.getActiveNetwork();
+                if (n == null) {
+                  o.put("net", "OFFLINE");
+                } else {
+                  NetworkCapabilities nc = cm.getNetworkCapabilities(n);
+                  if (nc != null) {
+                    o.put("net", nc.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ? "WIFI" : (nc.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ? "MOBILE" : "OTHER"));
+                    o.put("down", nc.getLinkDownstreamBandwidthKbps() / 1000);
+                  }
+                }
+              } catch (Throwable t) { }
+              return o.toString();
+            }
+
+            public static String icon(Context c, String pkg) {
+              try {
+                Drawable d = c.getPackageManager().getApplicationIcon(pkg);
+                int s = 128;
+                Bitmap bm = Bitmap.createBitmap(s, s, Bitmap.Config.ARGB_8888);
+                Canvas cv = new Canvas(bm);
+                d.setBounds(0, 0, s, s);
+                d.draw(cv);
+                ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                bm.compress(Bitmap.CompressFormat.PNG, 100, bo);
+                return Base64.encodeToString(bo.toByteArray(), Base64.NO_WRAP);
+              } catch (Throwable t) {
+                return "";
+              }
+            }
+          }
+          EOF
           cat > $R/xml/aura_access.xml << 'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
@@ -2487,7 +2598,7 @@ jobs:
           </resources>
           EOF
           M=android/app/src/main/AndroidManifest.xml
-          sed -i 's#<application#<uses-permission android:name="android.permission.RECORD_AUDIO"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/><uses-permission android:name="android.permission.USE_EXACT_ALARM"/><uses-permission android:name="android.permission.WRITE_SETTINGS"/><uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/><uses-permission android:name="android.permission.FLASHLIGHT"/><uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/><uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/><uses-permission android:name="android.permission.VIBRATE"/><queries><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent><intent><action android:name="android.speech.RecognitionService"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries><application#' $M
+          sed -i 's#<application#<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><uses-permission android:name="android.permission.RECORD_AUDIO"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/><uses-permission android:name="android.permission.USE_EXACT_ALARM"/><uses-permission android:name="android.permission.WRITE_SETTINGS"/><uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/><uses-permission android:name="android.permission.FLASHLIGHT"/><uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/><uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/><uses-permission android:name="android.permission.VIBRATE"/><queries><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent><intent><action android:name="android.speech.RecognitionService"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries><application#' $M
           sed -i 's#</application>#<!--AURA_X1--><service android:name=".WakeService" android:exported="false" android:foregroundServiceType="microphone"/><!--AURA_X2--><!--AURA_Y1--><service android:name=".SendService" android:exported="true" android:label="Aura Auto-Send" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"><intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter><meta-data android:name="android.accessibilityservice" android:resource="@xml/aura_access"/></service><!--AURA_Y2--></application>#' $M
           npx cap sync android
           cd android && mkdir -p ~/.android && cp ../debug.keystore ~/.android/debug.keystore && chmod +x gradlew
@@ -2495,24 +2606,30 @@ jobs:
           RR=app/src/main/res
           MM=app/src/main/AndroidManifest.xml
           if ./gradlew assembleDebug > gl1.log 2>&1; then
-            echo "FULL build: launcher + media + Hey Aura + Auto-Send + Screen-control" > build-info.txt
+            echo "FULL build: launcher + media + Hey Aura + Auto-Send + Screen-control + HUD stats" > build-info.txt
           else
-            echo "=== FULL fail: retry without Screen-control ==="
-            rm -f $J/AgentCore.java
+            echo "=== FULL fail: retry without HUD stats ==="
+            rm -f $J/HudNative.java
             if ./gradlew assembleDebug > gl2.log 2>&1; then
-              echo "BUILD 2: Hey Aura + Auto-Send (Screen-control nahi)" > build-info.txt
+              echo "BUILD 1b: Hey Aura + Auto-Send + Screen-control (HUD stats/icons nahi)" > build-info.txt
             else
-              echo "=== retry without Auto-Send ==="
-              rm -f $J/SendService.java $RR/xml/aura_access.xml $RR/values/aura_strings.xml
-              sed -i 's#<!--AURA_Y1-->.*<!--AURA_Y2-->##' $MM
+              echo "=== retry without Screen-control ==="
+              rm -f $J/AgentCore.java
               if ./gradlew assembleDebug > gl3.log 2>&1; then
-                echo "BUILD 3: Hey Aura (Auto-Send, Screen-control nahi)" > build-info.txt
+                echo "BUILD 2: Hey Aura + Auto-Send (Screen-control nahi)" > build-info.txt
               else
-                echo "=== retry LITE ==="
-                rm -f $J/WakeService.java
-                sed -i 's#<!--AURA_X1-->.*<!--AURA_X2-->##' $MM
-                ./gradlew assembleDebug > gl4.log 2>&1 || { tail -80 gl4.log; exit 1; }
-                echo "LITE build: launcher + media (Hey Aura, Auto-Send, Screen-control nahi)" > build-info.txt
+                echo "=== retry without Auto-Send ==="
+                rm -f $J/SendService.java $RR/xml/aura_access.xml $RR/values/aura_strings.xml
+                sed -i 's#<!--AURA_Y1-->.*<!--AURA_Y2-->##' $MM
+                if ./gradlew assembleDebug > gl4.log 2>&1; then
+                  echo "BUILD 3: Hey Aura (Auto-Send, Screen-control nahi)" > build-info.txt
+                else
+                  echo "=== retry LITE ==="
+                  rm -f $J/WakeService.java
+                  sed -i 's#<!--AURA_X1-->.*<!--AURA_X2-->##' $MM
+                  ./gradlew assembleDebug > gl5.log 2>&1 || { tail -80 gl5.log; exit 1; }
+                  echo "LITE build: launcher + media (Hey Aura, Auto-Send, Screen-control nahi)" > build-info.txt
+                fi
               fi
             fi
           fi
@@ -2520,7 +2637,7 @@ jobs:
         if: always()
         run: |
           cd android
-          for f in gl1 gl2 gl3 gl4; do [ -f $f.log ] && { echo "##### $f"; grep -E "error:|Exception|FAILED|What went wrong" -A3 $f.log | head -60; } >> build-errors.txt; done
+          for f in gl1 gl2 gl3 gl4 gl5; do [ -f $f.log ] && { echo "##### $f"; grep -E "error:|Exception|FAILED|What went wrong" -A3 $f.log | head -60; } >> build-errors.txt; done
           cat build-errors.txt 2>/dev/null | head -150 || true
       - uses: actions/upload-artifact@v4
         with:
