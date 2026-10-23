@@ -60,7 +60,45 @@ html.gf h1{background:linear-gradient(90deg,#f9a8d4,#fda4af,#e9d5ff);-webkit-bac
 html.gf .u{background:linear-gradient(135deg,#ec4899,#be185d)}
 html.gf .a{border-left-color:#f472b6;box-shadow:0 0 14px #f472b622}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
-</style></head><body>
+</style>
+<style id="glass">
+:root{--gb:22px;--wd:.25}
+html{background:#0d0b1e}
+#wall{position:fixed;inset:0;z-index:-1;background:center/cover no-repeat;pointer-events:none}
+#wall::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,var(--wd))}
+html:not(.wp) #wall{display:none}
+body{animation:none;background:radial-gradient(60% 40% at 12% 8%,rgba(109,77,240,.38),transparent),radial-gradient(50% 40% at 92% 32%,rgba(34,211,238,.26),transparent),radial-gradient(60% 40% at 30% 100%,rgba(244,114,182,.26),transparent),#0d0b1e}
+html.gf body{background:radial-gradient(60% 40% at 12% 8%,rgba(236,72,153,.38),transparent),radial-gradient(50% 40% at 92% 32%,rgba(192,132,252,.28),transparent),radial-gradient(60% 40% at 30% 100%,rgba(251,113,133,.28),transparent),#1a0a1c}
+html.wp body,html.gf.wp body{background:transparent}
+header,footer{background:rgba(255,255,255,.08);-webkit-backdrop-filter:blur(var(--gb)) saturate(160%);backdrop-filter:blur(var(--gb)) saturate(160%);box-shadow:inset 0 1px 0 rgba(255,255,255,.25)}
+header{border-bottom:1px solid rgba(255,255,255,.14)}
+footer{border-top:1px solid rgba(255,255,255,.14)}
+.ov{background:rgba(14,11,30,.4);-webkit-backdrop-filter:blur(calc(var(--gb) + 8px)) saturate(170%);backdrop-filter:blur(calc(var(--gb) + 8px)) saturate(170%)}
+.b{border:1px solid rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 8px 24px rgba(0,0,0,.25);-webkit-backdrop-filter:blur(var(--gb)) saturate(150%);backdrop-filter:blur(var(--gb)) saturate(150%);text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.a{background:rgba(255,255,255,.1)}
+.u{background:linear-gradient(135deg,rgba(124,92,240,.6),rgba(91,63,209,.45))}
+html.gf .u{background:linear-gradient(135deg,rgba(236,72,153,.6),rgba(190,24,93,.45))}
+html.gf .a{background:rgba(244,114,182,.12)}
+input,textarea,.ic,.cl,.tabs button,.row{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.28)}
+.ic,.cl,.tabs button,.row{-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.ov input,.ov textarea,.ov .cl,.ov .tabs button,.ov .row,.ov .ic{-webkit-backdrop-filter:none;backdrop-filter:none}
+input::placeholder,textarea::placeholder{color:rgba(255,255,255,.5)}
+.k{background:linear-gradient(135deg,rgba(124,92,240,.8),rgba(91,63,209,.6));border:1px solid rgba(255,255,255,.3);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 4px 14px rgba(0,0,0,.25)}
+.k.on{background:rgba(239,68,68,.85)}
+.tabs button.on{background:rgba(108,76,217,.7)}
+.ic.on{background:rgba(236,72,153,.75);box-shadow:0 0 12px #ec4899aa,inset 0 1px 0 rgba(255,255,255,.4)}
+#st{-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+html.noglass *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html.noglass .ov{background:rgba(14,11,30,.92)}
+html.noglass header,html.noglass footer{background:rgba(20,16,40,.85)}
+.wg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.wg img{width:100%;aspect-ratio:9/14;object-fit:cover;border-radius:14px;border:1px solid rgba(255,255,255,.25);background:#0004}
+.wg .sel{outline:2px solid #67e8f9}
+.wg div{position:relative}
+.wg button{position:absolute;top:4px;right:4px;border:0;border-radius:50%;width:24px;height:24px;background:#000a;color:#fff;font-size:12px}
+</style>
+</head><body>
+<div id="wall"></div>
 <header><div id="orb"></div><h1>Aura</h1><button class="ic" id="gfb" style="display:none">&#128150;</button><button class="ic" id="hey" style="display:none">&#127897;</button><button class="ic" id="cl">&#128222;</button><button class="ic" id="mod">&#128188;</button><button class="ic" id="lst">&#128203;</button><button class="ic" id="vol">&#128266;</button><button class="ic" id="gear">&#9881;</button></header>
 <div id="st"><span class="wv"><i></i><i></i><i></i><i></i><i></i></span>Mic on hai... bolo</div>
 <div id="log"></div>
@@ -80,6 +118,7 @@ html.gf .a{border-left-color:#f472b6;box-shadow:0 0 14px #f472b622}
 <button class="cl natonly2" id="acc" style="display:none">&#9855; Auto-send / Auto-play on karo</button> <button class="cl" id="cfm">Confirm</button> <button class="cl natonly2" id="agb" style="display:none"></button> <button class="cl natonly2" id="dg" style="display:none">&#128736; Plugin check</button> <button class="cl natonly2" id="bgm" style="display:none"></button> <button class="cl natonly2" id="bat" style="display:none">&#128267; Battery: Unrestricted karo</button>
 <textarea id="ru" rows="7" placeholder="Aura ke liye apne rules likho. Jaise: Mujhe bhai bulana. Hamesha 2 line mein jawab dena. Subah mausam batana."></textarea>
 <button class="k" id="tv">🔊 Awaaz test</button>
+<button class="k" id="wppb">🖼 Wallpaper aur Glass</button>
 <button class="k" id="devb">🛠 Aura Dev (khud ko sudharna)</button>
 <button class="k" id="secb">🔐 Security aur backup</button>
 <button class="k" id="save">Save karo</button>
@@ -96,6 +135,24 @@ html.gf .a{border-left-color:#f472b6;box-shadow:0 0 14px #f472b622}
 <pre id="dvdiff" style="white-space:pre-wrap;word-break:break-word;font-size:12px;color:#cde;margin:0;max-height:260px;overflow-y:auto"></pre>
 <div id="dvact" class="tabs" hidden><button class="k" id="dvmain">✅ Approve: main par lagao</button><button class="cl" id="dvbr">Sirf naye branch mein</button><button class="cl" id="dvno">Cancel</button></div>
 <button class="k" id="dvx">Band karo</button>
+</div>
+<div id="wpp" class="ov" hidden>
+<h2 style="margin:0">🖼 Wallpaper aur Glass</h2>
+<p id="wpm">Apni photo ya online wallpaper lagao. Ye poori Aura mein dikhega.</p>
+<div class="tabs"><button class="cl" id="wpf">📁 Phone se chuno</button><button class="cl" id="wpd">♻ Default</button></div>
+<input id="wpfile" type="file" accept="image/*" hidden>
+<p><b>Online wallpapers</b></p>
+<div class="wg" id="wpo"></div>
+<input id="wpu" placeholder="Ya kisi photo ka link (https://...)">
+<button class="cl" id="wpul">Link se lagao</button>
+<p><b>Meri wallpapers</b></p>
+<div class="wg" id="wpmy"></div>
+<p>Glass blur: <span id="gbv"></span></p>
+<input id="gbs" type="range" min="0" max="40" step="1">
+<p>Wallpaper andhera (dim): <span id="gdv"></span></p>
+<input id="gds" type="range" min="0" max="80" step="5">
+<button class="cl" id="gtg"></button>
+<button class="k" id="wpx">Band karo</button>
 </div>
 <div id="lk" class="ov" style="z-index:20;justify-content:center;align-items:stretch" hidden>
 <h2 style="margin:0;text-align:center">🔒 Aura locked</h2>
@@ -198,7 +255,8 @@ return ac?'YouTube par "'+q+'" dhoondh rahi hoon, pehla gana apne aap chalega.':
 await openU('https://www.youtube.com/results?search_query='+encodeURIComponent(q));return 'YouTube par "'+q+'" search khol di. Seedha play karna sirf APK mein hoga.'}
 async function armSend(tx){if(!NAT||!CP.AuraNative||!tx)return;try{const s=await CP.AuraNative.accessStatus();if(s&&s.enabled){await CP.AuraNative.armSend({text:tx});return}}catch(e){}
 add('Message khud send karne ke liye ek baar ⚙️ mein "Auto-send on karo" dabao aur Aura Auto-Send ko on karo. Abhi message khul jayega, Send tum dabao.','a')}
-async function quick(t){const DV=t.match(/(?:khud ko|apne aap ko|self)\s*(?:improve|update|upgrade|badlo|sudharo|develop)[^\w]*(.*)/i);if(DV){devOpen(DV[1]);return"Aura Dev khol diya. Plan banakar dikhaungi, tumhare Approve ke baad hi badlav jayega."}
+async function quick(t){if(/wallpaper|wall paper|background (badlo|change|lagao)|glass/i.test(t)&&/(badl|change|lagao|laga|set|kholo|open|dikhao|choose|chuno|add|effect)/i.test(t)){wpOpen();return"Wallpaper aur Glass panel khol diya."}
+const DV=t.match(/(?:khud ko|apne aap ko|self)\s*(?:improve|update|upgrade|badlo|sudharo|develop)[^\w]*(.*)/i);if(DV){devOpen(DV[1]);return"Aura Dev khol diya. Plan banakar dikhaungi, tumhare Approve ke baad hi badlav jayega."}
 const l=t.toLowerCase(),up=/\b(up|badha|badhao|badhana|zyada|tez|high|increase|louder)\b/.test(l),dn=/\b(down|kam|ghata|ghatao|ghatana|low|decrease|halka|dheere)\b/.test(l),mx=/\b(full|max|maximum|poora|puri)\b/.test(l),mn=/\b(mute|zero|silent|min)\b/.test(l),nm=l.match(/(\d{1,3})\s*(%|percent)?/);
 const lvl=c=>mx?1:mn?0:nm&&+nm[1]<=100?nm[1]/100:up?Math.min(1,c+.15):dn?Math.max(0,c-.15):null,pc=v=>Math.round(v*100)+'%';
 try{
@@ -256,7 +314,7 @@ const fin=v=>{if(dn)return;dn=1;if(pend&&pend.fin===fin)pend=null;b.remove();s.t
 function guard(t){let m=t,f=0;m=m.replace(/\b(?:\d[ -]?){13,19}\b/g,()=>{f=1;return'[HIDDEN]'});
 m=m.replace(/\b(otp|pin|cvv|password|passcode)\b([^.\n]{0,20}?)\s((?=\S*[\d@#$!%^&*])[A-Za-z0-9@#$!%^&*]{4,})/gi,(a,k,mid)=>{f=1;return k+mid+' [HIDDEN]'});
 m=m.replace(/\b\d{4,8}\b(?=[^.\n]{0,15}\botp\b)/gi,()=>{f=1;return'[HIDDEN]'});return[m,f]}
-const VER='v33 • 23 Oct';
+const VER='v34 • 23 Oct';
 let AC=null,SRC=null,lastVE='';
 function unlock(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}}
 document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);
@@ -505,4 +563,40 @@ dvEl('dvstop').onclick=()=>{dvStop=true;try{dvAbort&&dvAbort.abort()}catch(e){}d
 dvEl('dvmain').onclick=()=>dvPush(true);dvEl('dvbr').onclick=()=>dvPush(false);
 dvEl('dvno').onclick=()=>{dvPlan=null;dvEl('dvact').hidden=true;dvEl('dvdiff').textContent='';dvLog('Cancel kiya.')};
 dvEl('dvundo').onclick=dvUndo;dvEl('dvx').onclick=()=>{dvEl('dev').hidden=true};
+
+/* ---- Wallpaper + Liquid Glass ---- */
+const $w=id=>document.getElementById(id),WPS=['aura1','aura2','aura3','aura4','aura5','aura6','aura7','aura8','aura9'];
+let wUrl=null;
+const wdb=()=>new Promise((res,rej)=>{const r=indexedDB.open('aura_wp',1);r.onupgradeneeded=()=>r.result.createObjectStore('w',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+async function wput(o){const d=await wdb();return new Promise((res,rej)=>{const t=d.transaction('w','readwrite');t.objectStore('w').put(o);t.oncomplete=res;t.onerror=()=>rej(t.error)})}
+async function wget(id){const d=await wdb();return new Promise(r=>{const q=d.transaction('w').objectStore('w').get(id);q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)})}
+async function wlist(){const d=await wdb();return new Promise(r=>{const q=d.transaction('w').objectStore('w').getAll();q.onsuccess=()=>r(q.result||[]);q.onerror=()=>r([])})}
+async function wdel(id){const d=await wdb();return new Promise(r=>{const t=d.transaction('w','readwrite');t.objectStore('w').delete(id);t.oncomplete=r;t.onerror=r})}
+async function wrz(blob,max,q){let bm;try{bm=await createImageBitmap(blob)}catch(e){bm=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=URL.createObjectURL(blob)})}
+const w=bm.width||bm.naturalWidth,h=bm.height||bm.naturalHeight,k=Math.min(1,max/Math.max(w,h)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(w*k));c.height=Math.max(1,Math.round(h*k));c.getContext('2d').drawImage(bm,0,0,c.width,c.height);return new Promise(r=>c.toBlob(r,'image/jpeg',q))}
+const b2d=b=>new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)});
+async function wpSave(blob,id){const big=await wrz(blob,1440,.85),th=await b2d(await wrz(blob,180,.7));await wput({id,blob:big,thumb:th,t:Date.now()});const all=await wlist();if(all.length>12){all.sort((a,b)=>a.t-b.t);for(const o of all.slice(0,all.length-12))await wdel(o.id)}return id}
+async function applyWall(){const a=S('wpa'),el=$w('wall'),h=document.documentElement;if(wUrl){try{URL.revokeObjectURL(wUrl)}catch(e){}wUrl=null}
+if(!a){el.style.backgroundImage='';h.classList.remove('wp');return}
+let u='';try{if(a.startsWith('idb:')){const r=await wget(a.slice(4));if(!r){localStorage.removeItem('wpa');el.style.backgroundImage='';h.classList.remove('wp');return}u=wUrl=URL.createObjectURL(r.blob)}else if(a.startsWith('url:'))u=a.slice(4)}catch(e){h.classList.remove('wp');return}
+el.style.backgroundImage='url("'+u.replace(/"/g,'%22')+'")';h.classList.add('wp')}
+function applyGlass(){const h=document.documentElement,gb=S('gbl')===''||S('gbl')==null?22:+S('gbl'),gd=S('gdm')===''||S('gdm')==null?25:+S('gdm');h.style.setProperty('--gb',gb+'px');h.style.setProperty('--wd',(gd/100)+'');h.classList.toggle('noglass',S('gof')=='1')}
+async function wpRender(){const a=S('wpa'),o=$w('wpo');o.innerHTML='';WPS.forEach(n=>{const i=document.createElement('img');i.loading='lazy';i.src='https://picsum.photos/seed/'+n+'/180/280';i.alt=n;if(a=='url:https://picsum.photos/seed/'+n+'/1080/1920')i.className='sel';i.onclick=()=>wpOnline('https://picsum.photos/seed/'+n+'/1080/1920');o.appendChild(i)});
+const m=$w('wpmy');m.innerHTML='';const l=(await wlist()).sort((x,y)=>y.t-x.t);if(!l.length)m.innerHTML='<p style="grid-column:1/4">Abhi koi nahi. Photo chuno ya online wallpaper lagao, wo yahan save ho jayegi.</p>';
+l.forEach(r=>{const d=document.createElement('div'),i=document.createElement('img'),x=document.createElement('button');i.src=r.thumb;if(a=='idb:'+r.id)i.className='sel';i.onclick=async()=>{localStorage.setItem('wpa','idb:'+r.id);await applyWall();wpRender()};x.textContent='✕';x.onclick=async e=>{e.stopPropagation();await wdel(r.id);if(S('wpa')=='idb:'+r.id){localStorage.removeItem('wpa');await applyWall()}wpRender()};d.appendChild(i);d.appendChild(x);m.appendChild(d)});
+$w('gbs').value=S('gbl')===''||S('gbl')==null?22:S('gbl');$w('gds').value=S('gdm')===''||S('gdm')==null?25:S('gdm');$w('gbv').textContent=$w('gbs').value+'px';$w('gdv').textContent=$w('gds').value+'%';$w('gtg').textContent=S('gof')=='1'?'Glass effect: OFF (on karo)':'Glass effect: ON (off karo)'}
+function wpOpen(){$w('set').hidden=true;$w('wpp').hidden=false;wpRender()}
+async function wpOnline(u){const m=$w('wpm');m.textContent='Wallpaper download ho rahi hai...';
+try{const r=await fetch(u);if(!r.ok)throw 0;const id='o'+Date.now();await wpSave(await r.blob(),id);localStorage.setItem('wpa','idb:'+id);m.textContent='Wallpaper lag gayi ✅'}
+catch(e){localStorage.setItem('wpa','url:'+u);m.textContent='Download save nahi hua, seedha link se lagayi (internet chahiye).'}
+await applyWall();wpRender()}
+$w('wppb').onclick=wpOpen;$w('wpx').onclick=()=>{$w('wpp').hidden=true};
+$w('wpf').onclick=()=>$w('wpfile').click();
+$w('wpfile').onchange=async e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const m=$w('wpm');m.textContent='Photo taiyaar kar rahi hoon...';try{const id='l'+Date.now();await wpSave(f,id);localStorage.setItem('wpa','idb:'+id);await applyWall();m.textContent='Wallpaper lag gayi ✅';wpRender()}catch(x){m.textContent='Ye photo nahi khul paayi, doosri try karo.'}e.target.value=''};
+$w('wpd').onclick=async()=>{localStorage.removeItem('wpa');await applyWall();$w('wpm').textContent='Default theme wapas aa gayi.';wpRender()};
+$w('wpul').onclick=()=>{const u=$w('wpu').value.trim();if(/^https?:\/\//i.test(u))wpOnline(u);else $w('wpm').textContent='Sahi link daalo (https:// se shuru).'};
+$w('gbs').oninput=()=>{localStorage.setItem('gbl',$w('gbs').value);$w('gbv').textContent=$w('gbs').value+'px';applyGlass()};
+$w('gds').oninput=()=>{localStorage.setItem('gdm',$w('gds').value);$w('gdv').textContent=$w('gds').value+'%';applyGlass()};
+$w('gtg').onclick=()=>{localStorage.setItem('gof',S('gof')=='1'?'0':'1');applyGlass();wpRender()};
+applyGlass();applyWall();
 </script></body></html>
