@@ -160,6 +160,21 @@ jobs:
             }
 
             @PluginMethod
+            public void edgeTts(final PluginCall call) {
+              final String tx = call.getString("text", "");
+              final String vo = call.getString("voice", "");
+              new Thread(new Runnable() {
+                public void run() {
+                  byte[] r = EdgeTts.synth(tx, vo);
+                  if (r == null) { call.reject("edge fail"); return; }
+                  JSObject o = new JSObject();
+                  o.put("pcm", android.util.Base64.encodeToString(r, android.util.Base64.NO_WRAP));
+                  call.resolve(o);
+                }
+              }).start();
+            }
+
+            @PluginMethod
             public void appIcon(PluginCall call) {
               try {
                 Class<?> c = Class.forName("com.divyanshu.aura.HudNative");
@@ -373,7 +388,7 @@ jobs:
             @PluginMethod
             public void setBrain(PluginCall call) {
               android.content.SharedPreferences.Editor e = getContext().getSharedPreferences("aura", Context.MODE_PRIVATE).edit();
-              String[] ks = new String[] { "gk", "ek", "ev", "smk", "smv", "qk", "dev", "uname", "rules", "autoc" };
+              String[] ks = new String[] { "gk", "ek", "ev", "smk", "smv", "edv", "qk", "dev", "uname", "rules", "autoc" };
               for (String k : ks) e.putString(k, call.getString(k, ""));
               e.putBoolean("bg", call.getBoolean("bg", true));
               e.apply();
@@ -859,6 +874,7 @@ jobs:
             private volatile int speakGen = 0;
             private volatile AudioTrack curTrack = null;
             private long gemFailUntil = 0;
+            private long edgeFailUntil = 0;
 
             private void stopTts() {
               speakGen++;
@@ -874,7 +890,10 @@ jobs:
               final String ev = sp().getString("ev", "");
               final String smk = sp().getString("smk", "");
               final String smv = sp().getString("smv", "");
-              if ((gk.length() < 6 && ek.length() < 6 && smk.length() < 6) || System.currentTimeMillis() < gemFailUntil || t == null || t.length() == 0) {
+              final String edv = sp().getString("edv", "");
+              final boolean edgeOk = System.currentTimeMillis() >= edgeFailUntil;
+              final boolean cloudOk = (gk.length() >= 6 || ek.length() >= 6 || smk.length() >= 6) && System.currentTimeMillis() >= gemFailUntil;
+              if ((!edgeOk && !cloudOk) || t == null || t.length() == 0) {
                 localSpeak(t, thenListen);
                 return;
               }
@@ -885,13 +904,19 @@ jobs:
                 public void run() {
                   String tt = t.length() > 500 ? t.substring(0, 500) : t;
                   byte[] p0 = null;
-                  if (smk.length() >= 6) p0 = sarvamTts(smk, smv, tt);
-                  if (p0 == null && ek.length() >= 6) p0 = elevenTts(ek, ev, tt);
-                  if (p0 == null && gk.length() >= 6) p0 = geminiTts(gk, tt);
+                  if (edgeOk) {
+                    p0 = EdgeTts.synth(tt, edv);
+                    if (p0 == null) edgeFailUntil = System.currentTimeMillis() + 90000;
+                  }
+                  if (cloudOk) {
+                    if (p0 == null && smk.length() >= 6) p0 = sarvamTts(smk, smv, tt);
+                    if (p0 == null && ek.length() >= 6) p0 = elevenTts(ek, ev, tt);
+                    if (p0 == null && gk.length() >= 6) p0 = geminiTts(gk, tt);
+                  }
                   final byte[] pcm = p0;
                   if (my != speakGen) return;
                   if (pcm == null) {
-                    gemFailUntil = System.currentTimeMillis() + 60000;
+                    if (cloudOk) gemFailUntil = System.currentTimeMillis() + 60000;
                     h.post(new Runnable() { public void run() { if (my == speakGen) localSpeak(t, thenListen); } });
                     return;
                   }
@@ -2578,6 +2603,176 @@ jobs:
               } catch (Throwable t) {
                 return "";
               }
+            }
+          }
+          EOF
+          cat > $D/EdgeTts.java << 'EOF'
+          package com.divyanshu.aura;
+
+          import java.io.ByteArrayOutputStream;
+          import java.io.DataInputStream;
+          import java.io.InputStream;
+          import java.io.OutputStream;
+          import java.net.InetSocketAddress;
+          import java.net.Socket;
+          import java.security.MessageDigest;
+          import java.security.SecureRandom;
+          import java.text.SimpleDateFormat;
+          import java.util.Date;
+          import java.util.Locale;
+          import java.util.TimeZone;
+          import java.util.UUID;
+          import javax.net.ssl.SSLSocket;
+          import javax.net.ssl.SSLSocketFactory;
+
+          // Free natural voice (Microsoft Edge read-aloud). No key. Unofficial endpoint, so always keep a fallback.
+          // Returns 24 kHz 16-bit mono PCM, or null on any failure.
+          public class EdgeTts {
+            static final String TOKEN = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
+            static final String HOST = "speech.platform.bing.com";
+            static final String VER = "1-143.0.3650.75";
+            static final String UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0";
+            static final SecureRandom RND = new SecureRandom();
+
+            public static byte[] synth(String text, String voice) {
+              try {
+                SSLSocket s = (SSLSocket) SSLSocketFactory.getDefault().createSocket();
+                s.connect(new InetSocketAddress(HOST, 443), 6000);
+                s.setSoTimeout(9000);
+                s.startHandshake();
+                try { return run(s, HOST, text, voice); } finally { try { s.close(); } catch (Throwable e) { } }
+              } catch (Throwable e) {
+                return null;
+              }
+            }
+
+            static String gec() throws Exception {
+              long t = System.currentTimeMillis() / 1000L + 11644473600L;
+              t -= t % 300L;
+              String src = Long.toString(t * 10000000L) + TOKEN;
+              byte[] d = MessageDigest.getInstance("SHA-256").digest(src.getBytes("US-ASCII"));
+              StringBuilder sb = new StringBuilder();
+              for (int i = 0; i < d.length; i++) sb.append(String.format("%02X", d[i] & 255));
+              return sb.toString();
+            }
+
+            static String b64(byte[] d) {
+              String A = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+              StringBuilder o = new StringBuilder();
+              for (int i = 0; i < d.length; i += 3) {
+                int v = (d[i] & 255) << 16;
+                if (i + 1 < d.length) v |= (d[i + 1] & 255) << 8;
+                if (i + 2 < d.length) v |= (d[i + 2] & 255);
+                o.append(A.charAt((v >> 18) & 63)).append(A.charAt((v >> 12) & 63));
+                o.append(i + 1 < d.length ? A.charAt((v >> 6) & 63) : '=');
+                o.append(i + 2 < d.length ? A.charAt(v & 63) : '=');
+              }
+              return o.toString();
+            }
+
+            static String esc(String t) {
+              return t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&apos;");
+            }
+
+            static String ts() {
+              SimpleDateFormat f = new SimpleDateFormat("EEE MMM dd yyyy HH:mm:ss 'GMT+0000 (Coordinated Universal Time)'", Locale.US);
+              f.setTimeZone(TimeZone.getTimeZone("UTC"));
+              return f.format(new Date());
+            }
+
+            static byte[] run(Socket s, String host, String text, String voice) throws Exception {
+              if (voice == null || voice.length() < 5) voice = "hi-IN-SwaraNeural";
+              InputStream in = s.getInputStream();
+              OutputStream out = s.getOutputStream();
+              byte[] kb = new byte[16];
+              RND.nextBytes(kb);
+              String key = b64(kb);
+              String cid = UUID.randomUUID().toString().replace("-", "");
+              String muid = Long.toHexString(RND.nextLong()).toUpperCase(Locale.US);
+              String path = "/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=" + TOKEN + "&ConnectionId=" + cid
+                + "&Sec-MS-GEC=" + gec() + "&Sec-MS-GEC-Version=" + VER;
+              String req = "GET " + path + " HTTP/1.1\r\n"
+                + "Host: " + host + "\r\n"
+                + "Connection: Upgrade\r\nUpgrade: websocket\r\n"
+                + "Sec-WebSocket-Key: " + key + "\r\nSec-WebSocket-Version: 13\r\n"
+                + "Pragma: no-cache\r\nCache-Control: no-cache\r\n"
+                + "Origin: chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold\r\n"
+                + "Accept-Language: en-US,en;q=0.9\r\n"
+                + "User-Agent: " + UA + "\r\n"
+                + "Cookie: muid=" + muid + ";\r\n\r\n";
+              out.write(req.getBytes("US-ASCII"));
+              out.flush();
+
+              // read HTTP response head byte by byte (so no frame bytes are consumed)
+              StringBuilder head = new StringBuilder();
+              int n = 0;
+              while (head.length() < 8192) {
+                int b = in.read();
+                if (b < 0) return null;
+                head.append((char) b);
+                n = head.length();
+                if (n >= 4 && head.charAt(n - 4) == '\r' && head.charAt(n - 3) == '\n' && head.charAt(n - 2) == '\r' && head.charAt(n - 1) == '\n') break;
+              }
+              if (head.indexOf(" 101") < 0 || head.indexOf(" 101") > 16) return null;
+
+              String t0 = ts();
+              sendText(out, "X-Timestamp:" + t0 + "\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n"
+                + "{\"context\":{\"synthesis\":{\"audio\":{\"metadataoptions\":{\"sentenceBoundaryEnabled\":\"false\",\"wordBoundaryEnabled\":\"false\"},\"outputFormat\":\"raw-24khz-16bit-mono-pcm\"}}}}\r\n");
+              String rid = UUID.randomUUID().toString().replace("-", "");
+              String ssml = "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='hi-IN'><voice name='" + voice
+                + "'><prosody pitch='+0Hz' rate='+0%' volume='+0%'>" + esc(text) + "</prosody></voice></speak>";
+              sendText(out, "X-RequestId:" + rid + "\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:" + ts() + "Z\r\nPath:ssml\r\n\r\n" + ssml);
+
+              DataInputStream di = new DataInputStream(in);
+              ByteArrayOutputStream audio = new ByteArrayOutputStream();
+              ByteArrayOutputStream frag = new ByteArrayOutputStream();
+              int fragOp = 0;
+              boolean done = false;
+              while (!done) {
+                int b0 = di.readUnsignedByte();
+                int b1 = di.readUnsignedByte();
+                boolean fin = (b0 & 0x80) != 0;
+                int op = b0 & 15;
+                long len = b1 & 127;
+                if (len == 126) len = di.readUnsignedShort();
+                else if (len == 127) len = di.readLong();
+                if (len > 8000000L) return null;
+                byte[] pl = new byte[(int) len];
+                di.readFully(pl);
+                if (op == 8) break;
+                if (op == 9) { sendFrame(out, 10, pl); continue; }
+                if (op == 10) continue;
+                if (op == 0) { frag.write(pl); pl = frag.toByteArray(); op = fragOp; if (!fin) continue; frag.reset(); }
+                else if (!fin) { fragOp = op; frag.reset(); frag.write(pl); continue; }
+                if (op == 1) {
+                  String m = new String(pl, "UTF-8");
+                  if (m.indexOf("Path:turn.end") >= 0) done = true;
+                } else if (op == 2) {
+                  if (pl.length < 2) continue;
+                  int hl = ((pl[0] & 255) << 8) | (pl[1] & 255);
+                  if (2 + hl > pl.length) continue;
+                  String hd = new String(pl, 2, hl, "UTF-8");
+                  if (hd.indexOf("Path:audio") >= 0) audio.write(pl, 2 + hl, pl.length - 2 - hl);
+                }
+              }
+              byte[] r = audio.toByteArray();
+              return r.length > 2000 ? r : null;
+            }
+
+            static void sendText(OutputStream o, String s) throws Exception { sendFrame(o, 1, s.getBytes("UTF-8")); }
+
+            static void sendFrame(OutputStream o, int op, byte[] p) throws Exception {
+              ByteArrayOutputStream f = new ByteArrayOutputStream();
+              f.write(0x80 | op);
+              if (p.length < 126) f.write(0x80 | p.length);
+              else if (p.length < 65536) { f.write(0x80 | 126); f.write(p.length >> 8); f.write(p.length & 255); }
+              else { f.write(0x80 | 127); for (int i = 7; i >= 0; i--) f.write((int) (((long) p.length >> (8 * i)) & 255)); }
+              byte[] m = new byte[4];
+              RND.nextBytes(m);
+              f.write(m);
+              for (int i = 0; i < p.length; i++) f.write(p[i] ^ m[i & 3]);
+              o.write(f.toByteArray());
+              o.flush();
             }
           }
           EOF
