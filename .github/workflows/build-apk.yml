@@ -2600,6 +2600,90 @@ jobs:
           M=android/app/src/main/AndroidManifest.xml
           sed -i 's#<application#<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><uses-permission android:name="android.permission.RECORD_AUDIO"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/><uses-permission android:name="android.permission.USE_EXACT_ALARM"/><uses-permission android:name="android.permission.WRITE_SETTINGS"/><uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/><uses-permission android:name="android.permission.FLASHLIGHT"/><uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/><uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/><uses-permission android:name="android.permission.VIBRATE"/><queries><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent><intent><action android:name="android.speech.RecognitionService"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries><application#' $M
           sed -i 's#</application>#<!--AURA_X1--><service android:name=".WakeService" android:exported="false" android:foregroundServiceType="microphone"/><!--AURA_X2--><!--AURA_Y1--><service android:name=".SendService" android:exported="true" android:label="Aura Auto-Send" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"><intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter><meta-data android:name="android.accessibilityservice" android:resource="@xml/aura_access"/></service><!--AURA_Y2--></application>#' $M
+          python3 -m pip install pillow --break-system-packages -q || python3 -m pip install pillow -q || true
+          cat > aura_icon.py << 'PYEOF'
+          import math,sys,os,glob
+          from PIL import Image,ImageDraw,ImageFilter
+          S=1024;K=S/300.0
+          CY=(56,212,255)
+          def P(r,a):return (150+r*math.cos(math.radians(a)))*K,(150+r*math.sin(math.radians(a)))*K
+          def radial(size,stops,cx,cy,rad):
+              im=Image.new('RGBA',(size,size));px=im.load()
+              for y in range(size):
+                  for x in range(size):
+                      d=min(1,math.hypot(x-cx*size,y-cy*size)/(rad*size))
+                      for i in range(len(stops)-1):
+                          if d<=stops[i+1][0]:
+                              t=(d-stops[i][0])/(stops[i+1][0]-stops[i][0]+1e-9);a=stops[i][1];b=stops[i+1][1]
+                              px[x,y]=tuple(int(a[k]+(b[k]-a[k])*t) for k in range(4));break
+              return im
+          def content(k=1.0):
+              L=Image.new('RGBA',(S,S),(0,0,0,0))
+              def Pk(r,a):x,y=P(r,a);return (x/K-150)*k*K+150*K,(y/K-150)*k*K+150*K
+              def sc(v):return (v-150)*k+150
+              def ring(r,w,col):
+                  d=ImageDraw.Draw(L);R=r*K*k;d.ellipse([150*K-R,150*K-R,150*K+R,150*K+R],outline=col,width=max(1,int(w*K*k)))
+              def seg(ro,ri,a0,a1,fill,out,n=10):
+                  pts=[Pk(ro,a0+(a1-a0)*j/n) for j in range(n+1)]+[Pk(ri,a1-(a1-a0)*j/n) for j in range(n+1)]
+                  d=ImageDraw.Draw(L);d.polygon(pts,fill=fill);d.line(pts+[pts[0]],fill=out,width=max(1,int(1.2*K*k)))
+              d=ImageDraw.Draw(L)
+              for i in range(60):
+                  a=i*6;x0,y0=Pk(145,a);x1,y1=Pk(150,a);d.line([x0,y0,x1,y1],fill=CY+(120,),width=max(2,int(1.6*K*k)))
+              ring(134,16,(30,44,80,255));ring(142,.8,CY+(140,));ring(126,1,CY+(190,))
+              for i in range(12):
+                  a=i*30+6;pts=[Pk(135.5,a+j*0.8) for j in range(0,10)]
+                  d.line(pts,fill=CY+(255,),width=max(2,int(3*K*k)))
+              for i in range(8):seg(122,100,i*45+4,i*45+41,(30,80,205,255),CY+(255,))
+              for i in range(24):seg(98,89,i*15+2,i*15+12,(20,48,110,255),CY+(200,),4)
+              ring(85,2.8,CY+(255,));ring(80,.9,(255,255,255,200))
+              pts=[]
+              for i in range(16):
+                  c=i*22.5
+                  for r,a in [(68,c-8),(77,c-5),(77,c+5),(68,c+8)]:pts.append(Pk(r,a))
+              d.polygon(pts,fill=(20,40,90,255),outline=(127,220,255,255))
+              Ri=66*K*k;d.ellipse([150*K-Ri,150*K-Ri,150*K+Ri,150*K+Ri],fill=(5,15,42,255),outline=CY+(255,),width=max(1,int(K*k)))
+              ring(61,7,(40,58,100,255));ring(64.5,.8,CY+(255,));ring(57.5,.8,CY+(255,))
+              Rc=int(56*K*k);bl=radial(Rc*2,[(0,(191,243,255,230)),(.5,CY+(90,)),(1,CY+(0,))],.5,.5,.5)
+              g=Image.new('RGBA',(S,S),(0,0,0,0));g.paste(bl,(int(150*K)-Rc,int(150*K)-Rc));L=Image.alpha_composite(L,g)
+              A=[(112,204),(150,100),(188,204)];BAR=[(129,172),(171,172)]
+              def stroke(w,col):
+                  lay=Image.new('RGBA',(S,S),(0,0,0,0));ld=ImageDraw.Draw(lay)
+                  pts=[(sc(x)*K,sc(y)*K) for x,y in A];ld.line(pts,fill=col,width=int(w*K*k),joint='curve')
+                  for x,y in pts:r=w*K*k/2;ld.ellipse([x-r,y-r,x+r,y+r],fill=col)
+                  b=[(sc(x)*K,sc(y)*K) for x,y in BAR];ld.line(b,fill=col,width=int(w*K*k))
+                  for x,y in b:r=w*K*k/2;ld.ellipse([x-r,y-r,x+r,y+r],fill=col)
+                  return lay
+              glow=Image.alpha_composite(stroke(36,CY+(40,)),stroke(24,CY+(90,))).filter(ImageFilter.GaussianBlur(int(8*K*k/2)))
+              L=Image.alpha_composite(L,glow);L=Image.alpha_composite(L,stroke(15,CY+(130,)));L=Image.alpha_composite(L,stroke(8,(255,255,255,255)))
+              return L
+          def full(round_=False):
+              bg=radial(S,[(0,(14,30,70,255)),(.7,(6,12,30,255)),(1,(3,6,15,255))],.5,.42,.8)
+              bg=Image.alpha_composite(bg,content(.93))
+              m=Image.new('L',(S,S),0);d=ImageDraw.Draw(m)
+              if round_:d.ellipse([0,0,S-1,S-1],fill=255)
+              else:d.rounded_rectangle([0,0,S-1,S-1],radius=int(S*.22),fill=255)
+              o=Image.new('RGBA',(S,S),(0,0,0,0));o.paste(bg,(0,0),m);return o
+          def fgimg():return content(.6)
+          def splash(w,h,logo):
+              im=radial(max(w,h),[(0,(14,32,72,255)),(.72,(5,10,22,255)),(1,(5,10,22,255))],.5,.42,.9).crop((0,0,w,h)).convert('RGB')
+              s=int(min(w,h)*.5);lg=content(.93).resize((s,s),Image.LANCZOS);im.paste(lg,((w-s)//2,(h-s)//2-int(h*.04)),lg);return im
+          def run(res):
+              bgxml=os.path.join(res,'values','ic_launcher_background.xml')
+              if os.path.exists(bgxml):open(bgxml,'w').write('<resources><color name="ic_launcher_background">#060C1E</color></resources>')
+              F=full();R=full(True);G=fgimg();n=0
+              for f in glob.glob(res+'/mipmap-*/ic_launcher.png')+glob.glob(res+'/mipmap-*/ic_launcher_round.png')+glob.glob(res+'/mipmap-*/ic_launcher_foreground.png'):
+                  sz=Image.open(f).size;b=os.path.basename(f)
+                  src=F if b=='ic_launcher.png' else (R if b=='ic_launcher_round.png' else G)
+                  src.resize(sz,Image.LANCZOS).save(f);n+=1
+              for f in glob.glob(res+'/drawable*/splash.png'):
+                  w,h=Image.open(f).size;splash(w,h,None).save(f);n+=1
+              print('aura icon files:',n)
+          if __name__=='__main__':
+              if len(sys.argv)>1:run(sys.argv[1])
+              else:
+                  full().resize((300,300),Image.LANCZOS).save('p_full.png');splash(540,960,None).resize((270,480)).save('p_spl.png')
+          PYEOF
+          python3 aura_icon.py android/app/src/main/res || echo "icon step skipped"
           npx cap sync android
           cd android && mkdir -p ~/.android && cp ../debug.keystore ~/.android/debug.keystore && chmod +x gradlew
           J=app/src/main/java/com/divyanshu/aura
