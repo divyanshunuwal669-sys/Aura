@@ -163,9 +163,10 @@ jobs:
             public void edgeTts(final PluginCall call) {
               final String tx = call.getString("text", "");
               final String vo = call.getString("voice", "");
+              final boolean gfv = Boolean.TRUE.equals(call.getBoolean("gf", false));
               new Thread(new Runnable() {
                 public void run() {
-                  byte[] r = EdgeTts.synth(tx, vo);
+                  byte[] r = EdgeTts.synth(tx, vo, gfv);
                   if (r == null) { call.reject("edge fail"); return; }
                   JSObject o = new JSObject();
                   o.put("pcm", android.util.Base64.encodeToString(r, android.util.Base64.NO_WRAP));
@@ -388,7 +389,7 @@ jobs:
             @PluginMethod
             public void setBrain(PluginCall call) {
               android.content.SharedPreferences.Editor e = getContext().getSharedPreferences("aura", Context.MODE_PRIVATE).edit();
-              String[] ks = new String[] { "gk", "ek", "ev", "smk", "smv", "edv", "qk", "dev", "uname", "rules", "autoc" };
+              String[] ks = new String[] { "gk", "ek", "ev", "smk", "smv", "smn", "gfm", "edv", "qk", "dev", "uname", "rules", "autoc" };
               for (String k : ks) e.putString(k, call.getString(k, ""));
               e.putBoolean("bg", call.getBoolean("bg", true));
               e.apply();
@@ -875,6 +876,7 @@ jobs:
             private volatile AudioTrack curTrack = null;
             private long gemFailUntil = 0;
             private long edgeFailUntil = 0;
+            private volatile boolean gfNow = false;
 
             private void stopTts() {
               speakGen++;
@@ -891,6 +893,8 @@ jobs:
               final String smk = sp().getString("smk", "");
               final String smv = sp().getString("smv", "");
               final String edv = sp().getString("edv", "");
+              final boolean gfm = "1".equals(sp().getString("gfm", "0"));
+              final String smn = sp().getString("smn", "");
               final boolean edgeOk = System.currentTimeMillis() >= edgeFailUntil;
               final boolean cloudOk = (gk.length() >= 6 || ek.length() >= 6 || smk.length() >= 6) && System.currentTimeMillis() >= gemFailUntil;
               if ((!edgeOk && !cloudOk) || t == null || t.length() == 0) {
@@ -905,13 +909,13 @@ jobs:
                   String tt = t.length() > 500 ? t.substring(0, 500) : t;
                   byte[] p0 = null;
                   if (edgeOk) {
-                    p0 = EdgeTts.synth(tt, edv);
+                    p0 = EdgeTts.synth(tt, edv, gfm);
                     if (p0 == null) edgeFailUntil = System.currentTimeMillis() + 90000;
                   }
                   if (cloudOk) {
-                    if (p0 == null && smk.length() >= 6) p0 = sarvamTts(smk, smv, tt);
+                    if (p0 == null && smk.length() >= 6) p0 = sarvamTts(smk, gfm ? smv : (smn.length() > 1 ? smn : "aditya"), tt, gfm);
                     if (p0 == null && ek.length() >= 6) p0 = elevenTts(ek, ev, tt);
-                    if (p0 == null && gk.length() >= 6) p0 = geminiTts(gk, tt);
+                    if (p0 == null && gk.length() >= 6) { gfNow = gfm; p0 = geminiTts(gk, tt); }
                   }
                   final byte[] pcm = p0;
                   if (my != speakGen) return;
@@ -925,10 +929,10 @@ jobs:
               }).start();
             }
 
-            private byte[] sarvamTts(String key, String speaker, String text) {
+            private byte[] sarvamTts(String key, String speaker, String text, boolean gfm) {
               try {
                 JSONObject body = new JSONObject().put("text", text).put("language_code", "hi-IN").put("model", "bulbul:v3")
-                  .put("speaker", (speaker.length() > 1 ? speaker : "priya").toLowerCase()).put("speech_sample_rate", 24000).put("output_audio_codec", "wav");
+                  .put("speaker", (speaker.length() > 1 ? speaker : "priya").toLowerCase()).put("pace", gfm ? 0.95 : 0.92).put("speech_sample_rate", 24000).put("output_audio_codec", "wav");
                 HttpURLConnection c = (HttpURLConnection) new URL("https://api.sarvam.ai/text-to-speech").openConnection();
                 c.setConnectTimeout(5000);
                 c.setReadTimeout(12000);
@@ -995,7 +999,7 @@ jobs:
                 try {
                   JSONObject body = new JSONObject();
                   body.put("contents", new JSONArray().put(new JSONObject().put("parts", new JSONArray().put(new JSONObject().put("text", text)))));
-                  JSONObject voice = new JSONObject().put("prebuiltVoiceConfig", new JSONObject().put("voiceName", "Kore"));
+                  JSONObject voice = new JSONObject().put("prebuiltVoiceConfig", new JSONObject().put("voiceName", gfNow ? "Leda" : "Charon"));
                   body.put("generationConfig", new JSONObject()
                     .put("responseModalities", new JSONArray().put("AUDIO"))
                     .put("speechConfig", new JSONObject().put("voiceConfig", voice)));
@@ -2632,9 +2636,17 @@ jobs:
             static final String HOST = "speech.platform.bing.com";
             static final String VER = "1-143.0.3650.75";
             static final String UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0";
+            static String PITCH = "+0Hz", RATE = "+0%", VOL = "+0%";
             static final SecureRandom RND = new SecureRandom();
 
-            public static byte[] synth(String text, String voice) {
+            // gf = sweet, soft, higher girl voice; otherwise deep, calm, slow male voice
+            public static byte[] synth(String text, String voice, boolean gf) {
+              String v = gf ? "hi-IN-SwaraNeural" : ((voice != null && voice.length() > 4) ? voice : "hi-IN-MadhurNeural");
+              return synth(text, v, gf ? "+14Hz" : "-14Hz", gf ? "-6%" : "-8%", gf ? "-6%" : "+0%");
+            }
+
+            public static byte[] synth(String text, String voice, String pitch, String rate, String vol) {
+              PITCH = pitch; RATE = rate; VOL = vol;
               try {
                 SSLSocket s = (SSLSocket) SSLSocketFactory.getDefault().createSocket();
                 s.connect(new InetSocketAddress(HOST, 443), 6000);
@@ -2720,7 +2732,7 @@ jobs:
                 + "{\"context\":{\"synthesis\":{\"audio\":{\"metadataoptions\":{\"sentenceBoundaryEnabled\":\"false\",\"wordBoundaryEnabled\":\"false\"},\"outputFormat\":\"raw-24khz-16bit-mono-pcm\"}}}}\r\n");
               String rid = UUID.randomUUID().toString().replace("-", "");
               String ssml = "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='hi-IN'><voice name='" + voice
-                + "'><prosody pitch='+0Hz' rate='+0%' volume='+0%'>" + esc(text) + "</prosody></voice></speak>";
+                + "'><prosody pitch='" + PITCH + "' rate='" + RATE + "' volume='" + VOL + "'>" + esc(text) + "</prosody></voice></speak>";
               sendText(out, "X-RequestId:" + rid + "\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:" + ts() + "Z\r\nPath:ssml\r\n\r\n" + ssml);
 
               DataInputStream di = new DataInputStream(in);
