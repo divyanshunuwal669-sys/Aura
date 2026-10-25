@@ -481,7 +481,7 @@ const fin=v=>{if(dn)return;dn=1;if(pend&&pend.fin===fin)pend=null;b.remove();s.t
 function guard(t){let m=t,f=0;m=m.replace(/\b(?:\d[ -]?){13,19}\b/g,()=>{f=1;return'[HIDDEN]'});
 m=m.replace(/\b(otp|pin|cvv|password|passcode)\b([^.\n]{0,20}?)\s((?=\S*[\d@#$!%^&*])[A-Za-z0-9@#$!%^&*]{4,})/gi,(a,k,mid)=>{f=1;return k+mid+' [HIDDEN]'});
 m=m.replace(/\b\d{4,8}\b(?=[^.\n]{0,15}\botp\b)/gi,()=>{f=1;return'[HIDDEN]'});return[m,f]}
-const VER='v42 • 25 Oct';
+const VER='v43 • 25 Oct';
 let AC=null,SRC=null,lastVE='';
 function unlock(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}}
 document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);
@@ -495,6 +495,28 @@ const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m
 const j=await r.json();if(!r.ok){lastVE=(lastVE?lastVE+' | ':'')+'gemini '+r.status;continue}const d=j.candidates[0].content.parts[0].inlineData.data;if(d)return d}catch(e){lastVE=(lastVE?lastVE+' | ':'')+'gemini: '+(e.message||'fail')}}return null}
 let edgeFail=0;
 async function edtts(t){if(!NAT||!CP.AuraNative||!CP.AuraNative.edgeTts||Date.now()<edgeFail)return null;try{const r=await CP.AuraNative.edgeTts({text:t,voice:S('edv')||'',gf:gf});return r&&r.pcm?r.pcm:null}catch(e){edgeFail=Date.now()+90000;lastVE=(lastVE?lastVE+' | ':'')+'edge fail';return null}}
+
+/* ---- live voice: stream AI reply, speak sentence by sentence ---- */
+var SQ={dead:1,q:[],run:0,fin:0,n:0,d:null};
+function vis(t){t=t.replace(/\[\[[\s\S]*?\]\]/g,'');const i=t.indexOf('[[');if(i>=0)t=t.slice(0,i);if(t.endsWith('['))t=t.slice(0,-1);return t.replace(/[*_#`]/g,'')}
+function cutAt(s){const re=/[.!?।]+["')\]]*\s+|\n+/g;let m;while((m=re.exec(s))){const e=m.index+m[0].length;if(e>=14)return e}if(s.length>180){let k=Math.max(s.lastIndexOf(', ',170),s.lastIndexOf(' ',170));if(k<40)k=170;return k+1}return 0}
+async function getPcm(t){t=t.slice(0,500);let a=await edtts(t);if(a)return a;if(S('smk')){a=await stts(t);if(a)return a}if(S('ek')){a=await etts(t);if(a)return a}if(S('gk')){a=await gtts(t);if(a)return a}return null}
+function fbSpeak(t,res){if(NAT&&CP.TextToSpeech){CP.TextToSpeech.speak({text:t,lang:'en-IN',rate:1.1,pitch:1,volume:1}).then(()=>res()).catch(()=>res());return}
+if(!window.speechSynthesis){res();return}const vs=speechSynthesis.getVoices(),v=vs.find(x=>/en[-_]IN/i.test(x.lang))||vs.find(x=>/hi[-_]IN/i.test(x.lang))||vs.find(x=>/^en/i.test(x.lang)),u=new SpeechSynthesisUtterance(t);if(v){u.voice=v;u.lang=v.lang}else u.lang='en-IN';u.rate=1.1;u.onend=u.onerror=()=>res();speechSynthesis.speak(u)}
+function sqStart(d){stopTalk();SQ={dead:0,q:[],run:0,fin:0,n:0,d};unlock();call.sp=1;if(call.on)cs('speak')}
+function sqCancel(){SQ.dead=1;call.sp=0}
+function sqAdd(t){const me=SQ;if(me.dead)return;t=t.replace(/\s+/g,' ').trim();if(!t||!/[A-Za-z0-9ऀ-ॿ]/.test(t))return;me.n++;me.q.push({t,p:getPcm(t)});sqPump(me)}
+function sqEnd(){SQ.fin=1;sqPump(SQ)}
+async function sqPump(me){if(me.run||me.dead)return;me.run=1;while(!me.dead){const it=me.q.shift();if(!it){if(me.fin){me.dead=1;me.d()}break}const a=await it.p;if(me.dead)return;document.body.className='talk';await new Promise(res=>{if(a&&AC){try{pcmPlay(a,res);return}catch(e){}}fbSpeak(it.t,res)})}me.run=0}
+async function sse(url,opt,pick,onD){let full='';try{const r=await fetch(url,{...opt,signal:AbortSignal.timeout(25000)});if(!r.ok||!r.body)throw 0;const rd=r.body.getReader(),dec=new TextDecoder();let buf='';for(;;){const x=await rd.read();if(x.done)break;buf+=dec.decode(x.value,{stream:true});let i;while((i=buf.indexOf('\n'))>=0){const ln=buf.slice(0,i).trim();buf=buf.slice(i+1);if(ln.slice(0,5)!='data:')continue;const d=ln.slice(5).trim();if(d=='[DONE]')continue;try{const t=pick(JSON.parse(d));if(t){full+=t;onD(full)}}catch(e){}}}return full}catch(e){if(full.trim())return full;throw e}}
+async function askStream(c,onD){const L=[];
+if(S('qk')){const msgs=[{role:'system',content:sys()},...c.map(x=>({role:x.role=='model'?'assistant':'user',content:x.parts[0].text}))];L.push(()=>sse('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+S('qk')},body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:msgs,max_tokens:250,stream:true})},j=>j.choices[0].delta.content,onD))}
+if(S('gk'))['gemini-flash-lite-latest','gemini-flash-latest','gemini-3.8-flash'].forEach(m=>L.push(()=>sse('https://generativelanguage.googleapis.com/v1beta/models/'+m+':streamGenerateContent?alt=sse',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':S('gk')},body:JSON.stringify({system_instruction:{parts:[{text:sys()}]},contents:c})},j=>j.candidates[0].content.parts[0].text,onD)));
+for(const f of L){try{const t=await f();if(t&&t.trim())return t}catch(e){}}return null}
+async function streamReply(c,w){sqStart(()=>{document.body.className='';call.sp=0;if(call.on)setTimeout(callListen,450)});let sent=0;
+const raw=await askStream(c,full=>{const v=vis(full);if(!v.trim())return;w.textContent=v;$('log').scrollTop=1e9;let rest=v.slice(sent),m;while((m=cutAt(rest))){sqAdd(rest.slice(0,m));sent+=m;rest=v.slice(sent)}});
+if(raw==null){sqCancel();return null}
+const v=vis(raw);if(v.slice(sent).trim())sqAdd(v.slice(sent));return raw}
 async function webSay(t,d){stopTalk();document.body.className='talk';
 {unlock();const a=await edtts(t.slice(0,500));if(a&&AC){try{pcmPlay(a,d);return}catch(e){lastVE='play '+(e.message||'')}}}
 if(S('smk')){unlock();const a=await stts(t.slice(0,500));if(a&&AC){try{pcmPlay(a,d);return}catch(e){lastVE='play '+(e.message||'')}}}
@@ -504,7 +526,7 @@ if(NAT&&CP.TextToSpeech){document.body.className='talk';CP.TextToSpeech.speak({t
 if(!window.speechSynthesis){d();return}
 const vs=speechSynthesis.getVoices(),v=vs.find(x=>/en[-_]IN/i.test(x.lang))||vs.find(x=>/hi[-_]IN/i.test(x.lang))||vs.find(x=>/^en/i.test(x.lang)),u=new SpeechSynthesisUtterance(t);
 if(v){u.voice=v;u.lang=v.lang}else u.lang='en-IN';u.rate=1.1;u.onend=u.onerror=d;speechSynthesis.cancel();speechSynthesis.resume();speechSynthesis.speak(u)}
-function stopTalk(){try{SRC&&SRC.stop()}catch(e){}try{CP.TextToSpeech&&CP.TextToSpeech.stop()}catch(e){}if(window.speechSynthesis)speechSynthesis.cancel()}
+function stopTalk(){SQ.dead=1;try{SRC&&SRC.stop()}catch(e){}try{CP.TextToSpeech&&CP.TextToSpeech.stop()}catch(e){}if(window.speechSynthesis)speechSynthesis.cancel()}
 function say(t){if(!speakOn&&!call.on){return}t=t.replace(/[*_#`]/g,'');call.sp=1;if(call.on)cs('speak');const d=()=>{document.body.className='';call.sp=0;if(call.on)setTimeout(callListen,450)};
 webSay(t,d)}
 function sched(d,x,id){if(!NAT||!CP.LocalNotifications)return;CP.LocalNotifications.schedule({notifications:[{id,title:'Aura ⏰',body:x,schedule:{at:new Date(d.replace(' ','T')),allowWhileIdle:true}}]}).catch(()=>{})}
@@ -543,10 +565,10 @@ const w=add('','a');w.innerHTML='<span class="dots"><span></span><span></span><s
 hist.push({role:'user',parts:[{text:tt}]});const c=hist.slice(-10);
 if(mic)c[c.length-1]={role:'user',parts:[{text:tt+' (Roman Hinglish mein, sirf 1-2 chhote vakya)'}]};
 EX=(/mausam|weather|barish|baarish|temperature|garmi|sardi|thand|chhata|umbrella/i.test(t)?await wx():'')+(/search|khoj|latest|news|khabar|pata kar|details chahiye|jankari|aaj ka|price|rate|score/i.test(t)?await srch(tt):'');
-let r=await ask(c);document.body.className='';
+const stm=(speakOn||call.on)&&typeof ReadableStream!='undefined'&&!!(S('qk')||S('gk'));let r=null,st=0;if(stm){r=await streamReply(c,w);st=r!==null?1:0}if(r===null)r=await ask(c);if(!st)document.body.className='';
 if(!r){hist.pop();w.textContent='Saare servers busy hain ya key galat hai. Key check karo (⚙️) ya thodi der baad try karo.';if(call.on){callStop('Call band: AI jawab nahi de paya.')}return}
 r=tags(r)||'Done!';save();hist.push({role:'model',parts:[{text:r}]});W('hist',hist.slice(-20));
-typeText(w,r);if(call.on&&!speakOn)speakOn=true;say(pend?r+' '+pend.q.replace(/\n/g,' ')+' Haan ya na?':r);if(call.on&&!call.sp)setTimeout(callListen,600);if(call.on)setTimeout(()=>{if(call.on&&call.sp){call.sp=0;callListen()}},Math.min(30000,r.length*130+5000))}
+if(st){w.textContent=r;w.classList.remove('cur');if(!SQ.n)sqAdd(r);if(pend)sqAdd(pend.q.replace(/\n/g,' ')+' Haan ya na?');sqEnd();if(call.on&&!speakOn)speakOn=true}else{typeText(w,r);if(call.on&&!speakOn)speakOn=true;say(pend?r+' '+pend.q.replace(/\n/g,' ')+' Haan ya na?':r)}if(call.on&&!call.sp)setTimeout(callListen,600);if(call.on)setTimeout(()=>{if(call.on&&call.sp){call.sp=0;callListen()}},Math.min(30000,r.length*130+5000))}
 function rend(){document.querySelectorAll('.tabs [data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t==tab));const L=$('pl');L.innerHTML='';
 if(tab=='app'&&NAT&&inst.length){inst.forEach(a=>{const d=document.createElement('div');d.className='row';const s=document.createElement('span');s.textContent='📱 '+a.name;s.onclick=()=>{$('pn').hidden=true;CP.AuraNative.launch({package:a.package}).catch(e=>add('Nahi khula: '+(e.message||e),'a'))};d.append(s);L.append(d)});return}
 const rows=tab=='rem'?rems.map(r=>(r.done?'✅ ':'⏰ ')+r.due+' - '+r.text):tab=='todo'?todos.map(r=>(r.d?'☑ ':'☐ ')+r.t):tab=='note'?notes.map(r=>r.t):tab=='con'?cons.map(r=>r.n+': '+r.v):tab=='app'?apps.map(r=>r.n+': '+r.v):mem;
