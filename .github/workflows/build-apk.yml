@@ -432,11 +432,40 @@ jobs:
               return k;
             }
 
+            // pages that need an exact screen. Tries each candidate; returns false when this phone has none.
+            private boolean deepOpen(String k) {
+              java.util.ArrayList<Intent> L = new java.util.ArrayList<Intent>();
+              if ("tts".equals(k)) {
+                L.add(new Intent("com.android.settings.TTS_SETTINGS"));
+                L.add(new Intent().setClassName("com.android.settings", "com.android.settings.Settings$TextToSpeechSettingsActivity"));
+              } else if ("voiceinput".equals(k)) {
+                L.add(new Intent("android.settings.VOICE_INPUT_SETTINGS"));
+              } else if ("wallpaper".equals(k)) {
+                L.add(new Intent("android.intent.action.SET_WALLPAPER"));
+              } else if ("defaultapps".equals(k)) {
+                L.add(new Intent("android.settings.MANAGE_DEFAULT_APPS_SETTINGS"));
+              } else if ("datausage".equals(k)) {
+                L.add(new Intent("android.settings.DATA_USAGE_SETTINGS"));
+              }
+              for (Intent i : L) {
+                try {
+                  i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                  getContext().startActivity(i);
+                  return true;
+                } catch (Throwable e) { }
+              }
+              return false;
+            }
+
             @PluginMethod
             public void openSettings(PluginCall call) {
               String k = call.getString("page", "main");
               String state = call.getString("state", "");
               Context c = getContext();
+              if ("tts".equals(k) || "voiceinput".equals(k) || "wallpaper".equals(k) || "defaultapps".equals(k) || "datausage".equals(k)) {
+                if (deepOpen(k)) call.resolve(); else call.reject("nodirect");
+                return;
+              }
               if (state.length() > 0) {
                 c.getSharedPreferences("aura", Context.MODE_PRIVATE).edit()
                   .putString("auto_pkg", "com.android.settings")
@@ -906,14 +935,16 @@ jobs:
               final int my = ++speakGen;
               new Thread(new Runnable() {
                 public void run() {
-                  String tt = t.length() > 500 ? t.substring(0, 500) : t;
+                  String t1 = EdgeTts.clean(t);
+                  String tt = t1.length() > 500 ? t1.substring(0, 500) : t1;
                   byte[] p0 = null;
+                  if (tt.length() < 1) { h.post(afterSpeak); return; }
                   if (edgeOk) {
                     p0 = EdgeTts.synth(tt, edv, gfm);
                     if (p0 == null) edgeFailUntil = System.currentTimeMillis() + 90000;
                   }
                   if (cloudOk) {
-                    if (p0 == null && smk.length() >= 6) p0 = sarvamTts(smk, gfm ? smv : (smn.length() > 1 ? smn : "aditya"), tt, gfm);
+                    if (p0 == null && smk.length() >= 6) p0 = sarvamTts(smk, gfm ? smv : (smn.length() > 1 ? smn : "ritu"), tt, gfm);
                     if (p0 == null && ek.length() >= 6) p0 = elevenTts(ek, ev, tt);
                     if (p0 == null && gk.length() >= 6) { gfNow = gfm; p0 = geminiTts(gk, tt); }
                   }
@@ -932,7 +963,7 @@ jobs:
             private byte[] sarvamTts(String key, String speaker, String text, boolean gfm) {
               try {
                 JSONObject body = new JSONObject().put("text", text).put("language_code", "hi-IN").put("model", "bulbul:v3")
-                  .put("speaker", (speaker.length() > 1 ? speaker : "priya").toLowerCase()).put("pace", gfm ? 0.95 : 0.92).put("speech_sample_rate", 24000).put("output_audio_codec", "wav");
+                  .put("speaker", (speaker.length() > 1 ? speaker : "priya").toLowerCase()).put("pace", gfm ? 0.92 : 0.95).put("speech_sample_rate", 24000).put("output_audio_codec", "wav");
                 HttpURLConnection c = (HttpURLConnection) new URL("https://api.sarvam.ai/text-to-speech").openConnection();
                 c.setConnectTimeout(5000);
                 c.setReadTimeout(12000);
@@ -999,7 +1030,7 @@ jobs:
                 try {
                   JSONObject body = new JSONObject();
                   body.put("contents", new JSONArray().put(new JSONObject().put("parts", new JSONArray().put(new JSONObject().put("text", text)))));
-                  JSONObject voice = new JSONObject().put("prebuiltVoiceConfig", new JSONObject().put("voiceName", gfNow ? "Leda" : "Charon"));
+                  JSONObject voice = new JSONObject().put("prebuiltVoiceConfig", new JSONObject().put("voiceName", gfNow ? "Leda" : "Kore"));
                   body.put("generationConfig", new JSONObject()
                     .put("responseModalities", new JSONArray().put("AUDIO"))
                     .put("speechConfig", new JSONObject().put("voiceConfig", voice)));
@@ -2639,14 +2670,27 @@ jobs:
             static String PITCH = "+0Hz", RATE = "+0%", VOL = "+0%";
             static final SecureRandom RND = new SecureRandom();
 
-            // gf = sweet, soft, higher girl voice; otherwise deep, calm, slow male voice
+            // Both modes female. gf = sweet, soft, higher; normal = warm, low, slow. voice = optional user pick.
             public static byte[] synth(String text, String voice, boolean gf) {
-              String v = gf ? "hi-IN-SwaraNeural" : ((voice != null && voice.length() > 4) ? voice : "hi-IN-MadhurNeural");
-              return synth(text, v, gf ? "+14Hz" : "-14Hz", gf ? "-6%" : "-8%", gf ? "-6%" : "+0%");
+              String v = (voice != null && voice.length() > 4) ? voice : "hi-IN-SwaraNeural";
+              return synth(text, v, gf ? "+12Hz" : "-6Hz", gf ? "-8%" : "-6%", gf ? "-4%" : "+0%");
+            }
+
+            // remove emoji, links and markdown so they are not read aloud
+            public static String clean(String t) {
+              if (t == null) return "";
+              t = t.replaceAll("https?://\\S+", " ");
+              t = t.replaceAll("[\\p{So}\\p{Cs}\\uFE0F\\u200D*_#`~^|<>\\[\\]{}]", " ");
+              t = t.replace("...", ", ").replace("\u2026", ", ");
+              t = t.replaceAll("[\\p{Cc}&&[^\\n]]", " ");
+              t = t.replaceAll("\\s+", " ").trim();
+              return t;
             }
 
             public static byte[] synth(String text, String voice, String pitch, String rate, String vol) {
               PITCH = pitch; RATE = rate; VOL = vol;
+              text = clean(text);
+              if (text.length() < 1) return null;
               try {
                 SSLSocket s = (SSLSocket) SSLSocketFactory.getDefault().createSocket();
                 s.connect(new InetSocketAddress(HOST, 443), 6000);
