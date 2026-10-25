@@ -480,7 +480,7 @@ const fin=v=>{if(dn)return;dn=1;if(pend&&pend.fin===fin)pend=null;b.remove();s.t
 function guard(t){let m=t,f=0;m=m.replace(/\b(?:\d[ -]?){13,19}\b/g,()=>{f=1;return'[HIDDEN]'});
 m=m.replace(/\b(otp|pin|cvv|password|passcode)\b([^.\n]{0,20}?)\s((?=\S*[\d@#$!%^&*])[A-Za-z0-9@#$!%^&*]{4,})/gi,(a,k,mid)=>{f=1;return k+mid+' [HIDDEN]'});
 m=m.replace(/\b\d{4,8}\b(?=[^.\n]{0,15}\botp\b)/gi,()=>{f=1;return'[HIDDEN]'});return[m,f]}
-const VER='v40 • 24 Oct';
+const VER='v41 • 24 Oct';
 let AC=null,SRC=null,lastVE='';
 function unlock(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}}
 document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);
@@ -499,12 +499,12 @@ async function webSay(t,d){stopTalk();document.body.className='talk';
 if(S('smk')){unlock();const a=await stts(t.slice(0,500));if(a&&AC){try{pcmPlay(a,d);return}catch(e){lastVE='play '+(e.message||'')}}}
 if(S('ek')){unlock();const a=await etts(t.slice(0,500));if(a&&AC){try{pcmPlay(a,d);return}catch(e){lastVE='play '+(e.message||'')}}}
 if(S('gk')){unlock();const a=await gtts(t.slice(0,500));if(a&&AC){try{pcmPlay(a,d);return}catch(e){lastVE='play '+(e.message||'')}}}
+if(NAT&&CP.TextToSpeech){document.body.className='talk';CP.TextToSpeech.speak({text:t,lang:'en-IN',rate:1.1,pitch:1,volume:1}).then(d).catch(e=>{d();add('Awaaz error: '+(e.message||e),'a')});return}
 if(!window.speechSynthesis){d();return}
 const vs=speechSynthesis.getVoices(),v=vs.find(x=>/en[-_]IN/i.test(x.lang))||vs.find(x=>/hi[-_]IN/i.test(x.lang))||vs.find(x=>/^en/i.test(x.lang)),u=new SpeechSynthesisUtterance(t);
 if(v){u.voice=v;u.lang=v.lang}else u.lang='en-IN';u.rate=1.1;u.onend=u.onerror=d;speechSynthesis.cancel();speechSynthesis.resume();speechSynthesis.speak(u)}
 function stopTalk(){try{SRC&&SRC.stop()}catch(e){}try{CP.TextToSpeech&&CP.TextToSpeech.stop()}catch(e){}if(window.speechSynthesis)speechSynthesis.cancel()}
 function say(t){if(!speakOn&&!call.on){return}t=t.replace(/[*_#`]/g,'');call.sp=1;if(call.on)cs('speak');const d=()=>{document.body.className='';call.sp=0;if(call.on)setTimeout(callListen,450)};
-if(NAT&&CP.TextToSpeech){stopTalk();document.body.className='talk';CP.TextToSpeech.speak({text:t,lang:'en-IN',rate:1.1,pitch:1,volume:1}).then(d).catch(e=>{d();add('Awaaz error: '+(e.message||e),'a')});return}
 webSay(t,d)}
 function sched(d,x,id){if(!NAT||!CP.LocalNotifications)return;CP.LocalNotifications.schedule({notifications:[{id,title:'Aura ⏰',body:x,schedule:{at:new Date(d.replace(' ','T')),allowWhileIdle:true}}]}).catch(()=>{})}
 function notify(t){say('Reminder. '+t);add('⏰ '+t,'a');if(!NAT&&'Notification'in window&&Notification.permission=='granted'){navigator.serviceWorker.ready.then(r=>r.showNotification('Aura ⏰',{body:t,vibrate:[200,100,200]})).catch(()=>{})}}
