@@ -937,22 +937,24 @@ jobs:
                 public void run() {
                   String t1 = EdgeTts.clean(t);
                   String tt = t1.length() > 500 ? t1.substring(0, 500) : t1;
+                  String t2 = EdgeTts.plain(t1);
+                  final String tp = t2.length() > 500 ? t2.substring(0, 500) : t2;
                   byte[] p0 = null;
-                  if (tt.length() < 1) { h.post(afterSpeak); return; }
+                  if (tp.length() < 1) { h.post(afterSpeak); return; }
                   if (edgeOk) {
                     p0 = EdgeTts.synth(tt, edv, gfm);
                     if (p0 == null) edgeFailUntil = System.currentTimeMillis() + 90000;
                   }
                   if (cloudOk) {
-                    if (p0 == null && smk.length() >= 6) p0 = sarvamTts(smk, gfm ? smv : (smn.length() > 1 ? smn : "ritu"), tt, gfm);
-                    if (p0 == null && ek.length() >= 6) p0 = elevenTts(ek, ev, tt);
-                    if (p0 == null && gk.length() >= 6) { gfNow = gfm; p0 = geminiTts(gk, tt); }
+                    if (p0 == null && smk.length() >= 6) p0 = sarvamTts(smk, gfm ? smv : (smn.length() > 1 ? smn : "ritu"), tp, gfm);
+                    if (p0 == null && ek.length() >= 6) p0 = elevenTts(ek, ev, tp);
+                    if (p0 == null && gk.length() >= 6) { gfNow = gfm; p0 = geminiTts(gk, tp); }
                   }
                   final byte[] pcm = p0;
                   if (my != speakGen) return;
                   if (pcm == null) {
                     if (cloudOk) gemFailUntil = System.currentTimeMillis() + 60000;
-                    h.post(new Runnable() { public void run() { if (my == speakGen) localSpeak(t, thenListen); } });
+                    h.post(new Runnable() { public void run() { if (my == speakGen) localSpeak(tp, thenListen); } });
                     return;
                   }
                   playPcm(pcm, my);
@@ -963,7 +965,7 @@ jobs:
             private byte[] sarvamTts(String key, String speaker, String text, boolean gfm) {
               try {
                 JSONObject body = new JSONObject().put("text", text).put("language_code", "hi-IN").put("model", "bulbul:v3")
-                  .put("speaker", (speaker.length() > 1 ? speaker : "priya").toLowerCase()).put("pace", gfm ? 0.92 : 0.95).put("speech_sample_rate", 24000).put("output_audio_codec", "wav");
+                  .put("speaker", (speaker.length() > 1 ? speaker : "priya").toLowerCase()).put("pace", gfm ? 1.06 : 0.95).put("speech_sample_rate", 24000).put("output_audio_codec", "wav");
                 HttpURLConnection c = (HttpURLConnection) new URL("https://api.sarvam.ai/text-to-speech").openConnection();
                 c.setConnectTimeout(5000);
                 c.setReadTimeout(12000);
@@ -2673,24 +2675,89 @@ jobs:
             // Both modes female. gf = sweet, soft, higher; normal = warm, low, slow. voice = optional user pick.
             public static byte[] synth(String text, String voice, boolean gf) {
               String v = (voice != null && voice.length() > 4) ? voice : "hi-IN-SwaraNeural";
-              return synth(text, v, gf ? "+12Hz" : "-6Hz", gf ? "-8%" : "-6%", gf ? "-4%" : "+0%");
+              return synth(text, v, gf ? "+12Hz" : "-6Hz", gf ? "+6%" : "-6%", gf ? "-4%" : "+0%");
             }
 
-            // remove emoji, links and markdown so they are not read aloud
+            // links, markdown and odd symbols out (emoji stay, they become laughs/sighs)
             public static String clean(String t) {
               if (t == null) return "";
               t = t.replaceAll("https?://\\S+", " ");
-              t = t.replaceAll("[\\p{So}\\p{Cs}\\uFE0F\\u200D*_#`~^|<>\\[\\]{}]", " ");
+              t = t.replaceAll("[*_#`~^|<>\\[\\]{}]", " ");
               t = t.replace("...", ", ").replace("\u2026", ", ");
               t = t.replaceAll("[\\p{Cc}&&[^\\n]]", " ");
               t = t.replaceAll("\\s+", " ").trim();
               return t;
             }
 
+            static final int[][] EK = {
+              {0x1F602, 0x1F923, 0x1F606, 0x1F639},          // 0 laugh
+              {0x1F601, 0x1F604, 0x1F605, 0x1F600, 0x1F603}, // 1 giggle
+              {0x1F618, 0x1F61A, 0x1F617, 0x1F48B},          // 2 kiss
+              {0x1F60D, 0x1F970, 0x1F63B},                   // 3 love
+              {0x1F60F, 0x1F609, 0x1F61C, 0x1F61D, 0x1F61B, 0x1F608}, // 4 tease
+              {0x1F622, 0x1F62D, 0x1F97A, 0x1F614, 0x1F61E}, // 5 sad
+              {0x1F644, 0x1F612, 0x1F624},                   // 6 uff
+              {0x1F621, 0x1F92C},                            // 7 angry
+              {0x1F62E, 0x1F632, 0x1F631}                    // 8 wow
+            };
+            static final String[] EW = { "ha ha ha,", "hehe,", "mwah,", "aww,", "hmm hehe,", "aww,", "uff,", "hmph!", "oh!" };
+            static final String[] EP = { "+8Hz|+10%", "+6Hz|+8%", "+4Hz|-8%", "+2Hz|-8%", "+0Hz|-6%", "-4Hz|-14%", "-2Hz|-4%", "+2Hz|+6%", "+8Hz|+6%" };
+
+            static int emoKind(int cp) {
+              for (int k = 0; k < EK.length; k++) for (int j = 0; j < EK[k].length; j++) if (EK[k][j] == cp) return k;
+              return -1;
+            }
+
+            static boolean isSym(int cp) {
+              return (cp >= 0x1F000 && cp <= 0x1FFFF) || (cp >= 0x2600 && cp <= 0x27BF) || (cp >= 0x2190 && cp <= 0x21FF)
+                || (cp >= 0x2B00 && cp <= 0x2BFF) || cp == 0xFE0F || cp == 0x200D || cp == 0x20E3;
+            }
+
+            // plain text version (for voices without SSML): emoji become sounds
+            public static String plain(String t) {
+              t = clean(t);
+              StringBuilder b = new StringBuilder();
+              for (int i = 0; i < t.length(); ) {
+                int cp = t.codePointAt(i);
+                i += Character.charCount(cp);
+                int k = emoKind(cp);
+                if (k >= 0) b.append(' ').append(EW[k]).append(' ');
+                else if (!isSym(cp)) b.appendCodePoint(cp);
+              }
+              return b.toString().replaceAll("\\s+", " ").trim();
+            }
+
+            // SSML body: normal text, and a laugh/sigh/kiss with its own pitch+rate where an emoji was
+            static String body(String t) {
+              t = clean(t);
+              StringBuilder out = new StringBuilder();
+              StringBuilder cur = new StringBuilder();
+              for (int i = 0; i < t.length(); ) {
+                int cp = t.codePointAt(i);
+                i += Character.charCount(cp);
+                int k = emoKind(cp);
+                if (k >= 0) {
+                  flush(out, cur);
+                  String[] pr = EP[k].split("\\|");
+                  out.append("<break time='120ms'/><prosody pitch='").append(pr[0]).append("' rate='").append(pr[1]).append("' volume='+0%'>")
+                    .append(EW[k]).append("</prosody><break time='80ms'/>");
+                } else if (!isSym(cp)) cur.appendCodePoint(cp);
+              }
+              flush(out, cur);
+              return out.toString();
+            }
+
+            static void flush(StringBuilder out, StringBuilder cur) {
+              String x = cur.toString().trim();
+              cur.setLength(0);
+              if (x.length() == 0) return;
+              out.append("<prosody pitch='").append(PITCH).append("' rate='").append(RATE).append("' volume='").append(VOL).append("'>").append(esc(x)).append("</prosody>");
+            }
+
             public static byte[] synth(String text, String voice, String pitch, String rate, String vol) {
               PITCH = pitch; RATE = rate; VOL = vol;
               text = clean(text);
-              if (text.length() < 1) return null;
+              if (plain(text).length() < 1) return null;
               try {
                 SSLSocket s = (SSLSocket) SSLSocketFactory.getDefault().createSocket();
                 s.connect(new InetSocketAddress(HOST, 443), 6000);
@@ -2776,7 +2843,7 @@ jobs:
                 + "{\"context\":{\"synthesis\":{\"audio\":{\"metadataoptions\":{\"sentenceBoundaryEnabled\":\"false\",\"wordBoundaryEnabled\":\"false\"},\"outputFormat\":\"raw-24khz-16bit-mono-pcm\"}}}}\r\n");
               String rid = UUID.randomUUID().toString().replace("-", "");
               String ssml = "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='hi-IN'><voice name='" + voice
-                + "'><prosody pitch='" + PITCH + "' rate='" + RATE + "' volume='" + VOL + "'>" + esc(text) + "</prosody></voice></speak>";
+                + "'>" + body(text) + "</voice></speak>";
               sendText(out, "X-RequestId:" + rid + "\r\nContent-Type:application/ssml+xml\r\nX-Timestamp:" + ts() + "Z\r\nPath:ssml\r\n\r\n" + ssml);
 
               DataInputStream di = new DataInputStream(in);
