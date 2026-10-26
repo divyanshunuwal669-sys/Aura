@@ -160,6 +160,43 @@ jobs:
             }
 
             @PluginMethod
+            public void saveFile(PluginCall call) {
+              try {
+                String name = call.getString("name", "aura-file.txt").replaceAll("[\\\\/:*?\"<>|]", "_");
+                String mime = call.getString("mime", "application/octet-stream");
+                byte[] data = android.util.Base64.decode(call.getString("b64", ""), android.util.Base64.DEFAULT);
+                Context c = getContext();
+                String where;
+                if (android.os.Build.VERSION.SDK_INT >= 29) {
+                  android.content.ContentValues v = new android.content.ContentValues();
+                  v.put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, name);
+                  v.put(android.provider.MediaStore.MediaColumns.MIME_TYPE, mime);
+                  v.put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, "Download/Aura");
+                  android.net.Uri u = c.getContentResolver().insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
+                  if (u == null) throw new Exception("insert fail");
+                  java.io.OutputStream os = c.getContentResolver().openOutputStream(u);
+                  os.write(data);
+                  os.close();
+                  where = "Download/Aura/" + name;
+                } else {
+                  java.io.File d = c.getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS);
+                  if (d == null) d = c.getFilesDir();
+                  d.mkdirs();
+                  java.io.File f = new java.io.File(d, name);
+                  java.io.FileOutputStream os = new java.io.FileOutputStream(f);
+                  os.write(data);
+                  os.close();
+                  where = f.getAbsolutePath();
+                }
+                JSObject o = new JSObject();
+                o.put("path", where);
+                call.resolve(o);
+              } catch (Throwable t) {
+                call.reject("save fail: " + t.getMessage());
+              }
+            }
+
+            @PluginMethod
             public void edgeTts(final PluginCall call) {
               final String tx = call.getString("text", "");
               final String vo = call.getString("voice", "");
