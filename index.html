@@ -60,6 +60,13 @@ html.gf h1{background:linear-gradient(90deg,#f9a8d4,#fda4af,#e9d5ff);-webkit-bac
 html.gf .u{background:linear-gradient(135deg,#ec4899,#be185d)}
 html.gf .a{border-left-color:#f472b6;box-shadow:0 0 14px #f472b622}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
+
+#dic.on{background:#ef4444}
+header #hdc{padding:0}
+.agr{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.07);border-radius:12px;padding:8px 10px;font-size:13px}
+.agr b{font-size:14px}.agr small{color:#9aa;display:block}
+.agm{padding:6px 9px;border-radius:10px;max-width:92%;line-height:1.4;white-space:pre-wrap}
+.agm.mgr{background:rgba(56,212,255,.16);align-self:flex-start}.agm.aura{background:rgba(255,122,200,.18);align-self:flex-end}.agm.sys{background:#ffffff14;color:#aab;align-self:center;font-size:12px}.agm.you{background:rgba(255,255,255,.14);align-self:flex-end}
 </style>
 <style id="glass">
 :root{--gb:22px;--wd:.25}
@@ -260,11 +267,11 @@ html.noglass .pn,html.noglass #chatsheet{-webkit-backdrop-filter:none!important;
 <div class="pn" id="pSys"><h4>SYSTEM</h4><div class="r"><span>UPTIME</span><b id="syu">--</b></div><div class="r"><span>DEVICE</span><b id="syd">--</b></div><div class="r"><span>ANDROID</span><b id="sya">--</b></div><div class="r"><span>HEY AURA</span><b id="syh">--</b></div><div class="r"><span>CLOUD</span><b id="syc">--</b></div></div>
 </div>
 
-<header><div id="orb"></div><h1>Aura</h1><button class="ic" id="gfb" style="display:none">&#128150;</button><button class="ic" id="hey" style="display:none">&#127897;</button><button class="ic" id="cl">&#128222;</button><button class="ic" id="mod">&#128188;</button><button class="ic" id="lst">&#128203;</button><button class="ic" id="vol">&#128266;</button><button class="ic" id="hch" title="Chat">&#128172;</button><button class="ic" id="hwp" title="Wallpaper">&#127912;</button><button class="ic" id="hdv" title="Aura Dev">&#128736;</button><button class="ic" id="hsc" title="Security">&#128274;</button><button class="ic" id="gear">&#9881;</button></header>
+<header><div id="orb"></div><h1>Aura</h1><button class="ic" id="gfb" style="display:none">&#128150;</button><button class="ic" id="hey" style="display:none">&#127897;</button><button class="ic" id="cl">&#128222;</button><button class="ic" id="mod">&#128188;</button><button class="ic" id="lst">&#128203;</button><button class="ic" id="vol">&#128266;</button><button class="ic" id="hch" title="Chat">&#128172;</button><button class="ic" id="hwp" title="Wallpaper">&#127912;</button><button class="ic" id="hdc" title="Bolke likho"><span style="display:block;font-size:14px;line-height:1">&#127908;</span><small style="display:block;font-size:7px;line-height:1">likho</small></button><button class="ic" id="hag" title="Agents">&#129513;</button><button class="ic" id="hdv" title="Aura Dev">&#128736;</button><button class="ic" id="hsc" title="Security">&#128274;</button><button class="ic" id="gear">&#9881;</button></header>
 <div id="chatsheet" hidden><button class="ic" id="chx">&#10005;</button>
 <div id="st"><span class="wv"><i></i><i></i><i></i><i></i><i></i></span>Mic on hai... bolo</div>
 <div id="log"></div>
-<footer><button class="k" id="mic">&#127908;</button><input id="m" placeholder="Aura se baat karo..."><button class="k" id="go">&#10148;</button></footer></div>
+<footer><button class="k" id="mic" title="Bolo, Aura jawab degi">&#127908;</button><button class="k" id="dic" title="Bolke likho (Gboard jaisa)"><span style="display:block;font-size:15px;line-height:1">&#127908;</span><small style="display:block;font-size:8px;line-height:1;margin-top:1px">likho</small></button><input id="m" placeholder="Aura se baat karo..."><button class="k" id="go">&#10148;</button></footer></div>
 <div id="set" class="ov" hidden>
 <h2 style="margin:0">Aura settings</h2>
 <p>Keys sirf is phone mein save hoti hain. Groq tez hai, Gemini backup hai. Ek bhi chalegi.</p>
@@ -291,6 +298,16 @@ html.noglass .pn,html.noglass #chatsheet{-webkit-backdrop-filter:none!important;
 <button class="k" id="secb">🔐 Security aur backup</button>
 <button class="k" id="save">Save karo</button>
 <p id="ver"></p>
+</div>
+<div id="agp" class="ov" hidden>
+<h2 style="margin:0">&#129513; Agents</h2>
+<p>Har kaam ka alag agent hai. Manager sab par nazar rakhta hai, kuch bigde to khud sambhalta hai aur Aura se baat karta hai.</p>
+<div id="agl"></div>
+<p><b>Manager aur Aura ki baatcheet</b></p>
+<div id="agc" style="max-height:230px;overflow-y:auto;font-size:13px;background:#0006;border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px"></div>
+<input id="agi" placeholder="Manager se kuch poochho (khali chhodo = report)">
+<div class="tabs"><button class="cl" id="agtalk">&#129504; Manager se baat</button><button class="cl" id="agrep">&#128202; Report</button><button class="cl" id="agclr">Log saaf</button></div>
+<button class="k" id="agx">Band karo</button>
 </div>
 <div id="dev" class="ov" hidden>
 <h2 style="margin:0">🛠 Aura Dev</h2>
@@ -486,7 +503,7 @@ const fin=v=>{if(dn)return;dn=1;if(pend&&pend.fin===fin)pend=null;b.remove();s.t
 function guard(t){let m=t,f=0;m=m.replace(/\b(?:\d[ -]?){13,19}\b/g,()=>{f=1;return'[HIDDEN]'});
 m=m.replace(/\b(otp|pin|cvv|password|passcode)\b([^.\n]{0,20}?)\s((?=\S*[\d@#$!%^&*])[A-Za-z0-9@#$!%^&*]{4,})/gi,(a,k,mid)=>{f=1;return k+mid+' [HIDDEN]'});
 m=m.replace(/\b\d{4,8}\b(?=[^.\n]{0,15}\botp\b)/gi,()=>{f=1;return'[HIDDEN]'});return[m,f]}
-const VER='v45 • 25 Oct';
+const VER='v46 • 26 Oct';
 let AC=null,SRC=null,lastVE='';
 function unlock(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}}
 document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);
@@ -508,8 +525,8 @@ function cutAt(s){const re=/[.!?।]+["')\]]*\s+|\n+/g;let m;while((m=re.exec(s)
 const EMK=[[[0x1F602,0x1F923,0x1F606,0x1F639],' ha ha ha, '],[[0x1F601,0x1F604,0x1F605,0x1F600,0x1F603],' hehe, '],[[0x1F618,0x1F61A,0x1F617,0x1F48B],' mwah, '],[[0x1F60D,0x1F970,0x1F63B],' aww, '],[[0x1F60F,0x1F609,0x1F61C,0x1F61D,0x1F61B,0x1F608],' hmm hehe, '],[[0x1F622,0x1F62D,0x1F97A,0x1F614,0x1F61E],' aww, '],[[0x1F644,0x1F612,0x1F624],' uff, '],[[0x1F621,0x1F92C],' hmph! '],[[0x1F62E,0x1F632,0x1F631],' oh! ']];
 function ttsBase(t){return String(t).replace(/https?:\/\/\S+/g,' ').replace(/[*_#`~^|<>\[\]{}]/g,' ').replace(/\.\.\.|\u2026/g,', ').replace(/\s+/g,' ').trim()}
 function ttsClean(t){t=ttsBase(t);let o='';for(const ch of t){const c=ch.codePointAt(0);let w=null;for(const k of EMK)if(k[0].includes(c)){w=k[1];break}if(w!==null)o+=w;else if((c>=0x1F000&&c<=0x1FFFF)||(c>=0x2600&&c<=0x27BF)||(c>=0x2190&&c<=0x21FF)||(c>=0x2B00&&c<=0x2BFF)||c==0xFE0F||c==0x200D||c==0x20E3)continue;else o+=ch}return o.replace(/\s+/g,' ').trim()}
-async function getPcm(t){const tb=ttsBase(t).slice(0,500);t=ttsClean(t).slice(0,500);if(!t)return null;let a=await edtts(tb);if(a)return a;if(S('smk')){a=await stts(t);if(a)return a}if(S('ek')){a=await etts(t);if(a)return a}if(S('gk')){a=await gtts(t);if(a)return a}return null}
-function fbSpeak(t,res){if(NAT&&CP.TextToSpeech){CP.TextToSpeech.speak({text:t,lang:'en-IN',rate:1.1,pitch:1,volume:1}).then(()=>res()).catch(()=>res());return}
+async function getPcm(t){const tb=ttsBase(t).slice(0,500);t=ttsClean(t).slice(0,500);if(!t)return null;let a=await edtts(tb);if(a){vTick('edge');return a}if(S('smk')){a=await stts(t);if(a){vTick('sarvam');return a}}if(S('ek')){a=await etts(t);if(a){vTick('eleven');return a}}if(S('gk')){a=await gtts(t);if(a){vTick('gemini');return a}}vTick(null);return null}
+function fbSpeak(t,res){VP.phone++;if(NAT&&CP.TextToSpeech){CP.TextToSpeech.speak({text:t,lang:'en-IN',rate:1.1,pitch:1,volume:1}).then(()=>res()).catch(()=>res());return}
 if(!window.speechSynthesis){res();return}const vs=speechSynthesis.getVoices(),v=vs.find(x=>/en[-_]IN/i.test(x.lang))||vs.find(x=>/hi[-_]IN/i.test(x.lang))||vs.find(x=>/^en/i.test(x.lang)),u=new SpeechSynthesisUtterance(t);if(v){u.voice=v;u.lang=v.lang}else u.lang='en-IN';u.rate=1.1;u.onend=u.onerror=()=>res();speechSynthesis.speak(u)}
 function sqStart(d){stopTalk();SQ={dead:0,q:[],run:0,fin:0,n:0,d};unlock();call.sp=1;if(call.on)cs('speak')}
 function sqCancel(){SQ.dead=1;call.sp=0}
@@ -561,19 +578,77 @@ else if(k=='TODO')todos.push({t:v,d:0});
 else if(k=='NOTE')notes.push({t:v});
 else if(k=='CITY')localStorage.setItem('city',v);
 return''}).trim()}
+
+/* ===== Agents + Manager ===== */
+const AGS={
+settings:{n:'Settings',ic:'⚙️',re:/setting|सेटिंग|wi ?-?fi|bluetooth|hotspot|airplane|flight mode|\btts\b|text.?to.?speech|brightness|display|battery|wallpaper|volume|sound/i},
+message:{n:'Message / Call',ic:'💬',re:/whatsapp|\bsms\b|message|\bmsg\b|\bcall\b|phone laga|bhej|text kar/i},
+device:{n:'Phone control',ic:'📱',re:/scroll|click|\btap\b|\btype\b|likho|\bhome\b|\bback\b|recent|notification|\bscreen\b|control|\bagent\b|enter/i},
+media:{n:'Media / Apps',ic:'🎵',re:/youtube|gana|\bsong|music|\bplay\b|pause|\bnext\b|video|spotify|chalao|\bapp\b|kholo|open/i},
+voice:{n:'Voice (awaaz)',ic:'🔊',re:null},
+chat:{n:'Chat / AI',ic:'🧠',re:null}};
+for(const k in AGS)Object.assign(AGS[k],{ok:0,fail:0,busy:0,ms:0,runs:0,streak:0,rest:0});
+const VP={edge:0,sarvam:0,eleven:0,gemini:0,phone:0};let vFail=0;
+const MLOG=J('mlog',[]),MT={busy:0};
+function agentFor(t){for(const k of['settings','message','device','media'])if(AGS[k].re.test(t))return k;return'chat'}
+function mNote(ag,kind,msg){MLOG.push({t:Date.now(),ag,k:kind,m:String(msg).slice(0,140)});while(MLOG.length>40)MLOG.shift();try{W('mlog',MLOG)}catch(e){}agDraw()}
+function agTick(k,ok,ms){const a=AGS[k];a.runs++;a.ms+=ms;if(ok){a.ok++;a.streak=0}else{a.fail++;a.streak++;mNote(k,'fail',k=='chat'?'AI ne jawab nahi diya':'fail')}if(ms>12000)mNote(k,'slow',(ms/1000|0)+' second lage');agDraw()}
+function vTick(p){if(p){VP[p]++;vFail=0;AGS.voice.ok++}else{AGS.voice.fail++;vFail++;mNote('voice','fail',(lastVE||'koi awaaz service nahi chali').slice(0,100));if(vFail==3){mNote('voice','warn','3 baar lagataar awaaz fail. Settings mein Awaaz test chalao.');try{add('🧠 Manager: awaaz 3 baar lagataar fail hui. ⚙️ mein Awaaz test chalao.','a')}catch(e){}}}agDraw()}
+async function runAgent(key,fn,to){const a=AGS[key];if(a.rest>Date.now())return a.n+' agent abhi thodi der aaram par hai (lagataar fail hua). 2 minute baad try karo.';
+const j={agent:key,t0:Date.now(),st:'run'};a.busy++;agDraw();let r=null,tid;
+try{r=await Promise.race([fn(),new Promise((_,rej)=>{tid=setTimeout(()=>rej(new Error('timeout')),to||25000)})]);clearTimeout(tid);
+if(r===null||r===undefined||r===false){j.st='skip';return r}
+j.st='ok';if(typeof r=='string'&&/^(Nahi ho paya|Ye nahi ho paya|Settings nahi khuli|Nahi khula|Gana nahi chal)/.test(r)){j.st='fail';a.fail++;a.streak++;mNote(key,'fail',r)}else{a.ok++;a.streak=0}}
+catch(e){clearTimeout(tid);j.st='fail';a.fail++;a.streak++;const to_=e&&e.message=='timeout';mNote(key,to_?'slow':'fail',to_?'25 second se zyada lage':(e&&e.message)||'error');r='Ye kaam nahi ho paya ('+(to_?'bahut der lagi':(e&&e.message)||'error')+').'}
+finally{a.busy=Math.max(0,a.busy-1);if(j.st!='skip'){j.ms=Date.now()-j.t0;a.ms+=j.ms;a.runs++;if(j.ms>8000&&j.st=='ok')mNote(key,'slow',(j.ms/1000|0)+' second lage');if(a.streak>=3){a.rest=Date.now()+120000;a.streak=0;mNote(key,'rest','3 baar lagataar fail, 2 minute aaram');try{add('🧠 Manager: '+a.n+' agent ko 2 minute aaram diya (3 baar lagataar fail).','a')}catch(e){}}}agDraw()}
+return r}
+function mgrReport(){const L=[];for(const k in AGS){const a=AGS[k];if(a.ok||a.fail)L.push(a.ic+' '+a.n+': '+a.ok+' theek, '+a.fail+' fail'+(a.runs?', avg '+(a.ms/a.runs/1000).toFixed(1)+'s':'')+(a.rest>Date.now()?' (aaram par)':''))}
+const v=Object.entries(VP).filter(x=>x[1]).map(x=>x[0]+' '+x[1]).join(', ');if(v)L.push('🔊 Awaaz kisse aayi: '+v);return L.length?L.join('\n'):'Abhi tak koi kaam nahi hua. Sab shaant hai.'}
+function agDraw(){const P=$('agp');if(!P||P.hidden)return;const L=$('agl');L.innerHTML='';for(const k in AGS){const a=AGS[k],d=document.createElement('div');d.className='agr';const dot=a.rest>Date.now()?'⛔':a.busy?'🟡':(a.fail>a.ok&&a.runs)?'🔴':'🟢';
+d.innerHTML='<span>'+a.ic+'</span><div style="flex:1"><b></b><small></small></div><span>'+dot+'</span>';d.querySelector('b').textContent=a.n;d.querySelector('small').textContent=a.ok+' theek • '+a.fail+' fail'+(a.runs?' • avg '+(a.ms/a.runs/1000).toFixed(1)+'s':'');L.appendChild(d)}}
+function agChat(w,t){const d=document.createElement('div');d.className='agm '+w;d.textContent=(w=='mgr'?'🧠 Manager: ':w=='aura'?'✨ Aura: ':w=='you'?'Tum: ':'')+t;$('agc').appendChild(d);$('agc').scrollTop=1e9}
+function agOpen(){$('set').hidden=true;$('chatsheet').hidden=true;$('agp').hidden=false;agDraw();if(!$('agc').children.length){const r=MLOG.slice(-5);if(r.length)agChat('sys','Pichhli ghatnayein:\n'+r.map(x=>(AGS[x.ag]?AGS[x.ag].n:x.ag)+' • '+x.k+' • '+x.m).join('\n'));else agChat('sys','Abhi sab shaant hai. "Manager se baat" dabao.')}}
+async function aiRaw(sysT,userT,max){const L=[];
+if(S('qk'))L.push(async()=>{const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+S('qk')},body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'system',content:sysT},{role:'user',content:userT}],max_tokens:max||200}),signal:AbortSignal.timeout(15000)});if(!r.ok)throw 0;return(await r.json()).choices[0].message.content});
+if(S('gk'))L.push(async()=>{const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':S('gk')},body:JSON.stringify({system_instruction:{parts:[{text:sysT}]},contents:[{role:'user',parts:[{text:userT}]}]}),signal:AbortSignal.timeout(15000)});if(!r.ok)throw 0;return(await r.json()).candidates[0].content.parts[0].text});
+for(const f of L){try{const t=await f();if(t&&t.trim())return vis(t).trim()}catch(e){}}return null}
+async function mgrTalk(um){if(MT.busy)return;MT.busy=1;$('agtalk').disabled=true;
+try{if(um)agChat('you',um);
+const ctx='STATUS:\n'+mgrReport()+'\nLOG:\n'+(MLOG.slice(-8).map(x=>(AGS[x.ag]?AGS[x.ag].n:x.ag)+' '+x.k+': '+x.m).join('\n')||'(khali)');
+const msys='Tum Aura ke Manager agent ho. Tumhara kaam Aura aur uske agents (Settings, Message/Call, Phone control, Media, Voice, Chat) ko sambhalna hai. Roman Hinglish mein, 2-3 chhote vakya, seedhe point par. Sirf diye gaye STATUS aur LOG ke aadhar par bolo, kuch banao mat. Tum khud code ya settings nahi badalte; badlav ke liye Aura Dev ka naam lo, jisme user ki ijazat lagti hai.';
+const m1=await aiRaw(msys,(um?'User ne poocha: '+um:'Aura ko apni report do: kya theek hai, kya nahi, kya karna chahiye.')+'\n'+ctx,200);
+if(!m1){agChat('sys','AI abhi jawab nahi de paya (key ya quota). Local report:\n'+mgrReport());return}
+agChat('mgr',m1);
+if(!um){const m2=await aiRaw(sys(),'Tumhare Manager agent ne tumse kaha: "'+m1+'". Aura ki taraf se 1-2 chhote vakya mein jawab do ki tum kya karogi.',120);if(m2)agChat('aura',m2)}}
+finally{MT.busy=0;$('agtalk').disabled=false}}
+function agCmd(t){if(t.length>60||!(/^(?:aura[, ]+)?(?:manager|agents?)\b/i.test(t)||/\b(?:manager|agents?)\s+(?:se baat|ki report|report|status|dikhao|kholo)/i.test(t))||!/(kholo|dikhao|report|status|baat|batao|check|sambhalo)/i.test(t))return false;agOpen();if(/report|status|baat|batao|check/i.test(t))mgrTalk('');add('Agents screen khol di.','a');return true}
+/* ===== dictation (Gboard jaisa): bolo, text box mein likh jaye ===== */
+let dicOn=0,dicR=null;
+function dicUi(on){dicOn=on;$('dic').classList.toggle('on',!!on);if(on)$('st').classList.add('show');else if(!call.on)$('st').classList.remove('show')}
+async function dictate(){const inp=$('m');$('chatsheet').hidden=false;
+if(call.on){add('Call chal rahi hai. Pehle call band karo, phir bolke likho.','a');return}
+if(dicOn){try{if(NAT&&CP.SpeechRecognition)await CP.SpeechRecognition.stop();else if(dicR)dicR.stop()}catch(e){}dicUi(0);return}
+stopTalk();const base=inp.value.trim();const put=t=>{inp.value=(base?base+' ':'')+t;inp.focus()};
+if(NAT&&CP.SpeechRecognition){const R=CP.SpeechRecognition;dicUi(1);
+try{const a=await R.available();if(!a.available){dicUi(0);add('Is phone par speech recognition nahi mila. Google app update karo.','a');return}
+let pm=await R.checkPermissions();if(pm.speechRecognition!=='granted')pm=await R.requestPermissions();if(pm.speechRecognition!=='granted'){dicUi(0);add('Mic permission do: Settings > Apps > Aura > Permissions.','a');return}
+const r=await R.start({language:'hi-IN',maxResults:1,partialResults:false,popup:false});dicUi(0);const t=r&&r.matches&&r.matches[0];if(t)put(t);else add('Kuch sunai nahi diya, dobara dabao.','a')}catch(e){dicUi(0);add('Mic error: '+(e.message||e),'a')}return}
+if(!SR){add('Is browser mein mic support nahi hai, Chrome use karo.','a');return}
+const r=new SR();r.lang='hi-IN';r.interimResults=true;r.continuous=false;dicR=r;r.onstart=()=>dicUi(1);r.onresult=e=>{let t='';for(let i=0;i<e.results.length;i++)t+=e.results[i][0].transcript;put(t)};r.onend=r.onerror=()=>{dicUi(0);dicR=null};r.start()}
 async function send(){const t=$('m').value.trim();if(!t)return;if(call.on)cs('think');$('m').value='';const[tt,fl]=guard(t);add(tt,'u');if(fl)add('⚠️ Isme OTP/password/card jaisi sensitive info thi. Maine ise chhupa diya, AI ko nahi bheja aur save bhi nahi karungi. Aisi detail kisi ko mat dena.','a');
 if(pend){const nn=tt.toLowerCase().replace(/[^\p{L}\p{M}\p{N} ]/gu,' ').replace(/\s+/g,' ').trim();const Y=/^(haan|han|haa|ha|yes|yeah|yep|ok|okay|theek hai|thik hai|kar do|karo|bhej do|bhejo|bhej|confirm|sahi hai|pakka|हाँ|हां|हा|जी हाँ|ठीक है|कर दो|भेज दो)( |$)/,N=/^(na|nahi|nahin|no|nope|mat|cancel|ruko|rehne do|rahne do|ना|नहीं|मत|रुको)( |$)/;
 if(Y.test(nn)||N.test(nn)){const p=pend,y=Y.test(nn);viaMic=false;p.fin(y?1:0);const m=y?'Theek hai, kar rahi hoon.':'Theek hai, cancel kar diya.';add(m,'a');say(m);if(call.on&&!call.sp)setTimeout(callListen,900);return}pend=null}
 const GM=tt.match(/(girlfriend|गर्लफ्रेंड|girl friend|gf|जीएफ)\s*(mode|मोड)?\s*(on|ऑन|चालू|chalu|shuru|शुरू|start|off|ऑफ|बंद|band|khatam|खत्म|stop)/i);
 if(GM){const on=!/off|ऑफ|बंद|band|khatam|खत्म|stop/i.test(GM[3]);gfAsk(on,true);if(call.on&&!call.sp)setTimeout(callListen,700);return}
 if(/masti\s*(time|mode)|masti shuru/i.test(t))setMode('masti');else if(/(kaam|work)\s*(time|mode)|masti (khatam|band)/i.test(t))setMode('kaam');const mic=viaMic;viaMic=false;
-const qk=await quick(tt);if(qk){try{hudAction(tt)}catch(e){}add(qk,'a');say(qk);return}
+if(agCmd(tt))return;
+const agk=agentFor(tt);const qk=await runAgent(agk,()=>quick(tt));if(qk){try{hudAction(tt)}catch(e){}add(qk,'a');say(qk);return}
 if(!S('gk')&&!S('qk')){add('Pehle ⚙️ mein API key daalo.','a');$('set').hidden=false;return}
 const w=add('','a');w.innerHTML='<span class="dots"><span></span><span></span><span></span></span>';document.body.className='think';
 hist.push({role:'user',parts:[{text:tt}]});const c=hist.slice(-10);
 if(mic)c[c.length-1]={role:'user',parts:[{text:tt+' (Roman Hinglish mein, sirf 1-2 chhote vakya)'}]};
 EX=(/mausam|weather|barish|baarish|temperature|garmi|sardi|thand|chhata|umbrella/i.test(t)?await wx():'')+(/search|khoj|latest|news|khabar|pata kar|details chahiye|jankari|aaj ka|price|rate|score/i.test(t)?await srch(tt):'');
-const stm=(speakOn||call.on)&&typeof ReadableStream!='undefined'&&!!(S('qk')||S('gk'));let r=null,st=0;if(stm){r=await streamReply(c,w);st=r!==null?1:0}if(r===null)r=await ask(c);if(!st)document.body.className='';
+const _t0=Date.now();const stm=(speakOn||call.on)&&typeof ReadableStream!='undefined'&&!!(S('qk')||S('gk'));let r=null,st=0;if(stm){r=await streamReply(c,w);st=r!==null?1:0}if(r===null)r=await ask(c);agTick('chat',r!==null,Date.now()-_t0);if(!st)document.body.className='';
 if(!r){hist.pop();w.textContent='Saare servers busy hain ya key galat hai. Key check karo (⚙️) ya thodi der baad try karo.';if(call.on){callStop('Call band: AI jawab nahi de paya.')}return}
 r=tags(r)||'Done!';save();hist.push({role:'model',parts:[{text:r}]});W('hist',hist.slice(-20));
 if(st){w.textContent=r;w.classList.remove('cur');if(!SQ.n)sqAdd(r);if(pend)sqAdd(pend.q.replace(/\n/g,' ')+' Haan ya na?');sqEnd();if(call.on&&!speakOn)speakOn=true}else{typeText(w,r);if(call.on&&!speakOn)speakOn=true;say(pend?r+' '+pend.q.replace(/\n/g,' ')+' Haan ya na?':r)}if(call.on&&!call.sp)setTimeout(callListen,600);if(call.on)setTimeout(()=>{if(call.on&&call.sp){call.sp=0;callListen()}},Math.min(30000,r.length*130+5000))}
@@ -868,6 +943,8 @@ document.getElementById('hch').onclick=()=>{document.getElementById('chatsheet')
 document.getElementById('chx').onclick=()=>{document.getElementById('chatsheet').hidden=true};
 document.getElementById('hwp').onclick=()=>wpOpen();
 document.getElementById('hdv').onclick=()=>devOpen('');
+$('hag').onclick=agOpen;$('agx').onclick=()=>{$('agp').hidden=true};$('agtalk').onclick=()=>{const v=$('agi').value.trim();$('agi').value='';mgrTalk(v)};$('agrep').onclick=()=>agChat('sys',mgrReport());$('agclr').onclick=()=>{MLOG.length=0;W('mlog',MLOG);$('agc').innerHTML='';agDraw()};
+$('hdc').onclick=dictate;$('dic').onclick=dictate;
 document.getElementById('hsc').onclick=()=>{$('secb').click()};
 
 /* ---- opening splash ---- */
