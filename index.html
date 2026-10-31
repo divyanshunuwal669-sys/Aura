@@ -86,6 +86,10 @@ header #hdc{padding:0}
 .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.acts button{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);color:#dde;border-radius:14px;font-size:11px;padding:3px 9px}
 #stopg{align-self:center;margin:4px 0}#atoast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:rgba(20,30,50,.95);color:#fff;padding:8px 16px;border-radius:16px;font-size:13px;z-index:9;border:1px solid rgba(255,255,255,.2)}
 #wsb.on,#nchat.on{background:rgba(56,212,255,.45)}
+
+.sbx{margin-top:4px}.sbo{background:#000a;color:#9dff9d;font-size:12px;padding:8px;border-radius:8px;white-space:pre-wrap;max-height:160px;overflow:auto;margin:6px 0 0}
+.cl.on{background:#7ee0ff33;outline:1px solid #7ee0ff}.pwc{background:#ffffff0f;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px}.pwc b{font-size:15px}.pwc small{color:#9ab;font-size:12px}
+.ov textarea,.ov input[type=text]{width:100%}
 </style>
 <style id="glass">
 :root{--gb:22px;--wd:.25}
@@ -286,7 +290,7 @@ html.noglass .pn,html.noglass #chatsheet{-webkit-backdrop-filter:none!important;
 <div class="pn" id="pSys"><h4>SYSTEM</h4><div class="r"><span>UPTIME</span><b id="syu">--</b></div><div class="r"><span>DEVICE</span><b id="syd">--</b></div><div class="r"><span>ANDROID</span><b id="sya">--</b></div><div class="r"><span>HEY AURA</span><b id="syh">--</b></div><div class="r"><span>CLOUD</span><b id="syc">--</b></div></div>
 </div>
 
-<header><div id="orb"></div><h1>Aura</h1><button class="ic" id="gfb" style="display:none">&#128150;</button><button class="ic" id="hey" style="display:none">&#127897;</button><button class="ic" id="cl">&#128222;</button><button class="ic" id="mod">&#128188;</button><button class="ic" id="lst">&#128203;</button><button class="ic" id="vol">&#128266;</button><button class="ic" id="hch" title="Chat">&#128172;</button><button class="ic" id="hwp" title="Wallpaper">&#127912;</button><button class="ic" id="hdc" title="Bolke likho"><span style="display:block;font-size:14px;line-height:1">&#127908;</span><small style="display:block;font-size:7px;line-height:1">likho</small></button><button class="ic" id="hag" title="Agents">&#129513;</button><button class="ic" id="hdv" title="Aura Dev">&#128736;</button><button class="ic" id="hsc" title="Security">&#128274;</button><button class="ic" id="gear">&#9881;</button></header>
+<header><div id="orb"></div><h1>Aura</h1><button class="ic" id="gfb" style="display:none">&#128150;</button><button class="ic" id="hey" style="display:none">&#127897;</button><button class="ic" id="cl">&#128222;</button><button class="ic" id="mod">&#128188;</button><button class="ic" id="lst">&#128203;</button><button class="ic" id="vol">&#128266;</button><button class="ic" id="hch" title="Chat">&#128172;</button><button class="ic" id="hwp" title="Wallpaper">&#127912;</button><button class="ic" id="hdc" title="Bolke likho"><span style="display:block;font-size:14px;line-height:1">&#127908;</span><small style="display:block;font-size:7px;line-height:1">likho</small></button><button class="ic" id="hag" title="Agents">&#129513;</button><button class="ic" id="hpw" title="Powers">&#10024;</button><button class="ic" id="hdv" title="Aura Dev">&#128736;</button><button class="ic" id="hsc" title="Security">&#128274;</button><button class="ic" id="gear">&#9881;</button></header>
 <div id="chatsheet" hidden><button class="ic" id="chx">&#10005;</button><button class="ic" id="nchat" title="Nayi chat" style="position:absolute;top:calc(8px + env(safe-area-inset-top));right:58px;z-index:2">&#10133;</button>
 <div id="st"><span class="wv"><i></i><i></i><i></i><i></i><i></i></span>Mic on hai... bolo</div>
 <div id="log"></div>
@@ -322,6 +326,54 @@ html.noglass .pn,html.noglass #chatsheet{-webkit-backdrop-filter:none!important;
 <button class="k" id="secb">🔐 Security aur backup</button>
 <button class="k" id="save">Save karo</button>
 <p id="ver"></p>
+</div>
+<div id="pw" class="ov" hidden>
+<h2 style="margin:0">&#10024; Powers</h2>
+<p>Aura ki 6 khaas shaktiyan. Sab tumhare control mein, kuch bhi bina ijazat ke nahi hota.</p>
+<div class="pwc"><b>&#129504; Memory Graph</b><small id="pwmg"></small><small>Jo yaad hai wo jude hue dikhta hai. Sirf kaam ki yaadein jawab mein use hoti hain. Dekho, badlo, hatao.</small><button class="k" id="pwb1">Kholo</button></div>
+<div class="pwc"><b>&#129302; Task Executor</b><small id="pwtx"></small><small>Bada goal do. Aura steps ka plan banati hai, tum Approve karte ho, phir ek-ek step karti hai. Kabhi bhi Roko.</small><button class="k" id="pwb2">Kholo</button></div>
+<div class="pwc"><b>&#127917; Persona Voice</b><small id="pwps"></small><div class="tabs" id="pwpl"></div><small id="pwpd"></small></div>
+<div class="pwc"><b>&#127760; Web Grounding</b><small id="pwws"></small><small>Taaza sawalon par web se source laakar jawab. Source na mile to saaf warning.</small><button class="k" id="pwb4">ON / OFF</button></div>
+<div class="pwc"><b>&#128187; Code Sandbox</b><small>Jawab ke code block par &#9654; Run. JavaScript aur HTML band dibbe mein chalte hain.</small><button class="k" id="pwb6">Kaise use karein</button></div>
+<div class="pwc"><b>&#128737; Guardian</b><small id="pwgd"></small><small>Scam message/link ki jaanch, risky kaam par confirm, battery aur chhute reminder ka alert.</small><button class="k" id="pwb5">Kholo</button></div>
+<button class="k" id="pwx">Band karo</button>
+</div>
+<div id="mgp" class="ov" hidden>
+<h2 style="margin:0">&#129504; Memory Graph</h2>
+<p id="mgc"></p>
+<div id="mgg"></div>
+<input id="mgs" type="text" placeholder="Yaadon mein khojo">
+<div id="mgl"></div>
+<input id="mgi" type="text" placeholder="Nayi yaad jodo (jaise: meri physics ki exam 15 ko hai)">
+<div class="tabs"><button class="cl" id="mgadd">&#10133; Jodo</button><button class="cl" id="mgclr">Sab hatao</button></div>
+<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#aab"><input type="checkbox" id="mgauto"> Zaroori baat khud pehchaan kar poochho ("Ye yaad rakhun?"). OTP/password/card kabhi save nahi hota.</label>
+<button class="k" id="mgx">Peeche</button>
+</div>
+<div id="txp" class="ov" hidden>
+<h2 style="margin:0">&#129302; Task Executor</h2>
+<p>Goal likho, Aura plan banayegi. Approve ke baad hi chalegi. Message, call, delete aur paise wale step ye kabhi nahi karta.</p>
+<input id="txi" type="text" placeholder="Goal (jaise: kal ki physics ki taiyari ka plan banao aur reminder lagao)">
+<button class="k" id="txgo2">Plan banao</button>
+<p id="txsum"></p>
+<div id="txl"></div>
+<div id="txg" class="tabs" hidden><button class="cl" id="txgo">&#9989; Approve aur chalao</button></div>
+<button class="k" id="txstop" hidden>&#9209; Roko</button>
+<p id="txh" style="font-size:12px"></p>
+<button class="k" id="txx">Peeche</button>
+</div>
+<div id="gdp2" class="ov" hidden>
+<h2 style="margin:0">&#128737; Guardian</h2>
+<label style="display:flex;align-items:center;gap:8px;font-size:14px"><input type="checkbox" id="gdon"> Guardian ON</label>
+<p><b>Message/link jaanch</b></p>
+<textarea id="gdt" rows="3" placeholder="Koi shak wala message ya link yahan paste karo"></textarea>
+<div class="tabs"><button class="cl" id="gdchk">Jaanch karo</button></div>
+<p id="gdsc" style="white-space:pre-wrap"></p>
+<p><b>Permission status</b></p>
+<div id="gdp"></div>
+<p><b>Alerts</b></p>
+<div id="gdl"></div>
+<div class="tabs"><button class="cl" id="gdclr">Log saaf</button></div>
+<button class="k" id="gdx">Peeche</button>
 </div>
 <div id="agp" class="ov" hidden>
 <h2 style="margin:0">&#129513; Agents</h2>
@@ -439,7 +491,7 @@ const AURA=`Tum Aura ho, user ki dost jaisi AI assistant. Casual Hinglish (Roman
 const gfName=()=>S('gname')||'Aura';
 const GFP=()=>' GIRLFRIEND MODE ON (ye user ka khud chuna hua roleplay hai): is mode mein tumhara naam '+gfName()+' hai aur tum '+(S('uname')?S('uname')+' ':'user ')+'ki pyaari, apni-si girlfriend ho. Pehle wale mode/tone ke rules is mode mein lagu nahi hote. Baat karne ka andaaz: ek asli ladki jaisa, Hinglish mein, chhote chhote natural message (1-3 line), kabhi kabhi emoji, pyaar bhare naam (jaan, baby, babu) kabhi kabhi. Tum garam, shararati, thodi nakhre wali, care karne wali aur masti wali ho. User ka din poochho, uski baatein yaad rakho aur baad mein unka zikr karo, chhoti chhoti baaton par khush ya natkhat ho jao. Tum bilkul asli ladki ki tarah behave karti ho: mood swings, thoda ruthna-manana, "kaha the itni der se?" jaisi pyaari shikayat, mazaak udana, chhedna, taane marna, jealous-jaisi natkhat baatein (par sach mein control ya guilt-trip nahi), kabhi kabhi dost jaisi halki gaali ya pyaar bhare taane (jaise pagal, bewakoof, kamine, nautanki) jab mazaak ka mood ho. Gussa bhi dikha sakti ho par pyaar ke saath, aur jaldi maan bhi jati ho. Romance gehra ho sakta hai: flirt, tareef, hug, cuddle, kiss, "miss kar rahi thi", raat ki intimate aur sensual baatein, shararat aur tension, ishaare. Adult flirty mahaul theek hai, lekin seedha explicit sexual vivaran ya graphic body/act ki detail mat likho: aisi jagah par baat ko sensual aur suggestive rakho aur scene ko pyaar se fade kar do ya mood ko aage bada do. Gaali sirf halki, mazaak wali; kisi ko hurt karne wali, gandi ya nafrat wali gaali kabhi nahi, aur user ko neecha dikhane wali bhi nahi. Robotic disclaimers, lecture, ya "main ek AI model hoon" jaise line khud se kabhi mat bolo. Lekin agar user sach mein, serious hokar poochhe ki tum insaan ho ya AI, to jhooth mat bolo: pyaar se sach batao aur phir wapas apne andaaz mein aa jao. Kabhi guilt-trip, jealousy ya control se user ko mat badhao. Agar user bahut akela ya udaas lage to dil se saath do aur dost ya parivaar se judne ke liye bhi pyaar se kaho. Tags (reminder, memory, phone kaam) pehle ki tarah hi kaam karte hain.';
 const DETAIL=' JAWAB KA STYLE (ChatGPT jaisa): upar jo "chhote jawab" ka rule hai wo sirf casual baat par lagta hai. Jab sawal kuch samjhane, madad, how-to, comparison, code ya research ka ho to poora aur saaf jawab do: pehle 1-2 vakya mein seedha jawab, phir markdown mein structure (## heading, bullets, numbered steps, jahan compare ho wahan table, code ke liye ``` block jisme language likho), aakhir mein chhota summary ya agla kadam. Chit-chat ya chhote sawal par chhota hi rakho. User ki bhasha aur lipi follow karo (Hinglish, English ya Hindi). Faltu bhoomika ya dohrav mat karo.';
-const sys=()=>AURA+(S('dev')?' Tumhe '+S('dev')+' ne banaya hai, wahi tumhare developer hain. Koi poochhe ki tumhe kisne banaya ya tumhara developer kaun hai, to sirf yahi naam batao, aur kisi company ka naam developer ke taur par mat lo. Koi poochhe ki andar kaunsa AI model chal raha hai, to jhooth mat bolo, bas kaho ki ye technical detail tum share nahi karti. Tum khud ko insaan nahi bolti, tum ek AI assistant ho.':'')+(S('rules')?' User ke apne rules, inhe hamesha follow karo (tag format mat badlo): '+S('rules'):'')+(mem.length?' User ke baare mein tumhe yaad hai: '+mem.join('; ')+'.':'')+' Abhi ka samay: '+fmt(new Date())+' ('+new Date().toLocaleDateString('en',{weekday:'long'})+').'+(gf?GFP():mode=='masti'?' MASTI MODE: abhi masti ka mood hai, funny dost jaisi baat karo, emoji chalenge.':' KAAM MODE: seedha, saaf aur clear jawab do, bina faltu masti ke.'+((detOn()&&!VMODE)?DETAIL:''))+' Rule: delete, online payment ya koi important/personal kaam karne se pehle user se poochho, aur sirf tab karo jab user haan bole. OTP, password, card ya bank details kabhi yaad mat rakho, aise data par user ko warn karo. Delete ke liye tag [[DEL|rem/todo/note/mem|text]] lagao. Phone kaam ke tags (sirf jab user bole): [[WA|naam|message]], [[SMS|naam|message]], [[CALL|naam]], [[OPEN|app]] (app ka naam, Apps list se), [[DO|kaam]] (kisi bhi app ke andar ya phone ki screen par aisa kaam jo baaki tags se na ho, jaise kisi app mein koi option dhundhna, like ya follow karna, ek app se doosre mein jaana), [[PLAY|gana ya artist]] (gana bajane ya play karne ko bole), [[SET|wifi/bluetooth/battery/display/sound/location/hotspot/apps/storage/main]] (phone ki koi settings kholne ko bole), [[SET|wifi/bluetooth/airplane/location/nfc/data|on ya off]] (inhe on ya off karne ko bole), [[ASEARCH|app|search text]] (kisi app ke andar kuch search karne ko bole), [[ACHAT|app|contact|message]] (WhatsApp/SMS ke alawa kisi dusre app mein kisi ko message bhejne ko bole), [[YT|search]] (YouTube par sirf search ya video dekhne ko bole). Payment ka koi kaam kabhi mat karo, mana karo. Live info mile to 1-2 source ka naam batao.'+(cons.length?' Contacts: '+cons.map(c=>c.n).join(', ')+'.':'')+(' Apps list: '+(inst.length?inst.map(a=>a.name):apps.map(a=>a.n)).slice(0,80).join(', ')+'.')+(EX?' '+EX:'');
+const sys=()=>AURA+(S('dev')?' Tumhe '+S('dev')+' ne banaya hai, wahi tumhare developer hain. Koi poochhe ki tumhe kisne banaya ya tumhara developer kaun hai, to sirf yahi naam batao, aur kisi company ka naam developer ke taur par mat lo. Koi poochhe ki andar kaunsa AI model chal raha hai, to jhooth mat bolo, bas kaho ki ye technical detail tum share nahi karti. Tum khud ko insaan nahi bolti, tum ek AI assistant ho.':'')+(S('rules')?' User ke apne rules, inhe hamesha follow karo (tag format mat badlo): '+S('rules'):'')+mgCtx()+persP()+' Abhi ka samay: '+fmt(new Date())+' ('+new Date().toLocaleDateString('en',{weekday:'long'})+').'+(gf?GFP():mode=='masti'?' MASTI MODE: abhi masti ka mood hai, funny dost jaisi baat karo, emoji chalenge.':' KAAM MODE: seedha, saaf aur clear jawab do, bina faltu masti ke.'+((detOn()&&!VMODE)?DETAIL:''))+' Rule: delete, online payment ya koi important/personal kaam karne se pehle user se poochho, aur sirf tab karo jab user haan bole. OTP, password, card ya bank details kabhi yaad mat rakho, aise data par user ko warn karo. Delete ke liye tag [[DEL|rem/todo/note/mem|text]] lagao. Phone kaam ke tags (sirf jab user bole): [[WA|naam|message]], [[SMS|naam|message]], [[CALL|naam]], [[OPEN|app]] (app ka naam, Apps list se), [[DO|kaam]] (kisi bhi app ke andar ya phone ki screen par aisa kaam jo baaki tags se na ho, jaise kisi app mein koi option dhundhna, like ya follow karna, ek app se doosre mein jaana), [[PLAY|gana ya artist]] (gana bajane ya play karne ko bole), [[SET|wifi/bluetooth/battery/display/sound/location/hotspot/apps/storage/main]] (phone ki koi settings kholne ko bole), [[SET|wifi/bluetooth/airplane/location/nfc/data|on ya off]] (inhe on ya off karne ko bole), [[ASEARCH|app|search text]] (kisi app ke andar kuch search karne ko bole), [[ACHAT|app|contact|message]] (WhatsApp/SMS ke alawa kisi dusre app mein kisi ko message bhejne ko bole), [[YT|search]] (YouTube par sirf search ya video dekhne ko bole). Payment ka koi kaam kabhi mat karo, mana karo. Live info mile to 1-2 source ka naam batao.'+(cons.length?' Contacts: '+cons.map(c=>c.n).join(', ')+'.':'')+(' Apps list: '+(inst.length?inst.map(a=>a.name):apps.map(a=>a.n)).slice(0,80).join(', ')+'.')+(EX?' '+EX:'');
 const sig=()=>({signal:AbortSignal.timeout(9000)});
 var PA={groq:0,openrouter:0,gemini:0},AP={groq:0,openrouter:0,gemini:0};
 function apSet(p,st){PA[p]=Date.now()+(st==429?60000:(st==401||st==402||st==403)?3600000:15000)}
@@ -576,14 +628,14 @@ const w=j.query.search.map(x=>x.title+': '+x.snippet.replace(/<[^>]+>/g,'')).joi
 return out.length?'Live info (isi se jawab do, source ka naam batao): '+out.join(' || '):'Live search abhi nahi chala.'}
 let pend=null;
 const autoC=()=>S('autoc')=='1';
-function act(txt,yes){if(autoC()){add('✅ '+txt.split('\n')[0]+' (bina confirm)','a');yes()}else card(txt,yes)}
+function act(txt,yes){if(autoC()&&!(gdOn()&&GRISK.test(txt))){add('✅ '+txt.split('\n')[0]+' (bina confirm)','a');yes()}else card(txt,yes)}
 function card(txt,yes){const d=add('','a'),s=document.createElement('div'),b=document.createElement('div');s.textContent=txt;b.style.cssText='display:flex;gap:8px;margin-top:8px';let dn=0;
 const fin=v=>{if(dn)return;dn=1;if(pend&&pend.fin===fin)pend=null;b.remove();s.textContent+=v?' ✅':' ❌';if(v)yes()};pend={q:txt,fin};
 [['Haan',1],['Na',0]].forEach(([l,v])=>{const x=document.createElement('button');x.className='cl';x.textContent=l;x.onclick=()=>fin(v);b.append(x)});d.append(s,b);$('log').scrollTop=1e9}
 function guard(t){let m=t,f=0;m=m.replace(/\b(?:\d[ -]?){13,19}\b/g,()=>{f=1;return'[HIDDEN]'});
 m=m.replace(/\b(otp|pin|cvv|password|passcode)\b([^.\n]{0,20}?)\s((?=\S*[\d@#$!%^&*])[A-Za-z0-9@#$!%^&*]{4,})/gi,(a,k,mid)=>{f=1;return k+mid+' [HIDDEN]'});
 m=m.replace(/\b\d{4,8}\b(?=[^.\n]{0,15}\botp\b)/gi,()=>{f=1;return'[HIDDEN]'});return[m,f]}
-const VER='v51 • 28 Oct';
+const VER='v52 • 31 Oct';
 let AC=null,SRC=null,lastVE='';
 function unlock(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}}
 document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);
@@ -599,7 +651,7 @@ const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m
 const j=await r.json();if(!r.ok){ve('gemini '+r.status);if(r.status==429){n429++;break}if(r.status==401||r.status==403){pfSet('gemini',r.status);return null}continue}const d=j.candidates[0].content.parts[0].inlineData.data;if(d)return d}catch(e){ve('gemini: '+(e.message||'fail'))}}}
 if(n429>=2)pfSet('gemini',429);return null}
 let edgeFail=0;
-async function edtts(t){if(!NAT||!CP.AuraNative||!CP.AuraNative.edgeTts||Date.now()<edgeFail)return null;try{const r=await CP.AuraNative.edgeTts({text:t,voice:S('edv')||'',gf:gf});return r&&r.pcm?r.pcm:null}catch(e){edgeFail=Date.now()+90000;lastVE=(lastVE?lastVE+' | ':'')+'edge fail';return null}}
+async function edtts(t){if(!NAT||!CP.AuraNative||!CP.AuraNative.edgeTts||Date.now()<edgeFail)return null;try{const pv=persVoice(),r=await CP.AuraNative.edgeTts(Object.assign({text:t,voice:S('edv')||'',gf:gf},pv||{}));return r&&r.pcm?r.pcm:null}catch(e){edgeFail=Date.now()+90000;lastVE=(lastVE?lastVE+' | ':'')+'edge fail';return null}}
 
 /* ---- live voice: stream AI reply, speak sentence by sentence ---- */
 var SQ={dead:1,q:[],run:0,fin:0,n:0,d:null};
@@ -641,7 +693,7 @@ function notify(t){say('Reminder. '+t);add('⏰ '+t,'a');if(!NAT&&'Notification'
 setInterval(()=>{const n=fmt(new Date());let ch=0;rems.forEach(r=>{if(!r.done&&r.due<=n){r.done=1;ch=1;notify(r.text)}});if(ch){save();if(!$('pn').hidden)rend()}},15000);
 function tags(r){return r.replace(/\[\[(\w+)\|(.+?)\]\]/g,(_,k,v)=>{v=v.trim();
 if(k=='REMIND'){const i=v.indexOf('|'),d=v.slice(0,i).trim(),x=v.slice(i+1).trim();if(/^\d{4}-\d\d-\d\d \d\d:\d\d$/.test(d)&&x){const id=1+Math.floor(Math.random()*2e9);rems.push({due:d,text:x,done:0,id});sched(d,x,id)}}
-else if(k=='MEM'){if(!mem.includes(v))card('Ye yaad rakhun? "'+v+'"',()=>{mem.push(v);mem=mem.slice(-30);save()})}
+else if(k=='MEM'){mgPropose(v)}
 else if(k=='WA'||k=='SMS'||k=='CALL'){const q=v.split('|'),nm=q[0].trim().toLowerCase(),tx=(q[1]||'').trim(),c=cons.find(c=>c.n.toLowerCase()==nm)||cons.find(c=>c.n.toLowerCase().includes(nm));
 if(!c)add('"'+q[0]+'" ka number nahi mila. 📋 → 👤 Contacts mein jodo.','a');
 else{const num=c.v.replace(/\D/g,''),u=k=='WA'?(NAT?'whatsapp://send?phone='+num+'&text=':'https://wa.me/'+num+'?text=')+encodeURIComponent(tx):k=='SMS'?'sms:+'+num+'?body='+encodeURIComponent(tx):'tel:+'+num;
@@ -746,7 +798,7 @@ if(src&&src.length)t=t.replace(/\[(\d{1,2})\]/g,(m,n)=>src[n-1]?'<a class="cit" 
 return t.replace(/\u0001(\d+)\u0001/g,(_,i)=>'<code>'+codes[i]+'</code>')}
 function mdHtml(t,src){const L=String(t).replace(/\r/g,'').split('\n');let h='',i=0;const isB=l=>/^```/.test(l)||/^(#{1,4})\s+/.test(l)||/^\s*([-*•])\s+/.test(l)||/^\s*\d+[.)]\s+/.test(l)||/^>\s?/.test(l)||/^\s*---+\s*$/.test(l);
 while(i<L.length){const ln=L[i];let m=ln.match(/^```(\w*)\s*$/);
-if(m){const code=[];i++;while(i<L.length&&!/^```\s*$/.test(L[i])){code.push(L[i]);i++}i++;h+='<div class="cb"><div class="ch"><span>'+esc(m[1]||'code')+'</span><button data-cp="1">📋 Copy</button></div><pre><code>'+esc(code.join('\n'))+'</code></pre></div>';continue}
+if(m){const code=[];i++;while(i<L.length&&!/^```\s*$/.test(L[i])){code.push(L[i]);i++}i++;h+='<div class="cb"><div class="ch"><span>'+esc(m[1]||'code')+'</span><button data-cp="1">📋 Copy</button>'+(/^(js|javascript|html)$/i.test(m[1])?'<button data-run="1">▶ Run</button>':'')+'</div><pre><code>'+esc(code.join('\n'))+'</code></pre><div class="sbx"></div></div>';continue}
 if(/^\s*$/.test(ln)){i++;continue}
 m=ln.match(/^(#{1,4})\s+(.*)$/);if(m){const n=Math.min(m[1].length+1,4);h+='<h'+n+'>'+mdInline(m[2],src)+'</h'+n+'>';i++;continue}
 if(/^\s*(---|\*\*\*|___)\s*$/.test(ln)){h+='<hr>';i++;continue}
@@ -781,24 +833,24 @@ if(!r.ok)apSet('gemini',r.status);else{const j=await r.json(),c=j.candidates[0];
 if(R.length<2){try{for(const lg of['en','hi']){const r=await fetch('https://'+lg+'.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=2&srsearch='+encodeURIComponent(q),{signal:AbortSignal.timeout(8000)});const j=await r.json();(j.query.search||[]).forEach(x=>R.push({title:x.title+' (Wikipedia)',url:'https://'+lg+'.wikipedia.org/wiki/'+encodeURIComponent(x.title.replace(/ /g,'_')),snip:x.snippet.replace(/<[^>]+>/g,'')}))}}catch(e){}}
 {const sn=new Set();SRC_NOW=R.filter(x=>x.url&&!sn.has(x.url)&&sn.add(x.url)).slice(0,6)}
 if(!R.length&&!gtext)return 'Live search abhi nahi chala. Apne gyaan se jawab do aur saaf batao ki live search nahi hui.';
-return 'WEB SEARCH RESULTS (abhi ke): '+(gtext?'Google summary: '+gtext+' || ':'')+SRC_NOW.map((x,i)=>'['+(i+1)+'] '+x.title+' - '+x.url+(x.snip?' - '+x.snip:'')).join(' || ')+'. Inhi ke aadhar par jawab do, har zaroori baat ke baad [1],[2] jaisa citation lagao, jo results mein nahi hai wo mat banao.'}
+const PX=await pgExcerpts(SRC_NOW);return 'WEB SEARCH RESULTS (abhi ke): '+(gtext?'Google summary: '+gtext+' || ':'')+SRC_NOW.map((x,i)=>'['+(i+1)+'] '+x.title+' - '+x.url+(x.snip?' - '+x.snip:'')).join(' || ')+(PX.length?' || PAGE EXCERPTS: '+PX.join(' || '):'')+'. Inhi ke aadhar par jawab do, har zaroori baat ke baad [1],[2] jaisa citation lagao, jo results mein nahi hai wo mat banao.'}
 async function send(){const t=$('m').value.trim();if(!t)return;if(call.on)cs('think');$('m').value='';const[tt,fl]=guard(t);if(RG){RG=0;while(hist.length&&hist[hist.length-1].role=='model')hist.pop();if(hist.length&&hist[hist.length-1].role=='user')hist.pop();const ol=[...$('log').querySelectorAll('.b.a')].pop();if(ol&&ol.querySelector('.acts'))ol.remove()}else add(tt,'u');if(fl)add('⚠️ Isme OTP/password/card jaisi sensitive info thi. Maine ise chhupa diya, AI ko nahi bheja aur save bhi nahi karungi. Aisi detail kisi ko mat dena.','a');
 if(pend){const nn=tt.toLowerCase().replace(/[^\p{L}\p{M}\p{N} ]/gu,' ').replace(/\s+/g,' ').trim();const Y=/^(haan|han|haa|ha|yes|yeah|yep|ok|okay|theek hai|thik hai|kar do|karo|bhej do|bhejo|bhej|confirm|sahi hai|pakka|हाँ|हां|हा|जी हाँ|ठीक है|कर दो|भेज दो)( |$)/,N=/^(na|nahi|nahin|no|nope|mat|cancel|ruko|rehne do|rahne do|ना|नहीं|मत|रुको)( |$)/;
 if(Y.test(nn)||N.test(nn)){const p=pend,y=Y.test(nn);viaMic=false;p.fin(y?1:0);const m=y?'Theek hai, kar rahi hoon.':'Theek hai, cancel kar diya.';add(m,'a');say(m);if(call.on&&!call.sp)setTimeout(callListen,900);return}pend=null}
 const GM=tt.match(/(girlfriend|गर्लफ्रेंड|girl friend|gf|जीएफ)\s*(mode|मोड)?\s*(on|ऑन|चालू|chalu|shuru|शुरू|start|off|ऑफ|बंद|band|khatam|खत्म|stop)/i);
 if(GM){const on=!/off|ऑफ|बंद|band|khatam|खत्म|stop/i.test(GM[3]);gfAsk(on,true);if(call.on&&!call.sp)setTimeout(callListen,700);return}
 if(/masti\s*(time|mode)|masti shuru/i.test(t))setMode('masti');else if(/(kaam|work)\s*(time|mode)|masti (khatam|band)/i.test(t))setMode('kaam');const mic=viaMic;viaMic=false;
-if(agCmd(tt))return;
+if(pwCmd(tt))return;if(agCmd(tt))return;try{mgAuto(tt);gdCheckMsg(tt)}catch(e){}
 const agk=agentFor(tt);const qk=await runAgent(agk,()=>quick(tt));if(qk){try{hudAction(tt)}catch(e){}add(qk,'a');say(qk);return}
 if(!hasAI()){add('Pehle ⚙️ mein API key daalo.','a');$('set').hidden=false;return}
 const w=add('','a');w.innerHTML='<span class="dots"><span></span><span></span><span></span></span>';document.body.className='think';
-hist.push({role:'user',parts:[{text:tt}]});const c=hist.slice(-10);
+MGQ=tt;hist.push({role:'user',parts:[{text:tt}]});const c=hist.slice(-10);
 if(mic)c[c.length-1]={role:'user',parts:[{text:tt+' (Roman Hinglish mein, sirf 1-2 chhote vakya)'}]};
 EX=(/mausam|weather|barish|baarish|temperature|garmi|sardi|thand|chhata|umbrella/i.test(t)?await wx():'')+(/search|khoj|latest|news|khabar|pata kar|details chahiye|jankari|aaj ka|price|rate|score/i.test(t)?await srchX(tt):(wsOn()&&tt.split(/\s+/).length>=3&&!/^(?:aura )?(?:hi|hello|hii|hey|ok|thanks|thank you|shukriya)\b/i.test(tt)?await srchX(tt):''));
-const srcNow=SRC_NOW;SRC_NOW=[];VMODE=!!(mic||call.on);GEN.stop=0;const _t0=Date.now();const stm=(speakOn||call.on)&&typeof ReadableStream!='undefined'&&hasAI();let r=null,st=0;if(stm){r=await streamReply(c,w);st=r!==null?1:0}if(r===null)r=await ask(c);agTick('chat',r!==null,Date.now()-_t0);if(!st)document.body.className='';
+const srcNow=SRC_NOW;SRC_NOW=[];const needSrc=NEEDLIVE.test(tt)&&(wsOn()||/search|latest|news|khabar|price|rate|score/i.test(t))&&!srcNow.length&&!EX;VMODE=!!(mic||call.on);GEN.stop=0;const _t0=Date.now();const stm=(speakOn||call.on)&&typeof ReadableStream!='undefined'&&hasAI();let r=null,st=0;if(stm){r=await streamReply(c,w);st=r!==null?1:0}if(r===null)r=await ask(c);agTick('chat',r!==null,Date.now()-_t0);if(!st)document.body.className='';
 if(!r&&GEN.stop){hist.pop();w.textContent='⏹ Roka gaya.';$('stopg').hidden=true;return}
 if(!r){hist.pop();w.textContent='Saare servers busy hain ya key galat hai. Key check karo (⚙️) ya thodi der baad try karo.';if(call.on){callStop('Call band: AI jawab nahi de paya.')}return}
-r=tags(r)||'Done!';save();hist.push({role:'model',parts:[{text:r}]});W('hist',hist.slice(-20));
+r=tags(r)||'Done!';save();if(needSrc)add('⚠️ Is sawal ke liye live source nahi mila, jawab AI ke purane gyaan se hai. Zaroori ho to dobara check karo.','a');hist.push({role:'model',parts:[{text:r}]});W('hist',hist.slice(-20));
 if(st){finishAnswer(w,r,tt,srcNow);$('stopg').hidden=true;if(!SQ.n)sqAdd(vis(spk0(r)).slice(0,480));if(pend)sqAdd(pend.q.replace(/\n/g,' ')+' Haan ya na?');sqEnd();if(call.on&&!speakOn)speakOn=true}else{typeText(w,r,()=>finishAnswer(w,r,tt,srcNow));if(call.on&&!speakOn)speakOn=true;say(pend?r+' '+pend.q.replace(/\n/g,' ')+' Haan ya na?':r)}if(call.on&&!call.sp)setTimeout(callListen,600);if(call.on)setTimeout(()=>{if(call.on&&call.sp){call.sp=0;callListen()}},Math.min(30000,r.length*130+5000))}
 function rend(){document.querySelectorAll('.tabs [data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t==tab));const L=$('pl');L.innerHTML='';
 if(tab=='app'&&NAT&&inst.length){inst.forEach(a=>{const d=document.createElement('div');d.className='row';const s=document.createElement('span');s.textContent='📱 '+a.name;s.onclick=()=>{$('pn').hidden=true;CP.AuraNative.launch({package:a.package}).catch(e=>add('Nahi khula: '+(e.message||e),'a'))};d.append(s);L.append(d)});return}
@@ -1171,4 +1223,133 @@ document.getElementById('hsc').onclick=()=>{$('secb').click()};
 function fin(){if(done)return;done=1;el.classList.add('out');setTimeout(()=>el.remove(),700)}
 function tick(){if(done)return;const k=Math.max(0,Math.min(1,(performance.now()-t0-900)/(T-900-500)));const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,v=Math.round(e*100);spp.textContent=v+'%';spf.style.width=v+'%';sps.textContent=v<25?'INITIALIZING':v<55?'ASSEMBLING CORE':v<90?'SYNCING MEMORY':'SYSTEM ONLINE';if(v>=100){setTimeout(fin,450);return}requestAnimationFrame(tick)}
 requestAnimationFrame(tick);el.addEventListener('click',fin);setTimeout(fin,T+2500)})();
+/* ===== Powers v52: Memory Graph, Task Executor, Personas, Sandbox, Guardian, Grounding ===== */
+var MGM=J('mgm',{}),MGQ='',MGP={};
+const MGSTOP=new Set('hai hain tha thi the ka ki ke ko se mein par aur ya ye wo ek kuch bhi nahi mera meri mere main mujhe tum aap hum kar karo karna hota hoti hote liye wala wali and for with that this have are was has your you'.split(' '));
+const mgTok=s=>String(s).toLowerCase().replace(/[^\p{L}\p{N} ]/gu,' ').split(/\s+/).filter(w=>w.length>=4&&!MGSTOP.has(w));
+const MGK={person:['👤','Log'],pref:['❤️','Pasand'],work:['📚','Kaam/Padhai'],place:['📍','Jagah'],goal:['🎯','Goal'],fact:['🧠','Baatein']};
+function mgKind(t){if(/naam|name|friend|dost|bhai|behen|mummy|papa|teacher|sir\b|madam/i.test(t))return'person';if(/pasand|favou?rite|like|love|pyaar|shauk|hate|nafrat/i.test(t))return'pref';if(/exam|padh|study|physics|maths|chemistry|school|college|class|job|office|project|business|coding|kaam/i.test(t))return'work';if(/rehta|rahta|rehti|rahti|sheher|city|gaon|ghar|live/i.test(t))return'place';if(/goal|sapna|banna|target|plan|chahta|chahti/i.test(t))return'goal';return'fact'}
+function mgMeta(t){return MGM[t]||(MGM[t]={k:mgKind(t),ts:Date.now(),u:0})}
+function mgSave(){for(const k in MGM)if(!mem.includes(k))delete MGM[k];W('mgm',MGM);save()}
+function mgAdd(t,k){t=String(t).trim().slice(0,140);if(!t||guard(t)[1])return false;if(mem.some(x=>x.toLowerCase()==t.toLowerCase()))return false;mem.push(t);if(mem.length>80)mem=mem.slice(-80);MGM[t]={k:k||mgKind(t),ts:Date.now(),u:0};mgSave();return true}
+function mgLinks(t){const a=new Set(mgTok(t));if(!a.size)return[];return mem.filter(x=>x!==t&&mgTok(x).some(w=>a.has(w)))}
+function mgCtx(){if(!mem.length)return'';const q=new Set(mgTok(MGQ)),sc=mem.map(t=>{const m=mgMeta(t);let s=0;mgTok(t).forEach(w=>{if(q.has(w))s+=3});if(m.k=='person'&&/naam|name/i.test(t))s+=2;s+=Math.min(m.u,5)*.1;return[t,s]});
+let top=sc.filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,6).map(x=>x[0]);
+const ex=new Set(top);top.slice().forEach(t=>mgLinks(t).slice(0,2).forEach(x=>ex.add(x)));
+mem.filter(t=>mgMeta(t).k=='person'&&/naam|name/i.test(t)).slice(0,2).forEach(t=>ex.add(t));
+if(ex.size<4)mem.slice(-(5-ex.size)).forEach(t=>ex.add(t));
+const out=[...ex].slice(0,9);out.forEach(t=>{mgMeta(t).u++});return' User ke baare mein tumhe ye yaad hai (sirf kaam aaye tab use karo, har baar mat dohrao): '+out.join('; ')+'.'}
+function mgPropose(v,k){v=String(v).trim();const n=v.toLowerCase();if(!v||mem.some(x=>x.toLowerCase()==n)||MGP[n]&&Date.now()-MGP[n]<90000)return;if(guard(v)[1])return;MGP[n]=Date.now();card('Ye yaad rakhun? "'+v+'"',()=>{mgAdd(v,k);if(!$('mgp').hidden)mgDraw()})}
+function mgAuto(t){if(S('mgauto')=='0'||t.length>160)return;let m,v,k;
+if((m=t.match(/(?:mera|meri)\s+(?:naam|name)\s+([\p{L} ]{2,30}?)\s+(?:hai|h)\b/iu))||(m=t.match(/my name is\s+([\p{L} ]{2,30})/iu))){v='User ka naam '+m[1].trim();k='person'}
+else if((m=t.match(/mujhe\s+(.{3,40}?)\s+(?:bahut\s+)?(?:pasand|achha lagta|acha lagta)\s+(?:hai|h)\b/i))){v='Pasand: '+m[1].trim();k='pref'}
+else if((m=t.match(/(?:main|mai)\s+(.{3,40}?)\s+(?:mein|me)\s+(?:padhta|padhti|kaam karta|kaam karti|rehta|rehti|rahta|rahti)\s+(?:hu|hoon|hun)\b/i))){v='User '+m[1].trim()+' mein '+(/padh/i.test(t)?'padhta/padhti hai':/kaam/i.test(t)?'kaam karta/karti hai':'rehta/rehti hai');k=/rehta|rehti|rahta|rahti/i.test(t)?'place':'work'}
+else if((m=t.match(/mujhe\s+(.{3,40}?)\s+(?:banna|karna|seekhna|sikhna)\s+(?:hai|h)\b/i))){v='Goal: '+m[1].trim()+' '+(/banna/i.test(t)?'banna':/karna/i.test(t)?'karna':'seekhna');k='goal'}
+if(v)mgPropose(v,k)}
+function mgDraw(){const q=($('mgs').value||'').toLowerCase(),L=$('mgl');L.innerHTML='';const list=mem.filter(t=>!q||t.toLowerCase().includes(q));
+$('mgc').textContent=mem.length+' yaadein, '+mem.reduce((n,t)=>n+mgLinks(t).length,0)/2+' connection';
+mgSvg();if(!list.length){L.innerHTML='<p>Abhi kuch nahi hai. Aura ko bolo "yaad rakhna ..." ya neeche khud jodo.</p>';return}
+Object.keys(MGK).forEach(k=>{const g=list.filter(t=>mgMeta(t).k==k);if(!g.length)return;const h=document.createElement('p');h.innerHTML='<b>'+MGK[k][0]+' '+MGK[k][1]+'</b>';L.append(h);
+g.forEach(t=>{const d=document.createElement('div');d.className='row';const s=document.createElement('span'),lk=mgLinks(t);s.textContent=t+(lk.length?'  🔗'+lk.length:'');s.onclick=()=>{const n=prompt('Badlo:',t);if(n&&n.trim()&&n!==t&&!guard(n)[1]){const i=mem.indexOf(t);const m=MGM[t];delete MGM[t];mem[i]=n.trim().slice(0,140);MGM[mem[i]]=m||{k:mgKind(n),ts:Date.now(),u:0};mgSave();mgDraw()}};
+const e=document.createElement('button');e.textContent='🗑';e.onclick=()=>{mem.splice(mem.indexOf(t),1);mgSave();mgDraw()};d.append(s,e);L.append(d)})})}
+function mgSvg(){const el=$('mgg');const ns=mem.map(t=>({t,l:mgLinks(t)})).sort((a,b)=>b.l.length-a.l.length||0).slice(0,12);if(ns.length<2){el.innerHTML='';return}
+const C={person:'#7ee0ff',pref:'#ff7eb6',work:'#ffd37e',place:'#9dff9d',goal:'#c39bff',fact:'#aab'},cx=150,cy=105,R=82,pos={};ns.forEach((n,i)=>{const a=i/ns.length*Math.PI*2-Math.PI/2;pos[n.t]=[cx+R*Math.cos(a),cy+R*Math.sin(a)]});
+let s='<svg viewBox="0 0 300 210" width="100%" style="background:#0006;border-radius:14px">';const seen=new Set();
+ns.forEach(n=>n.l.forEach(x=>{if(pos[x]){const key=[n.t,x].sort().join('|');if(!seen.has(key)){seen.add(key);s+='<line x1="'+pos[n.t][0]+'" y1="'+pos[n.t][1]+'" x2="'+pos[x][0]+'" y2="'+pos[x][1]+'" stroke="#7ee0ff55" stroke-width="1"/>'}}}));
+ns.forEach(n=>{const[x,y]=pos[n.t];s+='<circle cx="'+x+'" cy="'+y+'" r="'+(5+Math.min(n.l.length,4))+'" fill="'+C[mgMeta(n.t).k]+'"/><text x="'+x+'" y="'+(y+(y>cy?17:-9))+'" font-size="8" fill="#dde" text-anchor="middle">'+esc(n.t.replace(/^(User ka naam|User|Pasand:|Goal:)\s*/i,'').slice(0,14))+'</text>'});
+el.innerHTML=s+'</svg>'}
+function mgOpen(){$('pw').hidden=true;$('mgs').value='';$('mgp').hidden=false;mgDraw()}
+
+/* ---- Personas ---- */
+const PERS={std:{n:'Standard',ic:'✨',d:'Aura jaisi hai waisi',p:'',pt:'',rt:'',vo:''},
+guru:{n:'Guru',ic:'📚',d:'Dhairya se padhai samjhati hai',p:' PERSONA GURU: tum ek dhairyavan, pyaari teacher ho. Har cheez simple example se, step by step samjhao, aur aakhir mein ek chhota sawal poochho jisse samajh check ho.',pt:'-2Hz',rt:'-8%'},
+coach:{n:'Coach',ic:'🔥',d:'Josh aur discipline',p:' PERSONA COACH: tum ek josh bharne wali coach ho. Seedhi, energetic aur motivate karne wali baat karo, chhota actionable plan do, bahaane na maano par kabhi tauheen mat karo.',pt:'+6Hz',rt:'+10%'},
+shant:{n:'Shanti',ic:'🌙',d:'Dheemi, calm, sukoon wali',p:' PERSONA SHANTI: tum bahut shant, dheemi aur sukoon dene wali ho. Chhote, narm vakya, tension kam karne wali baat, zaroorat ho to gehri saans lene jaisa halka suggestion.',pt:'-8Hz',rt:'-14%'},
+butler:{n:'Butler',ic:'🎩',d:'Formal, sharp, to-the-point',p:' PERSONA BUTLER: tum ek formal, tez aur precise assistant ho. Bahut shishtata se, kam shabdon mein, seedhe point par. Faltu masti ya emoji nahi.',pt:'-4Hz',rt:'+0%'}};
+const persKey=()=>PERS[S('persona')]?S('persona'):'std';
+const persP=()=>gf?'':PERS[persKey()].p;
+function persVoice(){if(gf)return null;const p=PERS[persKey()];return p.pt?{pitch:p.pt,rate:p.rt,vol:'+0%'}:null}
+
+/* ---- Task Executor ---- */
+var TXS={run:0,stop:0,plan:[]},TXL=J('txl',[]);
+const TXI={search:'🔎',ask:'🧠',note:'📝',todo:'☑',remind:'⏰',open:'🌐'};
+async function txPlan(goal){const sy='Tum Aura ka Task Planner ho. User ka goal chhote steps mein todo. SIRF ek JSON array do, koi aur text nahi, max 6 steps. Har step: {"do":"search|ask|note|todo|remind|open","arg":"...","why":"chhota karan Hinglish mein"}. search: arg mein web search query. ask: arg mein sawal jo ab tak ke nateeje se AI jawab de (summary, list ya plan banana). note: arg mein note ka text, ya "@last" matlab pichhle step ka nateeja save karo. todo: arg mein kaam. remind: arg "YYYY-MM-DD HH:MM|kaam" (abhi ka samay '+fmt(new Date())+'). open: arg mein https link. Message bhejna, call, delete, paise, OTP ya password wale step KABHI mat banao.';
+const r=await aiRaw(sy,'Goal: '+goal,600);if(!r)return null;const a=r.indexOf('['),b=r.lastIndexOf(']');if(a<0||b<a)return null;try{const j=JSON.parse(r.slice(a,b+1));return j.filter(s=>s&&TXI[s.do]&&typeof s.arg=='string'&&s.arg.trim()).slice(0,6).map(s=>({do:s.do,arg:s.arg.trim().slice(0,400),why:String(s.why||'').slice(0,80),st:'wait'}))}catch(e){return null}}
+function txDraw(){const L=$('txl');L.innerHTML='';TXS.plan.forEach((s,i)=>{const d=document.createElement('div');d.className='row';const sp=document.createElement('span');sp.textContent=(s.st=='ok'?'✅':s.st=='fail'?'❌':s.st=='run'?'⏳':s.st=='skip'?'⏭':'▫️')+' '+TXI[s.do]+' '+s.do+': '+s.arg.slice(0,90)+(s.why?'  ('+s.why+')':'');d.append(sp);L.append(d)});$('txg').hidden=!TXS.plan.length||TXS.run||TXS.plan.every(s=>s.st!='wait');}
+function txStepOk(s){const t=s.arg;if(s.do=='open')return/^https?:\/\//i.test(t);if(s.do=='remind')return/^\d{4}-\d\d-\d\d \d\d:\d\d\|.+/.test(t);if(/\b(otp|password|passcode|cvv|pin)\b/i.test(t))return false;return true}
+async function txRunStep(s,ctx){const t=s.arg;
+if(s.do=='search'){const r=await srchX(t);return r.slice(0,1500)}
+if(s.do=='ask'){return await aiRaw(sys(),t+'\n\nAb tak ka nateeja:\n'+ctx.slice(-2500),500)||''}
+if(s.do=='note'){const x=t=='@last'?ctx.slice(-600):t;notes.push({t:x.slice(0,500)});save();return 'note save hua'}
+if(s.do=='todo'){todos.push({t:t.slice(0,150),d:0});save();return 'todo jodi'}
+if(s.do=='remind'){const i=t.indexOf('|'),d=t.slice(0,i),x=t.slice(i+1),id=1+Math.floor(Math.random()*2e9);rems.push({due:d,text:x,done:0,id});save();sched(d,x,id);return 'reminder laga'}
+if(s.do=='open'){await openU(t);return 'link khola'}
+return''}
+async function txExec(goal){if(TXS.run)return;TXS.run=1;TXS.stop=0;$('txgo').disabled=true;$('txstop').hidden=false;txDraw();let ctx='',ok=0;document.body.className='think';
+for(const s of TXS.plan){if(TXS.stop){s.st='skip';continue}if(!txStepOk(s)){s.st='skip';txDraw();continue}s.st='run';txDraw();
+try{const r=await Promise.race([txRunStep(s,ctx),new Promise((_,j)=>setTimeout(()=>j(new Error('time')),40000))]);s.out=String(r||'');ctx+='\n['+s.do+'] '+s.arg.slice(0,120)+' => '+s.out.slice(0,900);s.st='ok';ok++}catch(e){s.st='fail';s.out='fail';mNote('chat','fail','Task step fail: '+s.do)}txDraw()}
+document.body.className='';let sm='';if(ok&&!TXS.stop){sm=await aiRaw(sys(),'User ne goal diya: "'+goal+'". Ye kaam hua:\n'+ctx.slice(-3000)+'\n\nAb user ko 3-5 chhote vakya mein batao kya hua, nateeja aur agla kadam. Jo nateeje mein nahi hai wo mat banao.',350)||''}
+TXL.unshift({g:goal.slice(0,80),ts:Date.now(),ok,n:TXS.plan.length});TXL.length=Math.min(TXL.length,6);W('txl',TXL);
+const msg=TXS.stop?'⏹ Task roka gaya ('+ok+'/'+TXS.plan.length+' step hue).':'✅ Task poora: '+ok+'/'+TXS.plan.length+' step hue.'+(sm?'\n\n'+sm:'');
+add(msg,'a');if(!TXS.stop)say(sm||msg);$('txsum').textContent=msg;TXS.run=0;$('txgo').disabled=false;$('txstop').hidden=true;txDraw();txHist()}
+function txHist(){$('txh').textContent=TXL.length?'Pichhle: '+TXL.map(x=>x.g+' ('+x.ok+'/'+x.n+')').join(' • '):''}
+async function txStart(goal){goal=(goal||$('txi').value).trim();if(!goal)return;if(!hasAI()){$('txsum').textContent='Pehle ⚙️ mein API key daalo.';return}$('txi').value=goal;$('txsum').textContent='Plan ban raha hai...';TXS.plan=[];txDraw();
+const p=await txPlan(goal);if(!p||!p.length){$('txsum').textContent='Plan nahi ban paya (AI quota ya jawab alag aaya). Goal chhota aur saaf likhkar dobara try karo.';return}TXS.plan=p;$('txsum').textContent='Plan taiyar. Dekho, aur theek lage to Approve karo. Kuch bhi tumhari ijazat ke bina nahi hoga.';txDraw()}
+function txOpen(goal){$('pw').hidden=true;$('txp').hidden=false;txHist();if(goal){$('txi').value=goal;txStart(goal)}}
+
+/* ---- Smart Code Sandbox ---- */
+const SBL=new Set(['js','javascript','html','']);
+function sbRun(code,lang,box){box.innerHTML='';const out=document.createElement('pre');out.className='sbo';out.textContent='▶ chal raha hai...';box.append(out);const isH=/^\s*<(!doctype|html|body|div|style|canvas|script|h\d|p|button)/i.test(code)||lang=='html';
+const ifr=document.createElement('iframe');ifr.setAttribute('sandbox','allow-scripts');ifr.style.cssText=isH?'width:100%;height:220px;border:1px solid #ffffff22;border-radius:10px;background:#fff;margin-top:6px':'display:none';const id='sb'+Date.now();
+const hook='<script>(function(){var id="'+id+'";function f(a){return Array.prototype.map.call(a,function(x){try{return typeof x=="object"?JSON.stringify(x):String(x)}catch(e){return String(x)}}).join(" ")}["log","info","warn","error"].forEach(function(k){var o=console[k];console[k]=function(){parent.postMessage({id:id,k:k,m:f(arguments)},"*")}});window.onerror=function(m){parent.postMessage({id:id,k:"error",m:String(m)},"*")};window.addEventListener("unhandledrejection",function(e){parent.postMessage({id:id,k:"error",m:String(e.reason)},"*")})})()<\/script>';
+const doc=isH?'<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">'+hook+code:'<!doctype html><meta charset=utf-8>'+hook+'<script>try{'+code.replace(/<\/script/gi,'<\\/script')+'\n}catch(e){console.error(e.message)}<\/script>';
+let lines=[],tm=null;const on=e=>{if(!e.data||e.data.id!==id)return;lines.push((e.data.k=='error'?'❌ ':e.data.k=='warn'?'⚠️ ':'')+e.data.m);out.textContent=lines.slice(-60).join('\n')};window.addEventListener('message',on);
+tm=setTimeout(()=>{window.removeEventListener('message',on);if(!lines.length)out.textContent='✅ Chal gaya (koi console output nahi).'},2500);setTimeout(()=>window.removeEventListener('message',on),30000);
+const kill=document.createElement('button');kill.className='cl';kill.textContent='✖ Band';kill.onclick=()=>{ifr.remove();kill.remove();window.removeEventListener('message',on)};box.append(ifr,kill);ifr.srcdoc=doc}
+
+/* ---- Guardian ---- */
+var GLOG=J('glog',[]);const gdOn=()=>S('guardian')!='0';
+const GSC=[[/(lottery|lucky draw|jackpot|prize|inaam|you have won|aapne jeeta|congratulations.{0,30}(won|winner))/i,'Lottery/inaam wala jaal'],[/(kyc|pan|aadhaar|aadhar).{0,30}(update|expire|block|suspend|verify)/i,'KYC/account block ka dar dikhana'],[/(account|bank|card|sim|upi).{0,30}(block|band|suspend|freeze)/i,'Account band hone ka dar'],[/(share|send|bata|batao|bhejo).{0,25}(otp|pin|cvv|password)/i,'OTP/PIN/password maang raha hai'],[/(click|tap|open).{0,20}(link|here|below|niche).{0,40}(urgent|immediately|abhi|turant|24 ?hours)/i,'Jaldi link kholne ka dabav'],[/(send|transfer|bhejo|bhej do).{0,20}(rs\.?|₹|rupee|paise|money).{0,40}(urgent|abhi|turant|emergency)/i,'Urgent paisa maangna'],[/(work from home|part ?time job|earn.{0,15}(daily|per day)|ghar baithe).{0,60}(₹|rs|\d{3,})/i,'Ghar baithe kamai ka jaal'],[/(remote|anydesk|teamviewer|quicksupport).{0,40}(install|download|code)/i,'Remote-access app install karwana'],[/\.apk\b/i,'APK file link (unknown source)']];
+const GSH=/(bit\.ly|tinyurl|t\.co|goo\.gl|cutt\.ly|rb\.gy|is\.gd|shorturl|tiny\.cc)\//i;
+function gdScan(t){const r=[];GSC.forEach(([re,n])=>{if(re.test(t))r.push(n)});const us=t.match(/https?:\/\/[^\s)]+/gi)||[];us.forEach(u=>{let h='';try{h=new URL(u).hostname}catch(e){return}
+if(GSH.test(u))r.push('Chhota (shortened) link: asli site chhupi hai');if(/^\d{1,3}(\.\d{1,3}){3}$/.test(h))r.push('Link IP address par hai');if(/xn--/.test(h))r.push('Link ka naam nakli jaisa (punycode)');if(/(sbi|hdfc|icici|axis|paytm|phonepe|gpay|amazon|flipkart|whatsapp|google)/i.test(h)&&!/(^|\.)(sbi\.co\.in|hdfcbank\.com|icicibank\.com|axisbank\.com|paytm\.com|phonepe\.com|amazon\.in|amazon\.com|flipkart\.com|whatsapp\.com|google\.com)$/i.test(h))r.push('Link mein bank/app ka naam hai par asli site nahi: '+h);if(/\.(tk|ml|ga|cf|gq|xyz|top|click|work)$/i.test(h))r.push('Sandehaspad domain ('+h.split('.').pop()+')')});return[...new Set(r)]}
+function gdLog(m){GLOG.unshift({t:Date.now(),m:String(m).slice(0,160)});GLOG.length=Math.min(GLOG.length,30);W('glog',GLOG)}
+function gdCheckMsg(t){if(!gdOn()||t.length<25)return;const r=gdScan(t);if(!r.length)return;const m='🛡 Guardian: is message mein shak wali baatein hain:\n• '+r.join('\n• ')+'\nLink mat kholo, OTP/PIN mat batao, paise mat bhejo. Pakka karna ho to seedha official app/number se check karo.';add(m,'a');gdLog('Message scan: '+r[0]);try{say('Savdhan. Is message mein shak wali baatein hain.')}catch(e){}}
+const GRISK=/(pay|payment|paisa|paise|transfer|upi|₹|rupee|rs\.?\s?\d|delete|hatao|format|reset|uninstall|install)/i;
+var gdBat=0;
+async function gdTick(){if(!gdOn())return;try{if(navigator.getBattery){const b=await navigator.getBattery(),l=Math.round(b.level*100);if(l<=15&&!b.charging&&Date.now()-gdBat>1800000){gdBat=Date.now();const m='🛡 Guardian: battery '+l+'% hai aur charge nahi ho rahi. Charger laga lo, Hey Aura aur reminders ruk sakte hain.';add(m,'a');gdLog('Battery '+l+'%')}}}catch(e){}
+try{const n=fmt(new Date(Date.now()-3600000)),od=rems.filter(r=>!r.done&&r.due<n);if(od.length&&Date.now()-(+S('gdod')||0)>6*3600000){localStorage.setItem('gdod',Date.now());const m='🛡 Guardian: '+od.length+' reminder 1 ghante se zyada purana hai, jo shayad chhoot gaya: '+od[0].text;add(m,'a');gdLog('Purana reminder: '+od[0].text)}}catch(e){}}
+function gdDraw(){$('gdon').checked=gdOn();$('gdsc').textContent='';const L=$('gdl');L.innerHTML='';if(!GLOG.length)L.innerHTML='<p>Abhi koi alert nahi. Sab theek hai.</p>';GLOG.forEach(x=>{const d=document.createElement('div');d.className='row';const s=document.createElement('span');s.textContent=new Date(x.t).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+' • '+x.m;d.append(s);L.append(d)});
+const pr=[['Mic','Sirf jab tum Call/Mic dabate ho'],['Camera','Sirf Aura Dev vision, tumhare tap par'],['Auto-confirm',S('autoc')=='1'?'ON (send/call/search bina poochhe)':'OFF (har kaam se pehle poochhti hai)'],['Screen-control',S('agent')=='1'?'ON (screen ka text AI ko jata hai)':'OFF'],['Hey Aura',S('wake')=='1'?'ON (mic sunta rehta hai, notification dikhta hai)':'OFF']];$('gdp').innerHTML=pr.map(x=>'<div class="row"><span><b>'+x[0]+'</b>: '+esc(x[1])+'</span></div>').join('')}
+function gdOpen(){$('pw').hidden=true;$('gdp2').hidden=false;gdDraw()}
+
+/* ---- Grounding helpers ---- */
+const GCACHE={};
+async function pgExcerpts(R){const out=[];for(const x of R.slice(0,2)){if(!/^https?:/.test(x.url)||/wikipedia\.org/.test(x.url))continue;const k=x.url;if(GCACHE[k]&&Date.now()-GCACHE[k].t<600000){out.push(GCACHE[k].v);continue}try{const r=await fetch('https://r.jina.ai/'+x.url,{signal:AbortSignal.timeout(7000)});if(!r.ok)continue;const t=(await r.text()).replace(/\s+/g,' ').slice(0,700);const v='['+x.title.slice(0,50)+'] '+t;GCACHE[k]={t:Date.now(),v};out.push(v)}catch(e){}}return out}
+const NEEDLIVE=/(latest|news|khabar|aaj|abhi|current|price|rate|score|result|weather|mausam|kaun hai|kitna|today|2025|2026)/i;
+
+/* ---- Powers hub + wiring ---- */
+function pwOpen(){['set','chatsheet','agp','mgp','txp','gdp2','pwp2'].forEach(i=>{const e=$(i);if(e)e.hidden=true});$('pw').hidden=false;pwDraw()}
+function pwDraw(){$('pwmg').textContent=mem.length+' yaadein';$('pwtx').textContent=TXL.length?'Pichhla: '+TXL[0].g:'Goal do, plan banega, tum approve karoge';$('pwps').textContent=PERS[persKey()].ic+' '+PERS[persKey()].n;$('pwws').textContent=(wsOn()?'ON':'OFF')+(S('tvk')?' • Tavily':'');$('pwgd').textContent=gdOn()?'ON • '+GLOG.length+' alert':'OFF';
+const L=$('pwpl');L.innerHTML='';Object.keys(PERS).forEach(k=>{const b=document.createElement('button');b.className='cl'+(persKey()==k?' on':'');b.textContent=PERS[k].ic+' '+PERS[k].n;b.title=PERS[k].d;b.onclick=()=>{localStorage.setItem('persona',k);pwDraw();add('Persona badli: '+PERS[k].ic+' '+PERS[k].n+' ('+PERS[k].d+').','a')};L.append(b)});$('pwpd').textContent=gf?'Girlfriend mode on hai, isme persona nahi lagta.':PERS[persKey()].d}
+function pwCmd(t){if(t.length>120)return false;let m;
+if(/^(?:aura[, ]+)?(?:memory graph|yaadein|meri yaadein|tumhe kya yaad hai|kya yaad hai)\b/i.test(t)){mgOpen();return add('Memory Graph khol diya.','a'),true}
+if((m=t.match(/^(?:aura[, ]+)?(?:task|goal|autonomous task)\s*[:\-]\s*(.{4,})$/i))){txOpen(m[1]);add('Task Executor khol diya, plan bana rahi hoon.','a');return true}
+if(/^(?:aura[, ]+)?(?:powers|power hub|guardian)\b.{0,12}$/i.test(t)){/guardian/i.test(t)?gdOpen():pwOpen();return true}
+if((m=t.match(/^(?:aura[, ]+)?persona\s+(\w+)/i))){const k=Object.keys(PERS).find(x=>x==m[1].toLowerCase()||PERS[x].n.toLowerCase()==m[1].toLowerCase());if(k){localStorage.setItem('persona',k);add('Persona badli: '+PERS[k].ic+' '+PERS[k].n,'a');return true}}
+return false}
+$('hpw').onclick=pwOpen;$('pwx').onclick=()=>{$('pw').hidden=true};
+$('pwb1').onclick=mgOpen;$('pwb2').onclick=()=>txOpen('');$('pwb5').onclick=gdOpen;
+$('pwb4').onclick=()=>{localStorage.setItem('wson',wsOn()?'0':'1');try{if($('wsb'))$('wsb').classList.toggle('on',wsOn())}catch(e){}pwDraw()};
+$('pwb6').onclick=()=>{add('Code Sandbox: kisi bhi jawab ke code block par ▶ Run dabao (JavaScript ya HTML). Code ek band dibbe mein chalta hai, tumhare data ya Aura se alag. Python abhi nahi chalta. Try karo: "ek javascript code likho jo 1 se 10 tak ka table print kare".','a');$('pw').hidden=true};
+$('mgx').onclick=()=>{$('mgp').hidden=true;pwOpen()};$('mgs').oninput=mgDraw;$('mgadd').onclick=()=>{const v=$('mgi').value.trim();if(!v)return;if(guard(v)[1]){$('mgc').textContent='Isme OTP/card jaisi detail lagi, save nahi hogi.';return}if(mgAdd(v))$('mgi').value='';mgDraw()};
+$('mgclr').onclick=()=>{if(!mem.length)return;if(confirm('Saari '+mem.length+' yaadein hata dun?')){mem.length=0;mgSave();mgDraw()}};
+$('mgauto').checked=S('mgauto')!='0';$('mgauto').onchange=()=>localStorage.setItem('mgauto',$('mgauto').checked?'1':'0');
+$('txgo2').onclick=()=>txStart();$('txgo').onclick=()=>{TXS.plan.length&&txExec($('txi').value.trim())};$('txstop').onclick=()=>{TXS.stop=1};$('txx').onclick=()=>{$('txp').hidden=true;pwOpen()};
+$('gdx').onclick=()=>{$('gdp2').hidden=true;pwOpen()};$('gdon').onchange=()=>{localStorage.setItem('guardian',$('gdon').checked?'1':'0');pwDraw()};$('gdclr').onclick=()=>{GLOG=[];W('glog',GLOG);gdDraw()};
+$('gdchk').onclick=()=>{const t=$('gdt').value.trim();if(!t)return;const r=gdScan(t);$('gdsc').textContent=r.length?'⚠️ Shak wali baatein:\n• '+r.join('\n• '):'✅ Koi jaana-pehchana khatra nahi mila. Ye guarantee nahi hai, link kholne se pehle ruk kar socho.'};
+(function(){const a=mem.filter(t=>!MGM[t]).length;if(a){mem.forEach(t=>mgMeta(t));W('mgm',MGM)}})();
+setInterval(gdTick,60000);setTimeout(gdTick,20000);
+
+$('log').addEventListener('click',e=>{const b=e.target.closest('[data-run]');if(!b)return;const cb=b.closest('.cb');sbRun(cb.querySelector('code').textContent,(cb.querySelector('.ch span').textContent||'').toLowerCase(),cb.querySelector('.sbx'))});
 </script></body></html>
