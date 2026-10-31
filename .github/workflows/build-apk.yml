@@ -13,9 +13,12 @@ jobs:
           distribution: temurin
           java-version: 21
       - name: Build APK
+        env:
+          AURA_KEYS: ${{ secrets.AURA_KEYS }}
         run: |
           mkdir -p www
           cp index.html manifest.json sw.js icon.svg www/
+          if [ -n "$AURA_KEYS" ]; then printf '%s' "$AURA_KEYS" > www/aura-keys.json; echo 'Aura keys: bundled in APK'; else echo 'Aura keys: none (secret AURA_KEYS not set)'; fi
           npm init -y
           npm i @capacitor/core @capacitor/cli @capacitor/android @capacitor/local-notifications @capacitor/app-launcher @capacitor-community/speech-recognition @capacitor-community/text-to-speech @capawesome/capacitor-volume @capawesome/capacitor-torch @capgo/capacitor-brightness --legacy-peer-deps
           npx cap init Aura com.divyanshu.aura --web-dir=www
@@ -201,9 +204,16 @@ jobs:
               final String tx = call.getString("text", "");
               final String vo = call.getString("voice", "");
               final boolean gfv = Boolean.TRUE.equals(call.getBoolean("gf", false));
+              final String pp = call.getString("pitch", "");
+              final String rr = call.getString("rate", "");
+              final String vv = call.getString("vol", "+0%");
               new Thread(new Runnable() {
                 public void run() {
-                  byte[] r = EdgeTts.synth(tx, vo, gfv);
+                  byte[] r;
+                  if (pp.length() > 0 && rr.length() > 0) {
+                    String v0 = (vo != null && vo.length() > 4) ? vo : "hi-IN-SwaraNeural";
+                    r = EdgeTts.synth(tx, v0, pp, rr, vv);
+                  } else r = EdgeTts.synth(tx, vo, gfv);
                   if (r == null) { call.reject("edge fail"); return; }
                   JSObject o = new JSObject();
                   o.put("pcm", android.util.Base64.encodeToString(r, android.util.Base64.NO_WRAP));
