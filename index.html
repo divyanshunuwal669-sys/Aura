@@ -90,6 +90,43 @@ header #hdc{padding:0}
 .sbx{margin-top:4px}.sbo{background:#000a;color:#9dff9d;font-size:12px;padding:8px;border-radius:8px;white-space:pre-wrap;max-height:160px;overflow:auto;margin:6px 0 0}
 .cl.on{background:#7ee0ff33;outline:1px solid #7ee0ff}.pwc{background:#ffffff0f;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px}.pwc b{font-size:15px}.pwc small{color:#9ab;font-size:12px}
 .ov textarea,.ov input[type=text]{width:100%}
+
+button,summary{-webkit-tap-highlight-color:transparent}button:focus,.ic:focus{outline:none}
+header{justify-content:space-around;overflow:visible!important;gap:0!important;padding:6px 6px calc(6px + env(safe-area-inset-bottom))!important}
+header::before,header::after{display:none!important}
+.nv{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1 1 0;min-width:0}
+.nv small{font-size:10px;color:#9fb4cc;line-height:1}
+header .nv .ic{width:40px;height:40px}
+.nv.mid .ic{width:48px;height:48px;font-size:20px;margin-top:-14px;background:var(--hcd);box-shadow:0 0 16px var(--hcg)}
+#more{position:fixed;inset:0;z-index:6;background:rgba(3,6,16,.55);display:flex;align-items:flex-end}
+#more[hidden]{display:none}
+.msheet{width:100%;background:rgba(10,14,30,.97);border-radius:22px 22px 0 0;padding:8px 14px calc(16px + env(safe-area-inset-bottom));border-top:1px solid var(--hcb);animation:pop .25s both}
+.mh{width:44px;height:4px;border-radius:2px;background:#ffffff33;margin:4px auto 12px}
+.mg{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 6px}
+.tl{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+.tl small{font-size:11px;color:#c7d3e6;line-height:1.15}
+.tl .ic{width:50px;height:50px;font-size:21px;border:1px solid var(--hcb)}
+.tl .ic.on{background:var(--hcd);box-shadow:0 0 12px var(--hcg)}
+details.g{background:rgba(255,255,255,.06);border-radius:16px;padding:2px 12px 12px;display:flex;flex-direction:column;gap:8px}
+details.g>summary{font-weight:600;font-size:15px;padding:12px 0 6px;cursor:pointer;list-style:none;color:#e6f2ff}
+details.g>summary::-webkit-details-marker{display:none}
+details.g>summary::after{content:'\25BE';float:right;color:#7ee0ff}
+details.g[open]>summary::after{content:'\25B4'}
+details.g[open]{display:flex}
+details.g:not([open])>*:not(summary){display:none}
+#save{position:sticky;bottom:0;z-index:2;box-shadow:0 -8px 18px #0b0f1e}
+footer{align-items:flex-end}
+#m{flex:1;min-width:0;border-radius:22px;padding:12px 14px;font-size:16px;line-height:1.35;max-height:148px;overflow-y:auto;background:#25253d;color:#fff;border:0;resize:none;outline:none;font-family:inherit;display:block}
+.b.u.lg{max-height:150px;overflow:hidden;cursor:pointer;-webkit-mask-image:linear-gradient(#000 65%,transparent);mask-image:linear-gradient(#000 65%,transparent)}
+.b.u.lg.open{max-height:none;-webkit-mask-image:none;mask-image:none}
+.chr{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.07);border-radius:14px;padding:10px 12px}
+.chr .t{flex:1;min-width:0}.chr b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chr small{color:#9ab;font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chr.cur{outline:1px solid #7ee0ff}
+.chr button{border:0;background:#ffffff14;color:#fff;border-radius:10px;width:34px;height:34px}
+.tl[hidden]{display:none}
+details.g>input,details.g>select,details.g>textarea,details.g>button{width:100%;box-sizing:border-box}
+details.g:not([open]){padding-bottom:0}
+details.g>button.k{height:44px}
 </style>
 <style id="glass">
 :root{--gb:22px;--wd:.25}
@@ -140,7 +177,7 @@ header .ic.on{background:var(--hcd);box-shadow:0 0 12px var(--hcg)}
 #chatsheet{position:fixed;inset:0;z-index:4;display:flex;flex-direction:column;background:rgba(5,10,22,.72);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px);padding-top:env(safe-area-inset-top)}
 #chatsheet[hidden]{display:none}
 #chx{align-self:flex-end;margin:10px 12px 0}
-#hud{position:fixed;inset:0;z-index:1;display:grid;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 10px calc(66px + env(safe-area-inset-bottom));grid-template-columns:repeat(6,1fr);grid-template-rows:auto auto minmax(0,1fr) auto auto;grid-template-areas:"bar bar bar bar bar bar" "pw pw pw mem mem mem" "core core core core core core" "cap cap cap cap cap cap" "fig fig act act net net";color:#dff6ff;font-family:ui-monospace,Menlo,Consolas,monospace;overflow:hidden}
+#hud{position:fixed;inset:0;z-index:1;display:grid;gap:8px;padding:calc(10px + env(safe-area-inset-top)) 10px calc(78px + env(safe-area-inset-bottom));grid-template-columns:repeat(6,1fr);grid-template-rows:auto auto minmax(0,1fr) auto auto;grid-template-areas:"bar bar bar bar bar bar" "pw pw pw mem mem mem" "core core core core core core" "cap cap cap cap cap cap" "fig fig act act net net";color:#dff6ff;font-family:ui-monospace,Menlo,Consolas,monospace;overflow:hidden}
 #hud::before{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(56,212,255,.035) 0 1px,transparent 1px 4px);z-index:-1}
 .hbar{grid-area:bar;display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:.14em;color:var(--hc);opacity:.9;border-bottom:1px solid var(--hcb);padding-bottom:5px}
 .hbar b{font-weight:600}
@@ -290,40 +327,84 @@ html.noglass .pn,html.noglass #chatsheet{-webkit-backdrop-filter:none!important;
 <div class="pn" id="pSys"><h4>SYSTEM</h4><div class="r"><span>UPTIME</span><b id="syu">--</b></div><div class="r"><span>DEVICE</span><b id="syd">--</b></div><div class="r"><span>ANDROID</span><b id="sya">--</b></div><div class="r"><span>HEY AURA</span><b id="syh">--</b></div><div class="r"><span>CLOUD</span><b id="syc">--</b></div></div>
 </div>
 
-<header><div id="orb"></div><h1>Aura</h1><button class="ic" id="gfb" style="display:none">&#128150;</button><button class="ic" id="hey" style="display:none">&#127897;</button><button class="ic" id="cl">&#128222;</button><button class="ic" id="mod">&#128188;</button><button class="ic" id="lst">&#128203;</button><button class="ic" id="vol">&#128266;</button><button class="ic" id="hch" title="Chat">&#128172;</button><button class="ic" id="hwp" title="Wallpaper">&#127912;</button><button class="ic" id="hdc" title="Bolke likho"><span style="display:block;font-size:14px;line-height:1">&#127908;</span><small style="display:block;font-size:7px;line-height:1">likho</small></button><button class="ic" id="hag" title="Agents">&#129513;</button><button class="ic" id="hpw" title="Powers">&#10024;</button><button class="ic" id="hdv" title="Aura Dev">&#128736;</button><button class="ic" id="hsc" title="Security">&#128274;</button><button class="ic" id="gear">&#9881;</button></header>
-<div id="chatsheet" hidden><button class="ic" id="chx">&#10005;</button><button class="ic" id="nchat" title="Nayi chat" style="position:absolute;top:calc(8px + env(safe-area-inset-top));right:58px;z-index:2">&#10133;</button>
+<header>
+<div id="orb"></div><h1>Aura</h1><button class="ic" id="gfb" style="display:none">&#128150;</button>
+<div class="nv"><button class="ic" id="hch" title="Chat">&#128172;</button><small>Chat</small></div>
+<div class="nv"><button class="ic" id="hhx" title="Chat history">&#128344;</button><small>History</small></div>
+<div class="nv mid"><button class="ic" id="cl" title="Aura Call">&#128222;</button><small>Call</small></div>
+<div class="nv"><button class="ic" id="hpw" title="Powers">&#10024;</button><small>Powers</small></div>
+<div class="nv"><button class="ic" id="hmore" title="Menu">&#9776;</button><small>Menu</small></div>
+</header>
+<div id="more" hidden><div class="msheet"><div class="mh"></div><div class="mg">
+<div class="tl"><button class="ic" id="hdc">&#127908;</button><small>Bolke likho</small></div>
+<div class="tl"><button class="ic" id="lst">&#128203;</button><small>Reminder aur List</small></div>
+<div class="tl"><button class="ic" id="hmg">&#129504;</button><small>Memory</small></div>
+<div class="tl"><button class="ic" id="htx">&#129302;</button><small>Tasks</small></div>
+<div class="tl"><button class="ic" id="hag">&#129513;</button><small>Agents</small></div>
+<div class="tl"><button class="ic" id="hdv">&#128736;</button><small>Aura Dev</small></div>
+<div class="tl"><button class="ic" id="mod">&#128188;</button><small>Mode</small></div>
+<div class="tl"><button class="ic" id="vol">&#128266;</button><small>Awaaz</small></div>
+<div class="tl"><button class="ic" id="hey" style="display:none">&#127897;</button><small>Hey Aura</small></div>
+<div class="tl"><button class="ic" id="hwp">&#127912;</button><small>Wallpaper</small></div>
+<div class="tl"><button class="ic" id="hsc">&#128274;</button><small>Security</small></div>
+<div class="tl"><button class="ic" id="gear">&#9881;</button><small>Settings</small></div>
+</div></div></div>
+<div id="chh" class="ov" hidden>
+<h2 style="margin:0">&#128344; Chat history</h2>
+<p id="chhc"></p>
+<input id="chhs" type="text" placeholder="Purani chat mein khojo">
+<div id="chhl"></div>
+<div class="tabs"><button class="cl" id="chhn">&#10133; Nayi chat</button><button class="cl" id="chhclr">Sab history hatao</button></div>
+<p style="font-size:12px">History sirf is phone mein save hoti hai. OTP/password/card wali detail pehle hi chhupa di jaati hai. Security mein data wipe karne par ye bhi mit jaati hai.</p>
+<button class="k" id="chhx">Band karo</button>
+</div>
+<div id="chatsheet" hidden><button class="ic" id="chx">&#10005;</button><button class="ic" id="nchat" title="Nayi chat" style="position:absolute;top:calc(10px + env(safe-area-inset-top));right:58px;z-index:2">&#10133;</button><button class="ic" id="chhb" title="Chat history" style="position:absolute;top:calc(10px + env(safe-area-inset-top));right:104px;z-index:2">&#128344;</button>
 <div id="st"><span class="wv"><i></i><i></i><i></i><i></i><i></i></span>Mic on hai... bolo</div>
 <div id="log"></div>
 <button class="cl" id="stopg" hidden>&#9209; Roko</button>
-<footer><button class="k" id="mic" title="Bolo, Aura jawab degi">&#127908;</button><button class="k" id="wsb" title="Web search on/off">&#127760;</button><button class="k" id="dic" title="Bolke likho (Gboard jaisa)"><span style="display:block;font-size:15px;line-height:1">&#127908;</span><small style="display:block;font-size:8px;line-height:1;margin-top:1px">likho</small></button><input id="m" placeholder="Aura se baat karo..."><button class="k" id="go">&#10148;</button></footer></div>
+<footer><button class="k" id="mic" title="Bolo, Aura jawab degi">&#127908;</button><button class="k" id="wsb" title="Web search on/off">&#127760;</button><button class="k" id="dic" title="Bolke likho (Gboard jaisa)"><span style="display:block;font-size:15px;line-height:1">&#127908;</span><small style="display:block;font-size:8px;line-height:1;margin-top:1px">likho</small></button><textarea id="m" rows="1" placeholder="Aura se baat karo..." enterkeyhint="enter"></textarea><button class="k" id="go">&#10148;</button></footer></div>
 <div id="set" class="ov" hidden>
-<h2 style="margin:0">Aura settings</h2>
-<p>Keys sirf is phone mein save hoti hain. Groq tez hai, Gemini backup hai. Ek bhi chalegi.</p>
+<h2 style="margin:0">&#9881; Settings</h2>
+<p>Keys sirf is phone mein save hoti hain. Har section kholkar badlo, aakhir mein Save karo.</p>
+<details class="g" open><summary>&#129302; AI aur Keys</summary>
 <input id="qk" type="password" placeholder="Groq API key">
 <input id="ork" type="password" placeholder="OpenRouter API key (free, backup AI + photo)">
-<input id="tvk" type="password" placeholder="Tavily key (web search ke sources, free 1000/mahina, optional)">
-<select id="ast"><option value="detail">Jawab ka style: Detailed (ChatGPT jaisa)</option><option value="dost">Jawab ka style: Chhota dost jaisa</option></select>
-<button class="cl" id="aipo">&#129302; Aur AI models jodo (kitne bhi)</button>
 <input id="gk" type="password" placeholder="Gemini API key">
+<input id="tvk" type="password" placeholder="Tavily key (web search ke sources, free 1000/mahina, optional)">
+<button class="cl" id="aipo">&#129302; Aur AI models jodo (kitne bhi)</button>
+</details>
+<details class="g"><summary>&#128172; Jawab ka style</summary>
+<select id="ast"><option value="detail">Jawab ka style: Detailed (ChatGPT jaisa)</option><option value="dost">Jawab ka style: Chhota dost jaisa</option></select>
+</details>
+<details class="g"><summary>&#128266; Awaaz</summary>
+<select id="edv" title="Edge awaaz (sirf APK)"><option value="">Edge awaaz: Swara (Hindi, default)</option><option value="en-IN-NeerjaNeural">Neerja (Indian English)</option><option value="en-US-AvaMultilingualNeural">Ava (multilingual)</option><option value="en-US-EmmaMultilingualNeural">Emma (multilingual)</option></select>
 <input id="smk" type="password" placeholder="Sarvam AI API key (Hindi/Hinglish natural awaaz, optional)">
 <input id="smv" placeholder="Sarvam speaker - girlfriend mode (khali = priya; jaise ritu, kavya, neha)">
 <input id="smn" placeholder="Sarvam speaker - normal mode (khali = ritu; jaise kavya, neha, simran)">
-<select id="edv" title="Edge awaaz (sirf APK)"><option value="">Edge awaaz: Swara (Hindi, default)</option><option value="en-IN-NeerjaNeural">Neerja (Indian English)</option><option value="en-US-AvaMultilingualNeural">Ava (multilingual)</option><option value="en-US-EmmaMultilingualNeural">Emma (multilingual)</option></select>
 <input id="ek" type="password" placeholder="ElevenLabs API key (natural awaaz, optional)">
 <input id="ev" placeholder="ElevenLabs Voice ID (khali = default)">
-<input id="cu" placeholder="Cloud Aura link (jaise https://aura-xxxx.onrender.com) — optional">
-<input id="cpn" type="password" placeholder="Cloud Aura PIN">
+<button class="k" id="tv">🔊 Awaaz test</button>
+</details>
+<details class="g"><summary>&#128100; Tum aur Aura</summary>
 <input id="dv" placeholder="Tumhara naam (Aura ka developer)">
 <input class="gfonly" id="un" placeholder="Tumhe kis naam se bulaye? (jaise Rahul)">
 <input class="gfonly" id="gn" placeholder="Girlfriend mode mein uska naam (jaise Aura)">
 <input id="ct" placeholder="Tumhara sheher (mausam ke liye)">
+<textarea id="ru" rows="7" placeholder="Aura ke liye apne rules likho. Jaise: Mujhe bhai bulana. Hamesha 2 line mein jawab dena. Subah mausam batana."></textarea>
+</details>
+<details class="g"><summary>&#128241; Phone aur Permission</summary>
 <input id="wp" style="display:none" placeholder="Hey Aura wake phrase (khali = hey aura)">
 <button class="cl natonly2" id="acc" style="display:none">&#9855; Auto-send / Auto-play on karo</button> <button class="cl" id="cfm">Confirm</button> <button class="cl natonly2" id="agb" style="display:none"></button> <button class="cl natonly2" id="dg" style="display:none">&#128736; Plugin check</button> <button class="cl natonly2" id="bgm" style="display:none"></button> <button class="cl natonly2" id="bat" style="display:none">&#128267; Battery: Unrestricted karo</button>
-<textarea id="ru" rows="7" placeholder="Aura ke liye apne rules likho. Jaise: Mujhe bhai bulana. Hamesha 2 line mein jawab dena. Subah mausam batana."></textarea>
-<button class="k" id="tv">🔊 Awaaz test</button>
+</details>
+<details class="g"><summary>&#9729; Cloud (optional)</summary>
+<input id="cu" placeholder="Cloud Aura link (jaise https://aura-xxxx.onrender.com) — optional">
+<input id="cpn" type="password" placeholder="Cloud Aura PIN">
+</details>
+<details class="g"><summary>&#129520; Aur options</summary>
 <button class="k" id="wppb">🖼 Wallpaper aur Glass</button>
 <button class="k" id="devb">🛠 Aura Dev (khud ko sudharna)</button>
 <button class="k" id="secb">🔐 Security aur backup</button>
+</details>
 <button class="k" id="save">Save karo</button>
 <p id="ver"></p>
 </div>
@@ -527,7 +608,7 @@ async function wx(){const c=S('city');if(!c)return'Mausam: user ka sheher pata n
 try{const g=await(await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&name='+encodeURIComponent(c),sig())).json();const l=g.results[0];
 const w=await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${l.latitude}&longitude=${l.longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=1`,sig())).json();
 const u=w.current,d=w.daily;return`Live mausam ${l.name}: abhi ${u.temperature_2m}C (mehsoos ${u.apparent_temperature}C), nami ${u.relative_humidity_2m}%, hawa ${u.wind_speed_10m} km/h, WMO code ${u.weather_code} (0 saaf, 1-3 badal, 45-48 kohra, 51-67 barish, 71-77 baraf, 80-82 baujhar, 95+ toofan). Aaj max ${d.temperature_2m_max[0]}C, min ${d.temperature_2m_min[0]}C, barish ka chance ${d.precipitation_probability_max[0]}%. Isi data se jawab do.`}catch(e){return'Mausam abhi fetch nahi hua, user ko batao.'}}
-function add(t,c){const d=document.createElement('div');d.className='b '+c;d.textContent=t;$('log').appendChild(d);$('log').scrollTop=1e9;return d}
+function add(t,c){const d=document.createElement('div');d.className='b '+c;d.textContent=t;if(c=='u'&&t.length>420)d.classList.add('lg');$('log').appendChild(d);$('log').scrollTop=1e9;return d}
 function typeText(el,t,done){el.textContent='';el.classList.add('cur');let i=0,s=Math.max(t.length>200?3:1,Math.ceil(t.length/90));const iv=setInterval(()=>{i+=s;el.textContent=t.slice(0,i);$('log').scrollTop=1e9;if(i>=t.length){clearInterval(iv);el.classList.remove('cur');if(done)done()}},18)}
 const NOM=()=>NAT?'Is APK mein Aura ka native module (AuraNative) nahi mila. ⚙️ mein "Plugin check" dabao, aur latest build-apk.yml se APK dobara banao.':'Ye sirf Aura APK mein chalega.';
 const SKEYS=[['wifi',/wi ?-?fi|वाई ?फाई/],['bluetooth',/bluetooth|ब्लूटूथ/],['hotspot',/hotspot|हॉटस्पॉट/],['airplane',/airplane|flight mode/],['nfc',/\bnfc\b/],['vpn',/\bvpn\b/],['location',/location|\bgps\b|लोकेशन/],['battery',/battery|बैटरी/],['display',/display|brightness|डिस्प्ले/],['sound',/\bsound\b|volume setting/],['data',/mobile data/],['apps',/\bapps?\b/],['storage',/storage|स्टोरेज/],['security',/security|lock screen/],['accessibility',/accessibility/],['developer',/developer/],['date',/\bdate\b|time setting/],['language',/language/],['privacy',/privacy/],['about',/about phone|device info|phone info/],['cast',/\bcast\b|screen mirroring/],['keyboard',/keyboard/],['tts',/\btts\b|text[ -]?to[ -]?speech|voice output|टीटीएस/],['voiceinput',/voice input/],['wallpaper',/wallpaper|वॉलपेपर/],['defaultapps',/default apps?/],['datausage',/data usage|data saver/]];
@@ -635,7 +716,7 @@ const fin=v=>{if(dn)return;dn=1;if(pend&&pend.fin===fin)pend=null;b.remove();s.t
 function guard(t){let m=t,f=0;m=m.replace(/\b(?:\d[ -]?){13,19}\b/g,()=>{f=1;return'[HIDDEN]'});
 m=m.replace(/\b(otp|pin|cvv|password|passcode)\b([^.\n]{0,20}?)\s((?=\S*[\d@#$!%^&*])[A-Za-z0-9@#$!%^&*]{4,})/gi,(a,k,mid)=>{f=1;return k+mid+' [HIDDEN]'});
 m=m.replace(/\b\d{4,8}\b(?=[^.\n]{0,15}\botp\b)/gi,()=>{f=1;return'[HIDDEN]'});return[m,f]}
-const VER='v52 • 31 Oct';
+const VER='v53 • 31 Oct';
 let AC=null,SRC=null,lastVE='';
 function unlock(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}}
 document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);
@@ -824,7 +905,7 @@ const act=[['📋 Copy',()=>copyTxt(raw)],['🔁 Dobara',()=>regen(q)],['🔊 Su
 act.forEach(x=>{const k=document.createElement('button');k.textContent=x[0];k.onclick=x[1];b.appendChild(k)});el.appendChild(b);$('log').scrollTop=1e9}
 $('log').addEventListener('click',e=>{const a=e.target.closest('[data-u]');if(a){e.preventDefault();openU(a.dataset.u);return}const c=e.target.closest('[data-cp]');if(c){const code=c.closest('.cb').querySelector('code').textContent;copyTxt(code);c.textContent='✅ Copied';setTimeout(()=>{c.textContent='📋 Copy'},1500)}});
 $('stopg').onclick=()=>{GEN.stop=1;try{GEN.ab&&GEN.ab.abort()}catch(e){}stopTalk();document.body.className='';call.sp=0;$('stopg').hidden=true};
-$('nchat').onclick=()=>{hist.length=0;W('hist',[]);$('log').innerHTML='';SRC_NOW=[];add('Nayi chat shuru. Purani baatein bhool gayi, memory (jo yaad rakhne ko kaha) yaad hai.','a')};
+$('nchat').onclick=()=>{chNew();SRC_NOW=[];add('Nayi chat shuru. Purani baatein bhool gayi, memory (jo yaad rakhne ko kaha) yaad hai.','a')};
 const wsl=()=>$('wsb').classList.toggle('on',wsOn());wsl();$('wsb').onclick=()=>{localStorage.setItem('wson',wsOn()?'0':'1');wsl();aToast(wsOn()?'Web search ON: har sawal par internet se dekhungi':'Web search OFF (zaroorat par apne aap)')};
 async function srchX(q){SRC_NOW=[];const R=[];let gtext='';
 if(S('tvk')){try{const r=await fetch('https://api.tavily.com/search',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+S('tvk')},body:JSON.stringify({query:q,max_results:5}),signal:AbortSignal.timeout(15000)});if(r.ok){const j=await r.json();(j.results||[]).forEach(x=>x.url&&R.push({title:x.title||x.url,url:x.url,snip:String(x.content||'').slice(0,350)}))}}catch(e){}}
@@ -850,7 +931,7 @@ EX=(/mausam|weather|barish|baarish|temperature|garmi|sardi|thand|chhata|umbrella
 const srcNow=SRC_NOW;SRC_NOW=[];const needSrc=NEEDLIVE.test(tt)&&(wsOn()||/search|latest|news|khabar|price|rate|score/i.test(t))&&!srcNow.length&&!EX;VMODE=!!(mic||call.on);GEN.stop=0;const _t0=Date.now();const stm=(speakOn||call.on)&&typeof ReadableStream!='undefined'&&hasAI();let r=null,st=0;if(stm){r=await streamReply(c,w);st=r!==null?1:0}if(r===null)r=await ask(c);agTick('chat',r!==null,Date.now()-_t0);if(!st)document.body.className='';
 if(!r&&GEN.stop){hist.pop();w.textContent='⏹ Roka gaya.';$('stopg').hidden=true;return}
 if(!r){hist.pop();w.textContent='Saare servers busy hain ya key galat hai. Key check karo (⚙️) ya thodi der baad try karo.';if(call.on){callStop('Call band: AI jawab nahi de paya.')}return}
-r=tags(r)||'Done!';save();if(needSrc)add('⚠️ Is sawal ke liye live source nahi mila, jawab AI ke purane gyaan se hai. Zaroori ho to dobara check karo.','a');hist.push({role:'model',parts:[{text:r}]});W('hist',hist.slice(-20));
+r=tags(r)||'Done!';save();if(needSrc)add('⚠️ Is sawal ke liye live source nahi mila, jawab AI ke purane gyaan se hai. Zaroori ho to dobara check karo.','a');hist.push({role:'model',parts:[{text:r}]});W('hist',hist.slice(-20));try{chSave()}catch(e){}
 if(st){finishAnswer(w,r,tt,srcNow);$('stopg').hidden=true;if(!SQ.n)sqAdd(vis(spk0(r)).slice(0,480));if(pend)sqAdd(pend.q.replace(/\n/g,' ')+' Haan ya na?');sqEnd();if(call.on&&!speakOn)speakOn=true}else{typeText(w,r,()=>finishAnswer(w,r,tt,srcNow));if(call.on&&!speakOn)speakOn=true;say(pend?r+' '+pend.q.replace(/\n/g,' ')+' Haan ya na?':r)}if(call.on&&!call.sp)setTimeout(callListen,600);if(call.on)setTimeout(()=>{if(call.on&&call.sp){call.sp=0;callListen()}},Math.min(30000,r.length*130+5000))}
 function rend(){document.querySelectorAll('.tabs [data-t]').forEach(b=>b.classList.toggle('on',b.dataset.t==tab));const L=$('pl');L.innerHTML='';
 if(tab=='app'&&NAT&&inst.length){inst.forEach(a=>{const d=document.createElement('div');d.className='row';const s=document.createElement('span');s.textContent='📱 '+a.name;s.onclick=()=>{$('pn').hidden=true;CP.AuraNative.launch({package:a.package}).catch(e=>add('Nahi khula: '+(e.message||e),'a'))};d.append(s);L.append(d)});return}
@@ -869,7 +950,7 @@ $('cl').onclick=callToggle;
 $('gfb').onclick=()=>gfAsk(!gf,speakOn);
 $('lst').onclick=()=>{$('pn').hidden=false;rend()};$('cls').onclick=()=>$('pn').hidden=true;
 $('clr').onclick=()=>{hist=[];W('hist',[]);$('log').innerHTML='';$('pn').hidden=true;add('Chat saaf ho gayi.','a')};
-$('go').onclick=send;$('m').onkeydown=e=>{if(e.key=='Enter')send()};
+$('go').onclick=send;$('m').onkeydown=e=>{if(e.key=='Enter'&&!e.shiftKey&&!e.isComposing&&window.matchMedia('(pointer:fine)').matches){e.preventDefault();send()}};
 $('vol').onclick=function(){speakOn=!speakOn;this.innerHTML=speakOn?'&#128266;':'&#128263;';if(!speakOn)stopTalk()};
 $('tv').onclick=()=>{$('set').hidden=true;lastVE='';PF.sarvam=PF.eleven=PF.gemini=0;edgeFail=0;add('Awaaz test chal raha hai...','a');const w=speakOn;speakOn=true;say('Namaste, main Aura hoon. Meri awaaz aa rahi hai?');speakOn=w;
 setTimeout(()=>{const hs=[];if(/sarvam 402/.test(lastVE))hs.push('Sarvam: credits khatam hain (402). Recharge karo ya nayi key lo.');if(/sarvam 40[13]/.test(lastVE))hs.push('Sarvam: key galat hai.');if(/gemini 429/.test(lastVE))hs.push('Gemini: free quota bhar gaya (429). Kuch der baad chalega.');if(/eleven 401/.test(lastVE))hs.push('ElevenLabs: key galat hai.');if(/eleven 429|eleven 402/.test(lastVE))hs.push('ElevenLabs: is mahine ki free limit khatam.');if(!NAT)hs.push('Web par Edge (free, bina limit) nahi chalti, wo sirf APK mein hai.');add(lastVE?'Natural voice nahi chali ('+(S('ek')||S('smk')?'':'Sarvam/ElevenLabs key save nahi hai | ')+lastVE+'), phone ki voice use hui.'+(hs.length?'\n\nWajah:\n- '+hs.join('\n- '):''):'Test ho gaya. Awaaz nahi aayi to phone ka media volume check karo.','a')},7000)};
@@ -1335,6 +1416,7 @@ const L=$('pwpl');L.innerHTML='';Object.keys(PERS).forEach(k=>{const b=document.
 function pwCmd(t){if(t.length>120)return false;let m;
 if(/^(?:aura[, ]+)?(?:memory graph|yaadein|meri yaadein|tumhe kya yaad hai|kya yaad hai)\b/i.test(t)){mgOpen();return add('Memory Graph khol diya.','a'),true}
 if((m=t.match(/^(?:aura[, ]+)?(?:task|goal|autonomous task)\s*[:\-]\s*(.{4,})$/i))){txOpen(m[1]);add('Task Executor khol diya, plan bana rahi hoon.','a');return true}
+if(/^(?:aura[, ]+)?(?:chat history|purani chat|purani chats|history)\b.{0,10}$/i.test(t)){chhOpen();return true}
 if(/^(?:aura[, ]+)?(?:powers|power hub|guardian)\b.{0,12}$/i.test(t)){/guardian/i.test(t)?gdOpen():pwOpen();return true}
 if((m=t.match(/^(?:aura[, ]+)?persona\s+(\w+)/i))){const k=Object.keys(PERS).find(x=>x==m[1].toLowerCase()||PERS[x].n.toLowerCase()==m[1].toLowerCase());if(k){localStorage.setItem('persona',k);add('Persona badli: '+PERS[k].ic+' '+PERS[k].n,'a');return true}}
 return false}
@@ -1352,4 +1434,35 @@ $('gdchk').onclick=()=>{const t=$('gdt').value.trim();if(!t)return;const r=gdSca
 setInterval(gdTick,60000);setTimeout(gdTick,20000);
 
 $('log').addEventListener('click',e=>{const b=e.target.closest('[data-run]');if(!b)return;const cb=b.closest('.cb');sbRun(cb.querySelector('code').textContent,(cb.querySelector('.ch span').textContent||'').toLowerCase(),cb.querySelector('.sbx'))});
+
+/* ===== v53: Chat history, dock/menu, auto-grow input ===== */
+var CHS=J('chats',[]),CHID=S('chid')||('c'+Date.now());
+function chSave(){const h=hist.slice(-40).map(x=>({role:x.role,parts:[{text:String(x.parts[0].text).slice(0,4000)}]}));const u=h.find(x=>x.role=='user');if(!u)return;
+let c=CHS.find(x=>x.id==CHID);if(!c){c={id:CHID,t:'',ts:0,h:[]};CHS.unshift(c)}c.h=h;c.ts=Date.now();if(!c.t||!c.ren)c.t=String(u.parts[0].text).replace(/\s+/g,' ').slice(0,42);
+CHS.sort((a,b)=>b.ts-a.ts);CHS.length=Math.min(CHS.length,30);
+for(let i=0;i<4;i++){try{W('chats',CHS);localStorage.setItem('chid',CHID);return}catch(e){CHS.length=Math.max(1,CHS.length-5)}}}
+function chNew(){chSave();CHID='c'+Date.now();localStorage.setItem('chid',CHID);hist.length=0;W('hist',[]);$('log').innerHTML=''}
+function chLoad(id){const c=CHS.find(x=>x.id==id);if(!c)return;chSave();CHID=id;localStorage.setItem('chid',id);hist=c.h.map(x=>({role:x.role,parts:[{text:x.parts[0].text}]}));W('hist',hist.slice(-20));
+$('log').innerHTML='';let q='';hist.forEach(x=>{const t=x.parts[0].text;if(x.role=='user'){q=t;add(t,'u')}else{const el=add('','a');try{finishAnswer(el,t,q,[])}catch(e){renderMd(el,t)}}});
+$('chh').hidden=true;$('chatsheet').hidden=false;setTimeout(()=>{$('log').scrollTop=1e9},50)}
+function chhDraw(){const q=($('chhs').value||'').toLowerCase(),L=$('chhl');L.innerHTML='';const list=CHS.filter(c=>c.h.length&&(!q||c.t.toLowerCase().includes(q)||c.h.some(x=>x.parts[0].text.toLowerCase().includes(q))));
+$('chhc').textContent=CHS.length+' chat save hain';if(!list.length){L.innerHTML='<p>Koi chat nahi mili.</p>';return}
+list.forEach(c=>{const d=document.createElement('div');d.className='chr'+(c.id==CHID?' cur':'');const t=document.createElement('div');t.className='t';const b=document.createElement('b'),sm=document.createElement('small');b.textContent=c.t||'Chat';
+const last=c.h[c.h.length-1].parts[0].text.replace(/\s+/g,' ').slice(0,60);sm.textContent=new Date(c.ts).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})+' • '+c.h.length+' msg • '+last;t.append(b,sm);t.onclick=()=>chLoad(c.id);
+const r=document.createElement('button');r.textContent='✏️';r.onclick=()=>{const n=prompt('Chat ka naam:',c.t);if(n&&n.trim()){c.t=n.trim().slice(0,60);c.ren=1;W('chats',CHS);chhDraw()}};
+const x=document.createElement('button');x.textContent='🗑';x.onclick=()=>{if(!confirm('Ye chat hata dun?'))return;CHS=CHS.filter(z=>z.id!=c.id);W('chats',CHS);if(c.id==CHID){hist.length=0;W('hist',[]);$('log').innerHTML='';CHID='c'+Date.now();localStorage.setItem('chid',CHID)}chhDraw()};d.append(t,r,x);L.append(d)})}
+function chhOpen(){['set','chatsheet','agp','mgp','txp','gdp2','pw','more'].forEach(i=>{const e=$(i);if(e)e.hidden=true});$('chhs').value='';$('chh').hidden=false;chhDraw()}
+$('hhx').onclick=chhOpen;$('chhb').onclick=chhOpen;$('chhx').onclick=()=>{$('chh').hidden=true};$('chhs').oninput=chhDraw;
+$('chhn').onclick=()=>{chNew();$('chh').hidden=true;$('chatsheet').hidden=false;add('Nayi chat shuru. Purani chat History mein save hai.','a')};
+$('chhclr').onclick=()=>{if(!CHS.length)return;if(confirm('Saari chat history hata dun? ('+CHS.length+' chat)')){CHS=[];W('chats',CHS);hist.length=0;W('hist',[]);$('log').innerHTML='';CHID='c'+Date.now();localStorage.setItem('chid',CHID);chhDraw()}};
+if(hist.length&&!CHS.some(c=>c.id==CHID)){try{chSave()}catch(e){}}
+/* menu sheet */
+function moreOpen(){document.querySelectorAll('#more .tl').forEach(t=>{const b=t.querySelector('button');t.hidden=b.style.display=='none'});$('more').hidden=false}
+$('hmore').onclick=moreOpen;
+$('more').addEventListener('click',e=>{if(e.target===$('more')){$('more').hidden=true;return}const t=e.target.closest('.tl');if(!t)return;const b=t.querySelector('button');if(e.target!==b&&!b.contains(e.target))b.click();if(!/^(mod|vol|hey)$/.test(b.id))$('more').hidden=true});
+$('hmg').onclick=mgOpen;$('htx').onclick=()=>txOpen('');
+/* auto-grow input */
+function mFit(){const m=$('m');if(!m)return;m.style.height='auto';const h=Math.min(m.scrollHeight,148);m.style.height=h+'px'}
+$('m').addEventListener('input',mFit);setInterval(()=>{if(!$('chatsheet').hidden)mFit()},300);
+$('log').addEventListener('click',e=>{const b=e.target.closest('.b.u.lg');if(b)b.classList.toggle('open')});
 </script></body></html>
