@@ -436,7 +436,7 @@ jobs:
             @PluginMethod
             public void setBrain(PluginCall call) {
               android.content.SharedPreferences.Editor e = getContext().getSharedPreferences("aura", Context.MODE_PRIVATE).edit();
-              String[] ks = new String[] { "gk", "ek", "ev", "smk", "smv", "smn", "gfm", "edv", "qk", "dev", "uname", "rules", "autoc" };
+              String[] ks = new String[] { "gk", "ek", "ev", "smk", "smv", "smn", "gfm", "edv", "qk", "dev", "uname", "rules", "autoc", "deny" };
               for (String k : ks) e.putString(k, call.getString(k, ""));
               e.putBoolean("bg", call.getBoolean("bg", true));
               e.apply();
@@ -659,11 +659,83 @@ jobs:
               } catch (Throwable t) { }
               call.resolve();
             }
+
+            public static volatile String SHARED = "";
+
+            public static void takeShare(Intent i) {
+              try {
+                if (i != null && Intent.ACTION_SEND.equals(i.getAction())) {
+                  String t = i.getStringExtra(Intent.EXTRA_TEXT);
+                  if (t != null && t.length() > 0) SHARED = t.length() > 6000 ? t.substring(0, 6000) : t;
+                }
+              } catch (Throwable e) { }
+            }
+
+            @PluginMethod
+            public void getShared(PluginCall call) {
+              JSObject o = new JSObject();
+              o.put("text", SHARED);
+              SHARED = "";
+              call.resolve(o);
+            }
+
+            @PluginMethod
+            public void agentRunning(PluginCall call) {
+              JSObject o = new JSObject();
+              boolean r = false;
+              try {
+                Class<?> c = Class.forName("com.divyanshu.aura.AgentCore");
+                r = Boolean.TRUE.equals(c.getMethod("isRunning").invoke(null));
+              } catch (Throwable t) { }
+              o.put("running", r);
+              call.resolve(o);
+            }
+
+            @PluginMethod
+            public void intentGo(PluginCall call) {
+              String kind = call.getString("kind", "");
+              try {
+                Intent i = null;
+                if ("alarm".equals(kind)) {
+                  i = new Intent(android.provider.AlarmClock.ACTION_SET_ALARM);
+                  i.putExtra(android.provider.AlarmClock.EXTRA_HOUR, call.getInt("hour", 0));
+                  i.putExtra(android.provider.AlarmClock.EXTRA_MINUTES, call.getInt("min", 0));
+                  i.putExtra(android.provider.AlarmClock.EXTRA_MESSAGE, call.getString("label", "Aura"));
+                  i.putExtra(android.provider.AlarmClock.EXTRA_SKIP_UI, false);
+                } else if ("timer".equals(kind)) {
+                  i = new Intent(android.provider.AlarmClock.ACTION_SET_TIMER);
+                  i.putExtra(android.provider.AlarmClock.EXTRA_LENGTH, call.getInt("secs", 60));
+                  i.putExtra(android.provider.AlarmClock.EXTRA_MESSAGE, call.getString("label", "Aura"));
+                  i.putExtra(android.provider.AlarmClock.EXTRA_SKIP_UI, false);
+                } else if ("event".equals(kind)) {
+                  i = new Intent(Intent.ACTION_INSERT);
+                  i.setData(android.provider.CalendarContract.Events.CONTENT_URI);
+                  i.putExtra(android.provider.CalendarContract.Events.TITLE, call.getString("title", "Aura event"));
+                  i.putExtra(android.provider.CalendarContract.Events.DESCRIPTION, call.getString("desc", ""));
+                  long b = (long) (double) call.getDouble("begin", 0.0);
+                  long e = (long) (double) call.getDouble("end", 0.0);
+                  if (b > 0) i.putExtra(android.provider.CalendarContract.EXTRA_EVENT_BEGIN_TIME, b);
+                  if (e > 0) i.putExtra(android.provider.CalendarContract.EXTRA_EVENT_END_TIME, e);
+                } else if ("share".equals(kind)) {
+                  Intent s0 = new Intent(Intent.ACTION_SEND);
+                  s0.setType("text/plain");
+                  s0.putExtra(Intent.EXTRA_TEXT, call.getString("text", ""));
+                  i = Intent.createChooser(s0, "Aura se share");
+                }
+                if (i == null) { call.reject("kind galat"); return; }
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(i);
+                call.resolve();
+              } catch (Throwable t) {
+                call.reject("intent nahi chala: " + t.getMessage());
+              }
+            }
           }
           EOF
           cat > $D/MainActivity.java << 'EOF'
           package com.divyanshu.aura;
 
+          import android.content.Intent;
           import android.os.Bundle;
           import com.getcapacitor.BridgeActivity;
 
@@ -672,6 +744,14 @@ jobs:
             public void onCreate(Bundle savedInstanceState) {
               registerPlugin(AuraNativePlugin.class);
               super.onCreate(savedInstanceState);
+              AuraNativePlugin.takeShare(getIntent());
+            }
+
+            @Override
+            protected void onNewIntent(Intent intent) {
+              super.onNewIntent(intent);
+              setIntent(intent);
+              AuraNativePlugin.takeShare(intent);
             }
           }
           EOF
@@ -1652,7 +1732,7 @@ jobs:
 
 
             private void startDo(String goal, String say) {
-              if ("1".equals(sp().getString("autoc", ""))) {
+              if (!"0".equals(sp().getString("autoc", "1"))) {
                 runAgent(goal);
               } else {
                 pendingDo = goal;
@@ -1835,6 +1915,19 @@ jobs:
               else if ("lock".equals(name) && Build.VERSION.SDK_INT >= 28) a = GLOBAL_ACTION_LOCK_SCREEN;
               if (a < 0) return false;
               return performGlobalAction(a);
+            }
+
+            public boolean tap(float x, float y) {
+              if (Build.VERSION.SDK_INT < 24) return false;
+              try {
+                android.graphics.Path pa = new android.graphics.Path();
+                pa.moveTo(x, y);
+                android.accessibilityservice.GestureDescription.Builder b = new android.accessibilityservice.GestureDescription.Builder();
+                b.addStroke(new android.accessibilityservice.GestureDescription.StrokeDescription(pa, 0, 70));
+                return dispatchGesture(b.build(), null, null);
+              } catch (Throwable t) {
+                return false;
+              }
             }
 
             private AccessibilityNodeInfo findScrollable(AccessibilityNodeInfo n, int depth) {
@@ -2215,7 +2308,12 @@ jobs:
             private static volatile boolean cancel = false;
             private static final String CH = "aura_agent";
             private static final String[] BLOCK_PKG = new String[] { "paisa", "phonepe", "paytm", "bhim", "upi", "bank", "wallet", "razorpay", "cred.club", "payment", "pay" };
-            private static final String[] BLOCK_TXT = new String[] { "pay", "buy", "purchase", "checkout", "place order", "order now", "transfer", "send money", "upi", "delete", "uninstall", "erase", "factory reset", "payment", "भुगतान", "डिलीट" };
+            private static final java.util.regex.Pattern BLOCK_RE = java.util.regex.Pattern.compile("\\b(pay|buy|purchase|checkout|place order|order now|transfer|send money|upi|delete|uninstall|erase|factory reset|payment)\\b|भुगतान|डिलीट", java.util.regex.Pattern.CASE_INSENSITIVE);
+            private static final java.util.regex.Pattern SEND_RE = java.util.regex.Pattern.compile("^(send|send message|submit|search|go|ask|post|reply|भेजें|खोजें|सर्च)\\b", java.util.regex.Pattern.CASE_INSENSITIVE);
+
+            public static boolean isRunning() {
+              return running;
+            }
 
             public static void stop() {
               cancel = true;
@@ -2270,7 +2368,7 @@ jobs:
               note(ctx, "Aura kaam kar rahi hai", goal + " | shuru", true);
               int step = 0;
               int guard = 0;
-              while (step < 18 && guard < 40 && !cancel) {
+              while (step < 32 && guard < 70 && !cancel) {
                 guard++;
                 SendService svc = SendService.INSTANCE;
                 if (svc == null) { finish(ctx, "Accessibility band ho gayi."); return; }
@@ -2284,6 +2382,7 @@ jobs:
                   continue;
                 }
                 if (blockedPkg(pkg)) { finish(ctx, "Ye payment ya bank app hai, main yahan kuch nahi karti."); return; }
+                if (sp.getString("deny", "").contains("|" + pkg + "|")) { finish(ctx, "Is app ko tumne Aura ke liye band rakha hai, main yahan kuch nahi karti."); return; }
                 step++;
                 ArrayList<AccessibilityNodeInfo> nodes = new ArrayList<AccessibilityNodeInfo>();
                 StringBuilder sb = new StringBuilder();
@@ -2304,8 +2403,10 @@ jobs:
                 if (a.has("text")) h += " '" + a.optString("text") + "'";
                 if (res == 0) h += " (fail)";
                 hist.add(h);
-                while (hist.size() > 6) hist.remove(0);
-                nap(1300);
+                while (hist.size() > 8) hist.remove(0);
+                int n2 = hist.size();
+                if (n2 >= 3 && hist.get(n2 - 1).equals(hist.get(n2 - 2)) && hist.get(n2 - 2).equals(hist.get(n2 - 3))) hist.add("STUCK: same action repeated, try a different element, scroll, or back");
+                nap("open".equals(act) ? 2300 : 1100);
               }
               finish(ctx, cancel ? "Roka gaya." : "Kaam poora nahi ho paya.");
             }
@@ -2323,17 +2424,26 @@ jobs:
               }
               String s = b.toString().trim().replaceAll("\\s+", " ");
               s = s.replaceAll("(?:\\d[ -]?){13,19}", "[card]").replaceAll("\\b\\d{4,8}\\b", "[num]");
-              if (s.length() > 70) s = s.substring(0, 70);
+              if (s.length() > 90) s = s.substring(0, 90);
               return s;
             }
 
             private static void walk(AccessibilityNodeInfo n, int depth, ArrayList<AccessibilityNodeInfo> nodes, StringBuilder sb) {
-              if (n == null || depth > 28 || nodes.size() >= 110) return;
+              if (n == null || depth > 30 || nodes.size() >= 170) return;
               if (n.isVisibleToUser()) {
                 String lb = label(n);
                 boolean c = n.isClickable();
                 boolean e = n.isEditable();
                 boolean s = n.isScrollable();
+                if (lb.length() == 0 && c && !e) {
+                  android.graphics.Rect r = new android.graphics.Rect();
+                  n.getBoundsInScreen(r);
+                  if (r.width() > 8 && r.height() > 8) {
+                    String cn = n.getClassName() == null ? "" : n.getClassName().toString();
+                    cn = cn.substring(cn.lastIndexOf('.') + 1);
+                    lb = "[icon " + cn + " at x=" + r.centerX() + " y=" + r.centerY() + "]";
+                  }
+                }
                 if (lb.length() > 0 || e || s) {
                   StringBuilder fl = new StringBuilder();
                   if (c) fl.append('c');
@@ -2369,6 +2479,48 @@ jobs:
               return t != null && t.performAction(AccessibilityNodeInfo.ACTION_CLICK);
             }
 
+            private static boolean tapNode(SendService svc, AccessibilityNodeInfo n) {
+              try {
+                android.graphics.Rect r = new android.graphics.Rect();
+                n.getBoundsInScreen(r);
+                if (r.width() <= 0 || r.height() <= 0) return false;
+                return svc.tap(r.centerX(), r.centerY());
+              } catch (Throwable t) {
+                return false;
+              }
+            }
+
+            private static AccessibilityNodeInfo focusedInput(SendService svc) {
+              try {
+                AccessibilityNodeInfo root = svc.getRootInActiveWindow();
+                if (root == null) return null;
+                AccessibilityNodeInfo f = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
+                return f;
+              } catch (Throwable t) {
+                return null;
+              }
+            }
+
+            private static boolean setText(Context ctx, AccessibilityNodeInfo n, String text) {
+              n.performAction(AccessibilityNodeInfo.ACTION_FOCUS);
+              n.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+              Bundle b = new Bundle();
+              b.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text);
+              if (n.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, b)) return true;
+              try {
+                android.content.ClipboardManager cm = (android.content.ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
+                cm.setPrimaryClip(android.content.ClipData.newPlainText("aura", text));
+                Bundle sel = new Bundle();
+                sel.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, 0);
+                CharSequence cur = n.getText();
+                sel.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, cur == null ? 0 : cur.length());
+                n.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, sel);
+                return n.performAction(AccessibilityNodeInfo.ACTION_PASTE);
+              } catch (Throwable t) {
+                return false;
+              }
+            }
+
             private static AccessibilityNodeInfo firstScrollable(AccessibilityNodeInfo n, int depth) {
               if (n == null || depth > 30) return null;
               if (n.isScrollable()) return n;
@@ -2388,27 +2540,32 @@ jobs:
                 if (!idOk) return 0;
                 AccessibilityNodeInfo n = nodes.get(id);
                 String t = fullInfo(n);
-                for (String b : BLOCK_TXT) if (t.contains(b)) return -1;
-                return clickNode(n) ? 1 : 0;
+                if (BLOCK_RE.matcher(t).find()) return -1;
+                if (clickNode(n)) return 1;
+                return tapNode(svc, n) ? 1 : 0;
               }
               if ("type".equals(act)) {
-                if (!idOk) return 0;
+                if (!idOk) {
+                  AccessibilityNodeInfo f = focusedInput(svc);
+                  if (f == null || f.isPassword()) return 0;
+                  return setText(ctx, f, a.optString("text", "")) ? 1 : 0;
+                }
                 AccessibilityNodeInfo n = nodes.get(id);
                 if (n.isPassword()) return -1;
-                n.performAction(AccessibilityNodeInfo.ACTION_FOCUS);
-                Bundle b = new Bundle();
-                b.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, a.optString("text", ""));
-                return n.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, b) ? 1 : 0;
+                return setText(ctx, n, a.optString("text", "")) ? 1 : 0;
               }
               if ("enter".equals(act)) {
-                if (Build.VERSION.SDK_INT < 30) return 0;
                 AccessibilityNodeInfo n = idOk ? nodes.get(id) : null;
-                if (n == null) {
-                  AccessibilityNodeInfo root = svc.getRootInActiveWindow();
-                  if (root != null) n = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
+                if (n == null) n = focusedInput(svc);
+                if (n != null && Build.VERSION.SDK_INT >= 30) {
+                  if (n.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.getId())) return 1;
                 }
-                if (n == null) return 0;
-                return n.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.getId()) ? 1 : 0;
+                for (AccessibilityNodeInfo c : nodes) {
+                  if (c == null || c.isEditable() || !(c.isClickable())) continue;
+                  String lb = label(c);
+                  if (SEND_RE.matcher(lb).find()) { if (clickNode(c) || tapNode(svc, c)) return 1; }
+                }
+                return 0;
               }
               if ("scroll".equals(act)) {
                 AccessibilityNodeInfo n = idOk ? nodes.get(id) : firstScrollable(svc.getRootInActiveWindow(), 0);
@@ -2460,8 +2617,13 @@ jobs:
             // ---------- AI ----------
             private static final String SYS = "You control an Android phone through its accessibility tree. Reply with ONE JSON object and nothing else: "
               + "{\"action\":\"click|type|enter|scroll|back|home|open|wait|done|fail\",\"id\":<element id>,\"text\":\"<text to type>\",\"dir\":\"down|up\",\"app\":\"<app name for open>\",\"say\":\"very short Hinglish status\"}. "
-              + "Choose the single next best action. Screen elements are listed as id|flags|label (c=clickable e=editable s=scrollable k=checkbox). "
-              + "Use open to launch an app by name. After typing into a search box use enter. "
+              + "Choose the single next best action. Screen elements are listed as id|flags|label (c=clickable e=editable s=scrollable k=checkbox). Unlabeled icon buttons are listed as [icon Class at x= y=]. "
+              + "Use open to launch an app by name (skip it if CURRENT APP is already the right app). "
+              + "HOW TO WORK INSIDE APPS: to search, click the search icon/box if needed, type the query into the editable element, then use enter; if enter fails click the Search/Send/Go button or the icon button at the right end of the input row. "
+              + "For chat or AI apps (ChatGPT, Gemini, Claude, WhatsApp, Telegram etc.): click the message box (editable), type the message once, then click the Send button (label Send, or an unlabeled icon at the right/bottom-right of the input row, usually the one that appeared after typing). Do not type the same text again if the box already contains it. "
+              + "If you need to wait for a reply, use wait a few times until the answer finishes appearing, then read it. "
+              + "If the goal asks for an answer or information, when done put the answer in say in short Hinglish or English (max 250 characters). "
+              + "If nothing happens after 2 tries, scroll, go back, or try a different element. Dismiss popups with Skip, Not now, Close, Allow only if they block the goal. "
               + "Never make payments, purchases or transfers and never delete or uninstall anything; if the goal needs that, reply fail. Never type passwords. "
               + "When the goal is achieved reply done. If you are stuck after several tries reply fail.";
 
@@ -2953,6 +3115,7 @@ jobs:
               android:accessibilityFeedbackType="feedbackGeneric"
               android:accessibilityFlags="flagDefault|flagReportViewIds"
               android:canRetrieveWindowContent="true"
+              android:canPerformGestures="true"
               android:notificationTimeout="200"
               android:description="@string/aura_access_desc" />
           EOF
@@ -2963,8 +3126,9 @@ jobs:
           </resources>
           EOF
           M=android/app/src/main/AndroidManifest.xml
-          sed -i 's#<application#<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><uses-permission android:name="android.permission.RECORD_AUDIO"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/><uses-permission android:name="android.permission.USE_EXACT_ALARM"/><uses-permission android:name="android.permission.WRITE_SETTINGS"/><uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/><uses-permission android:name="android.permission.FLASHLIGHT"/><uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/><uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/><uses-permission android:name="android.permission.VIBRATE"/><queries><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent><intent><action android:name="android.speech.RecognitionService"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries><application#' $M
+          sed -i 's#<application#<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><uses-permission android:name="android.permission.RECORD_AUDIO"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/><uses-permission android:name="android.permission.USE_EXACT_ALARM"/><uses-permission android:name="android.permission.WRITE_SETTINGS"/><uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/><uses-permission android:name="android.permission.FLASHLIGHT"/><uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/><uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/><uses-permission android:name="android.permission.VIBRATE"/><uses-permission android:name="android.permission.SET_ALARM"/><queries><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent><intent><action android:name="android.speech.RecognitionService"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries><application#' $M
           sed -i 's#</application>#<!--AURA_X1--><service android:name=".WakeService" android:exported="false" android:foregroundServiceType="microphone"/><!--AURA_X2--><!--AURA_Y1--><service android:name=".SendService" android:exported="true" android:label="Aura Auto-Send" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"><intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter><meta-data android:name="android.accessibilityservice" android:resource="@xml/aura_access"/></service><!--AURA_Y2--></application>#' $M
+          sed -i '0,/<\/activity>/s#</activity>#<intent-filter><action android:name="android.intent.action.SEND"/><category android:name="android.intent.category.DEFAULT"/><data android:mimeType="text/plain"/></intent-filter></activity>#' $M
           python3 -m pip install pillow --break-system-packages -q || python3 -m pip install pillow -q || true
           cat > aura_icon.py << 'PYEOF'
           import math,sys,os,glob
