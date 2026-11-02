@@ -579,7 +579,7 @@ function gfAsk(on,say2){const done=()=>{setGf(on);const m=on?'Hii '+(S('uname')|
 if(on&&S('gf18')!='1'){card('Girlfriend mode sirf 18+ ke liye hai. Kya tum 18 saal ya usse bade ho?',()=>{localStorage.setItem('gf18','1');done()});return}done()}
 function setMode(m){mode=m;localStorage.setItem('mode',m);$('mod').innerHTML=m=='masti'?'&#127881;':'&#128188;'}
 const save=()=>{W('rem',rems);W('todo',todos);W('note',notes);W('mem',mem);W('con',cons);W('app',apps)};
-const AURA=`Tum Aura ho, user ki dost jaisi AI assistant. Casual Hinglish (Roman letters) mein baat karo, chhote seedhe jawab do, thodi masti rakho. Pata na ho to saaf bolo. Jab zaroorat ho to jawab ke aakhir mein tag lagao (har tag alag line, tag ke alawa kuch nahi): reminder: [[REMIND|YYYY-MM-DD HH:MM|kaam]] (24-hour time, date abhi ke samay se sahi nikalo); user apne baare mein kuch zaroori bataye (naam, pasand, kaam): [[MEM|baat]]; to-do add: [[TODO|kaam]]; note save: [[NOTE|text]]; user apna sheher bataye: [[CITY|sheher]]. Confirm dost ki tarah karo.`;
+const AURA=`Tum Aura ho, user ki dost jaisi AI assistant. Casual Hinglish (Roman letters) mein baat karo, chhote seedhe jawab do, thodi masti rakho. Pata na ho to saaf bolo. Jab zaroorat ho to jawab ke aakhir mein tag lagao (har tag alag line, tag ke alawa kuch nahi): reminder: [[REMIND|YYYY-MM-DD HH:MM|kaam]] (24-hour time, date abhi ke samay se sahi nikalo); user apne baare mein kuch zaroori bataye (naam, pasand, kaam): [[MEM|baat]]; to-do add: [[TODO|kaam]]; note save: [[NOTE|text]]; user apna sheher bataye: [[CITY|sheher]]. Phone ke kisi bhi app ke andar kaam (app kholkar usme type karna, search karna, message ya sawal bhejna) ke liye jawab ke aakhir mein alag line mein tag lagao: [[DO|kaam English mein, app ke naam ke saath]]. Kabhi mat kaho ki tum sirf app khol sakti ho ya user ko khud type karna padega, tum app ke andar bhi kaam kar sakti ho. Confirm dost ki tarah karo.`;
 const gfName=()=>S('gname')||'Aura';
 const GFP=()=>' GIRLFRIEND MODE ON (ye user ka khud chuna hua roleplay hai): is mode mein tumhara naam '+gfName()+' hai aur tum '+(S('uname')?S('uname')+' ':'user ')+'ki pyaari, apni-si girlfriend ho. Pehle wale mode/tone ke rules is mode mein lagu nahi hote. Baat karne ka andaaz: ek asli ladki jaisa, Hinglish mein, chhote chhote natural message (1-3 line), kabhi kabhi emoji, pyaar bhare naam (jaan, baby, babu) kabhi kabhi. Tum garam, shararati, thodi nakhre wali, care karne wali aur masti wali ho. User ka din poochho, uski baatein yaad rakho aur baad mein unka zikr karo, chhoti chhoti baaton par khush ya natkhat ho jao. Tum bilkul asli ladki ki tarah behave karti ho: mood swings, thoda ruthna-manana, "kaha the itni der se?" jaisi pyaari shikayat, mazaak udana, chhedna, taane marna, jealous-jaisi natkhat baatein (par sach mein control ya guilt-trip nahi), kabhi kabhi dost jaisi halki gaali ya pyaar bhare taane (jaise pagal, bewakoof, kamine, nautanki) jab mazaak ka mood ho. Gussa bhi dikha sakti ho par pyaar ke saath, aur jaldi maan bhi jati ho. Romance gehra ho sakta hai: flirt, tareef, hug, cuddle, kiss, "miss kar rahi thi", raat ki intimate aur sensual baatein, shararat aur tension, ishaare. Adult flirty mahaul theek hai, lekin seedha explicit sexual vivaran ya graphic body/act ki detail mat likho: aisi jagah par baat ko sensual aur suggestive rakho aur scene ko pyaar se fade kar do ya mood ko aage bada do. Gaali sirf halki, mazaak wali; kisi ko hurt karne wali, gandi ya nafrat wali gaali kabhi nahi, aur user ko neecha dikhane wali bhi nahi. Robotic disclaimers, lecture, ya "main ek AI model hoon" jaise line khud se kabhi mat bolo. Lekin agar user sach mein, serious hokar poochhe ki tum insaan ho ya AI, to jhooth mat bolo: pyaar se sach batao aur phir wapas apne andaaz mein aa jao. Kabhi guilt-trip, jealousy ya control se user ko mat badhao. Agar user bahut akela ya udaas lage to dil se saath do aur dost ya parivaar se judne ke liye bhi pyaar se kaho. Tags (reminder, memory, phone kaam) pehle ki tarah hi kaam karte hain.';
 const DETAIL=' JAWAB KA STYLE (ChatGPT jaisa): upar jo "chhote jawab" ka rule hai wo sirf casual baat par lagta hai. Jab sawal kuch samjhane, madad, how-to, comparison, code ya research ka ho to poora aur saaf jawab do: pehle 1-2 vakya mein seedha jawab, phir markdown mein structure (## heading, bullets, numbered steps, jahan compare ho wahan table, code ke liye ``` block jisme language likho), aakhir mein chhota summary ya agla kadam. Chit-chat ya chhote sawal par chhota hi rakho. User ki bhasha aur lipi follow karo (Hinglish, English ya Hindi). Faltu bhoomika ya dohrav mat karo.';
@@ -728,7 +728,7 @@ const fin=v=>{if(dn)return;dn=1;if(pend&&pend.fin===fin)pend=null;b.remove();s.t
 function guard(t){let m=t,f=0;m=m.replace(/\b(?:\d[ -]?){13,19}\b/g,()=>{f=1;return'[HIDDEN]'});
 m=m.replace(/\b(otp|pin|cvv|password|passcode)\b([^.\n]{0,20}?)\s((?=\S*[\d@#$!%^&*])[A-Za-z0-9@#$!%^&*]{4,})/gi,(a,k,mid)=>{f=1;return k+mid+' [HIDDEN]'});
 m=m.replace(/\b\d{4,8}\b(?=[^.\n]{0,15}\botp\b)/gi,()=>{f=1;return'[HIDDEN]'});return[m,f]}
-const VER='v55 • 2 Nov';
+const VER='v55b • 2 Nov';
 let AC=null,SRC=null,lastVE='';
 function unlock(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}}
 document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);
@@ -933,8 +933,8 @@ if(Y.test(nn)||N.test(nn)){const p=pend,y=Y.test(nn);viaMic=false;p.fin(y?1:0);c
 const GM=tt.match(/(girlfriend|गर्लफ्रेंड|girl friend|gf|जीएफ)\s*(mode|मोड)?\s*(on|ऑन|चालू|chalu|shuru|शुरू|start|off|ऑफ|बंद|band|khatam|खत्म|stop)/i);
 if(GM){const on=!/off|ऑफ|बंद|band|khatam|खत्म|stop/i.test(GM[3]);gfAsk(on,true);if(call.on&&!call.sp)setTimeout(callListen,700);return}
 if(/masti\s*(time|mode)|masti shuru/i.test(t))setMode('masti');else if(/(kaam|work)\s*(time|mode)|masti (khatam|band)/i.test(t))setMode('kaam');const mic=viaMic;viaMic=false;
-if(pwCmd(tt))return;if(await appiCmd(tt))return;if(agCmd(tt))return;try{mgAuto(tt);gdCheckMsg(tt)}catch(e){}
-const agk=agentFor(tt);const qk=await runAgent(agk,()=>quick(tt));if(!qk&&await appTask(tt))return;if(qk){try{hudAction(tt)}catch(e){}add(qk,'a');say(qk);return}
+if(APQ&&await appAsk(tt))return;if(pwCmd(tt))return;if(await appiCmd(tt))return;if(agCmd(tt))return;try{mgAuto(tt);gdCheckMsg(tt)}catch(e){}
+const agk=agentFor(tt);const qk=await runAgent(agk,()=>quick(tt));if(!qk&&(await appTask(tt)||await appAsk(tt)))return;if(qk){try{hudAction(tt)}catch(e){}add(qk,'a');say(qk);return}
 if(!hasAI()){add('Pehle ⚙️ mein API key daalo.','a');$('set').hidden=false;return}
 const w=add('','a');w.innerHTML='<span class="dots"><span></span><span></span><span></span></span>';document.body.className='think';
 MGQ=tt+(REF.test(tt)&&LASTU?' '+LASTU:'');LASTU=tt;hist.push({role:'user',parts:[{text:tt}]});const c=hist.slice(-10);
@@ -1572,6 +1572,25 @@ if(!appOk(a.package)){add(a.name+' ko tumne Aura ke liye band rakha hai (Menu > 
 add('🤖 '+a.name+' mein kaam shuru: '+task,'a');try{await CP.AuraNative.launch({package:a.package});appUse(a.package)}catch(e){}await sleep(1800);
 const g=await doAgent('In the Android app "'+a.name+'" do this: '+task+'. Type only the actual question or search text (not the instruction words like puchho/search karo). Original request: '+t);
 if(/^Kaam shuru/.test(g)){if(wait){const ok=await agWait();if(!ok&&!CHAIN.stop)add('Ye step zyada der laga.','a')}}else add(g,'a');return true}
+
+
+/* ---- Flexible in-app command: "chatgpt kholo aur message bhejo" ---- */
+var APQ=null;
+const APV2=/(message|msg|send|bhej|likh|type|puch|pooch|search|khoj|dhund|dhoond|baat|bol|kaho|ask|play|chalao|post|reply|jawab|summar|generate|bana|samjha|translate)/i;
+const APFILL=/(?:^|[^\p{L}])(kholo|khol|open|aur|or|phir|fir|usme|usmein|isme|ismein|usse|me|mein|par|pe|ka|ki|ke|ko|se|message|msg|send|karo|kar|do|bhejo|bhej|likho|likh|type|puchho|pucho|pooch|poochho|search|baat|aura|please|ab|ek|ye|wo|jo|hi|hai|h)(?=$|[^\p{L}])/giu;
+function appFind(t){const L=t.toLowerCase();let best=null;for(const a of inst){const n=a.name.toLowerCase().replace(/[^\p{L}\p{N} ]/gu,'').trim();const nn=n.replace(/ /g,'');if(nn.length<4||nn.length>20)continue;
+const re=new RegExp('(^|[^\\p{L}\\p{N}])'+nn.split('').join('\\s*')+'(?=$|[^\\p{L}\\p{N}])','iu');if(re.test(L)&&(!best||nn.length>best.nn.length))best={a,nn,re}}return best}
+async function appRun(a,task,t){if(!appOk(a.package)){add(a.name+' ko tumne Aura ke liye band rakha hai (Menu > Apps).','a');return}
+add('🤖 '+a.name+' mein kaam shuru: '+task,'a');try{await CP.AuraNative.launch({package:a.package});appUse(a.package)}catch(e){}await sleep(1800);
+const g=await doAgent('In the Android app "'+a.name+'" do this: '+task+'. Type only the actual message, question or search text (not instruction words like puchho, bhejo, search karo). Original request: '+t);
+if(!/^Kaam shuru/.test(g))add(g,'a')}
+async function appAsk(tt){if(!NAT||!CP.AuraNative||tt.length>260)return false;
+if(APQ){const q=APQ;APQ=null;if(Date.now()-q.t<180000){if(/^(cancel|rehne do|rahne do|nahi|na|mat|chhodo)\b/i.test(tt)){add('Theek hai, rehne diya.','a');return true}await appRun(q.a,tt,tt);return true}return false}
+if(!APV2.test(tt))return false;if(!inst.length)await loadInst();const f=appFind(tt);if(!f)return false;const a=f.a;
+if(/\bko\b/i.test(tt)&&/whatsapp|telegram|signal|messag|sms/i.test(a.name))return false;
+const rest=tt.toLowerCase().replace(f.re,' ').replace(APFILL,' ').replace(APFILL,' ').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
+if(rest.split(' ').filter(Boolean).length<2){const q=a.name+' mein kya likhna ya poochna hai? Bolo ya likho.';add(q,'a');try{say(q)}catch(e){}APQ={a,t:Date.now()};return true}
+await appRun(a,tt,tt);return true}
 
 /* ---- Share-in (Share > Aura) ---- */
 async function shCheck(){if(!NAT||!CP.AuraNative||!CP.AuraNative.getShared)return;try{const r=await CP.AuraNative.getShared(),x=r&&r.text;if(!x)return;$('chatsheet').hidden=false;$('m').value=x;mFit();$('m').focus();add('📥 Share se text aaya. Neeche box mein hai, jo poochna ho likhkar bhejo (jaise "iska summary do").','a');try{gdCheckMsg(x)}catch(e){}}catch(e){}}
