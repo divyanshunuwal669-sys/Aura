@@ -680,6 +680,50 @@ jobs:
             }
 
             @PluginMethod
+            public void agentResult(PluginCall call) {
+              JSObject o = new JSObject();
+              String out = "";
+              String said = "";
+              try {
+                Class<?> c = Class.forName("com.divyanshu.aura.AgentCore");
+                Object r = c.getMethod("result").invoke(null);
+                Object d = c.getMethod("said").invoke(null);
+                out = r == null ? "" : r.toString();
+                said = d == null ? "" : d.toString();
+              } catch (Throwable t) { }
+              o.put("out", out);
+              o.put("said", said);
+              call.resolve(o);
+            }
+
+            @PluginMethod
+            public void bubble(PluginCall call) {
+              JSObject o = new JSObject();
+              try {
+                android.content.Context c = getContext();
+                boolean on = Boolean.TRUE.equals(call.getBoolean("on", false));
+                android.content.Intent i = new android.content.Intent(c, Class.forName("com.divyanshu.aura.BubbleService"));
+                if (on) {
+                  if (android.os.Build.VERSION.SDK_INT >= 23 && !android.provider.Settings.canDrawOverlays(c)) {
+                    android.content.Intent p = new android.content.Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION, android.net.Uri.parse("package:" + c.getPackageName()));
+                    p.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+                    c.startActivity(p);
+                    o.put("need", true);
+                    call.resolve(o);
+                    return;
+                  }
+                  c.startService(i);
+                } else {
+                  c.stopService(i);
+                }
+                o.put("ok", true);
+                call.resolve(o);
+              } catch (Throwable t) {
+                call.reject("bubble: " + t.getMessage());
+              }
+            }
+
+            @PluginMethod
             public void agentRunning(PluginCall call) {
               JSObject o = new JSObject();
               boolean r = false;
@@ -752,6 +796,109 @@ jobs:
               super.onNewIntent(intent);
               setIntent(intent);
               AuraNativePlugin.takeShare(intent);
+            }
+          }
+          EOF
+          cat > $D/BubbleService.java << 'EOF'
+          package com.divyanshu.aura;
+
+          import android.app.Service;
+          import android.content.Intent;
+          import android.graphics.Color;
+          import android.graphics.PixelFormat;
+          import android.graphics.drawable.GradientDrawable;
+          import android.os.Build;
+          import android.os.IBinder;
+          import android.provider.Settings;
+          import android.view.Gravity;
+          import android.view.MotionEvent;
+          import android.view.View;
+          import android.view.WindowManager;
+          import android.widget.TextView;
+
+          public class BubbleService extends Service {
+            private WindowManager wm;
+            private TextView v;
+            private WindowManager.LayoutParams lp;
+
+            @Override
+            public IBinder onBind(Intent i) { return null; }
+
+            @Override
+            public int onStartCommand(Intent i, int f, int s) {
+              show();
+              return START_STICKY;
+            }
+
+            private void show() {
+              if (v != null) return;
+              if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(this)) { stopSelf(); return; }
+              try {
+                wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+                v = new TextView(this);
+                v.setText("A");
+                v.setTextColor(Color.WHITE);
+                v.setTextSize(20);
+                v.setGravity(Gravity.CENTER);
+                GradientDrawable g = new GradientDrawable();
+                g.setShape(GradientDrawable.OVAL);
+                g.setColor(0xE6112244);
+                g.setStroke(3, 0xFF7EE0FF);
+                v.setBackground(g);
+                int sz = (int) (52 * getResources().getDisplayMetrics().density);
+                int type = Build.VERSION.SDK_INT >= 26 ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY : WindowManager.LayoutParams.TYPE_PHONE;
+                lp = new WindowManager.LayoutParams(sz, sz, type,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                    PixelFormat.TRANSLUCENT);
+                lp.gravity = Gravity.TOP | Gravity.START;
+                lp.x = 0;
+                lp.y = 400;
+                v.setOnTouchListener(new View.OnTouchListener() {
+                  float dx, dy;
+                  int sx, sy;
+                  boolean moved;
+                  @Override
+                  public boolean onTouch(View view, MotionEvent e) {
+                    int a = e.getAction();
+                    if (a == MotionEvent.ACTION_DOWN) {
+                      sx = lp.x; sy = lp.y; dx = e.getRawX(); dy = e.getRawY(); moved = false;
+                      return true;
+                    } else if (a == MotionEvent.ACTION_MOVE) {
+                      float mx = e.getRawX() - dx, my = e.getRawY() - dy;
+                      if (Math.abs(mx) > 12 || Math.abs(my) > 12) moved = true;
+                      if (moved) {
+                        lp.x = (int) (sx + mx);
+                        lp.y = (int) (sy + my);
+                        try { wm.updateViewLayout(v, lp); } catch (Throwable t) { }
+                      }
+                      return true;
+                    } else if (a == MotionEvent.ACTION_UP) {
+                      if (!moved) open();
+                      return true;
+                    }
+                    return false;
+                  }
+                });
+                wm.addView(v, lp);
+              } catch (Throwable t) {
+                v = null;
+                stopSelf();
+              }
+            }
+
+            private void open() {
+              try {
+                Intent i = new Intent(this, MainActivity.class);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                startActivity(i);
+              } catch (Throwable t) { }
+            }
+
+            @Override
+            public void onDestroy() {
+              try { if (v != null && wm != null) wm.removeView(v); } catch (Throwable t) { }
+              v = null;
+              super.onDestroy();
             }
           }
           EOF
@@ -2306,6 +2453,17 @@ jobs:
           public class AgentCore {
             private static volatile boolean running = false;
             private static volatile boolean cancel = false;
+            private static volatile String OUT = "";
+            private static volatile String SAYMSG = "";
+
+            public static String result() {
+              return OUT;
+            }
+
+            public static String said() {
+              return SAYMSG;
+            }
+
             private static final String CH = "aura_agent";
             private static final String[] BLOCK_PKG = new String[] { "paisa", "phonepe", "paytm", "bhim", "upi", "bank", "wallet", "razorpay", "cred.club", "payment", "pay" };
             private static final java.util.regex.Pattern BLOCK_RE = java.util.regex.Pattern.compile("\\b(pay|buy|purchase|checkout|place order|order now|transfer|send money|upi|delete|uninstall|erase|factory reset|payment)\\b|भुगतान|डिलीट", java.util.regex.Pattern.CASE_INSENSITIVE);
@@ -2328,6 +2486,8 @@ jobs:
               if (running) return "Pehle se ek kaam chal raha hai.";
               running = true;
               cancel = false;
+              OUT = "";
+              SAYMSG = "";
               new Thread(new Runnable() {
                 public void run() {
                   final BroadcastReceiver rcv = new BroadcastReceiver() {
@@ -2394,7 +2554,7 @@ jobs:
                 String act = a.optString("action", "");
                 String say = a.optString("say", "");
                 note(ctx, "Aura kaam kar rahi hai", goal + " | step " + step + ": " + (say.length() > 0 ? say : act), true);
-                if ("done".equals(act)) { finish(ctx, say.length() > 0 ? say : "Ho gaya."); return; }
+                if ("done".equals(act)) { if (OUT.length() == 0) OUT = say; finish(ctx, say.length() > 0 ? say : "Ho gaya."); return; }
                 if ("fail".equals(act)) { finish(ctx, say.length() > 0 ? say : "Nahi ho paya."); return; }
                 int res = exec(ctx, svc, a, nodes);
                 if (res < 0) { finish(ctx, "Ye kaam payment ya delete jaisa hai, main nahi karti."); return; }
@@ -2567,6 +2727,25 @@ jobs:
                 }
                 return 0;
               }
+              if ("read".equals(act)) {
+                StringBuilder rb = new StringBuilder();
+                for (AccessibilityNodeInfo rn : nodes) {
+                  String l = label(rn);
+                  if (l.length() > 0 && !l.startsWith("[icon")) rb.append(l).append('\n');
+                  if (rb.length() > 3000) break;
+                }
+                OUT = rb.toString().trim();
+                return OUT.length() > 0 ? 1 : 0;
+              }
+              if ("clip".equals(act)) {
+                try {
+                  android.content.ClipboardManager cm = (android.content.ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
+                  cm.setPrimaryClip(android.content.ClipData.newPlainText("aura", a.optString("text", "")));
+                  return 1;
+                } catch (Throwable t) {
+                  return 0;
+                }
+              }
               if ("scroll".equals(act)) {
                 AccessibilityNodeInfo n = idOk ? nodes.get(id) : firstScrollable(svc.getRootInActiveWindow(), 0);
                 if (n == null) return 0;
@@ -2616,13 +2795,14 @@ jobs:
 
             // ---------- AI ----------
             private static final String SYS = "You control an Android phone through its accessibility tree. Reply with ONE JSON object and nothing else: "
-              + "{\"action\":\"click|type|enter|scroll|back|home|open|wait|done|fail\",\"id\":<element id>,\"text\":\"<text to type>\",\"dir\":\"down|up\",\"app\":\"<app name for open>\",\"say\":\"very short Hinglish status\"}. "
+              + "{\"action\":\"click|type|enter|scroll|back|home|open|wait|read|clip|done|fail\",\"id\":<element id>,\"text\":\"<text to type>\",\"dir\":\"down|up\",\"app\":\"<app name for open>\",\"say\":\"very short Hinglish status\"}. "
               + "Choose the single next best action. Screen elements are listed as id|flags|label (c=clickable e=editable s=scrollable k=checkbox). Unlabeled icon buttons are listed as [icon Class at x= y=]. "
               + "Use open to launch an app by name (skip it if CURRENT APP is already the right app). "
               + "HOW TO WORK INSIDE APPS: to search, click the search icon/box if needed, type the query into the editable element, then use enter; if enter fails click the Search/Send/Go button or the icon button at the right end of the input row. "
               + "For chat or AI apps (ChatGPT, Gemini, Claude, WhatsApp, Telegram etc.): click the message box (editable), type the message once, then click the Send button (label Send, or an unlabeled icon at the right/bottom-right of the input row, usually the one that appeared after typing). Do not type the same text again if the box already contains it. "
               + "If you need to wait for a reply, use wait a few times until the answer finishes appearing, then read it. "
               + "If the goal asks for an answer or information, when done put the answer in say in short Hinglish or English (max 250 characters). "
+              + "Use read to capture all visible text of the current screen (for example a message, a price, a list) so Aura can pass it to the next app; after read you may scroll and read again, or finish with done. Use clip with text to copy text to the clipboard. "
               + "If nothing happens after 2 tries, scroll, go back, or try a different element. Dismiss popups with Skip, Not now, Close, Allow only if they block the goal. "
               + "Never make payments, purchases or transfers and never delete or uninstall anything; if the goal needs that, reply fail. Never type passwords. "
               + "When the goal is achieved reply done. If you are stuck after several tries reply fail.";
@@ -2739,6 +2919,7 @@ jobs:
             }
 
             private static void finish(final Context ctx, final String msg) {
+              SAYMSG = msg == null ? "" : msg;
               note(ctx, "Aura", msg, false);
               new Handler(Looper.getMainLooper()).post(new Runnable() {
                 public void run() {
@@ -3126,8 +3307,8 @@ jobs:
           </resources>
           EOF
           M=android/app/src/main/AndroidManifest.xml
-          sed -i 's#<application#<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><uses-permission android:name="android.permission.RECORD_AUDIO"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/><uses-permission android:name="android.permission.USE_EXACT_ALARM"/><uses-permission android:name="android.permission.WRITE_SETTINGS"/><uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/><uses-permission android:name="android.permission.FLASHLIGHT"/><uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/><uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/><uses-permission android:name="android.permission.VIBRATE"/><uses-permission android:name="android.permission.SET_ALARM"/><queries><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent><intent><action android:name="android.speech.RecognitionService"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries><application#' $M
-          sed -i 's#</application>#<!--AURA_X1--><service android:name=".WakeService" android:exported="false" android:foregroundServiceType="microphone"/><!--AURA_X2--><!--AURA_Y1--><service android:name=".SendService" android:exported="true" android:label="Aura Auto-Send" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"><intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter><meta-data android:name="android.accessibilityservice" android:resource="@xml/aura_access"/></service><!--AURA_Y2--></application>#' $M
+          sed -i 's#<application#<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><uses-permission android:name="android.permission.RECORD_AUDIO"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/><uses-permission android:name="android.permission.USE_EXACT_ALARM"/><uses-permission android:name="android.permission.WRITE_SETTINGS"/><uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/><uses-permission android:name="android.permission.FLASHLIGHT"/><uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/><uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/><uses-permission android:name="android.permission.VIBRATE"/><uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.SET_ALARM"/><queries><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent><intent><action android:name="android.speech.RecognitionService"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries><application#' $M
+          sed -i 's#</application>#<service android:name=".BubbleService" android:exported="false"/><!--AURA_X1--><service android:name=".WakeService" android:exported="false" android:foregroundServiceType="microphone"/><!--AURA_X2--><!--AURA_Y1--><service android:name=".SendService" android:exported="true" android:label="Aura Auto-Send" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"><intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter><meta-data android:name="android.accessibilityservice" android:resource="@xml/aura_access"/></service><!--AURA_Y2--></application>#' $M
           sed -i '0,/<\/activity>/s#</activity>#<intent-filter><action android:name="android.intent.action.SEND"/><category android:name="android.intent.category.DEFAULT"/><data android:mimeType="text/plain"/></intent-filter></activity>#' $M
           python3 -m pip install pillow --break-system-packages -q || python3 -m pip install pillow -q || true
           cat > aura_icon.py << 'PYEOF'
@@ -3222,7 +3403,7 @@ jobs:
             echo "FULL build: launcher + media + Hey Aura + Auto-Send + Screen-control + HUD stats" > build-info.txt
           else
             echo "=== FULL fail: retry without HUD stats ==="
-            rm -f $J/HudNative.java
+            rm -f $J/HudNative.java $J/BubbleService.java
             if ./gradlew assembleDebug > gl2.log 2>&1; then
               echo "BUILD 1b: Hey Aura + Auto-Send + Screen-control (HUD stats/icons nahi)" > build-info.txt
             else
