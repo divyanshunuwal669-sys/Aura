@@ -436,7 +436,7 @@ jobs:
             @PluginMethod
             public void setBrain(PluginCall call) {
               android.content.SharedPreferences.Editor e = getContext().getSharedPreferences("aura", Context.MODE_PRIVATE).edit();
-              String[] ks = new String[] { "gk", "ek", "ev", "smk", "smv", "smn", "gfm", "edv", "qk", "dev", "uname", "rules", "autoc", "deny" };
+              String[] ks = new String[] { "gk", "ek", "ev", "smk", "smv", "smn", "gfm", "edv", "qk", "dev", "uname", "rules", "autoc", "deny", "vis", "lo" };
               for (String k : ks) e.putString(k, call.getString(k, ""));
               e.putBoolean("bg", call.getBoolean("bg", true));
               e.apply();
@@ -2418,6 +2418,124 @@ jobs:
             }
           }
           EOF
+          cat > $D/AgentVision.java << 'EOF'
+          package com.divyanshu.aura;
+
+          import android.accessibilityservice.AccessibilityService;
+          import android.graphics.Bitmap;
+          import android.util.Base64;
+          import java.io.ByteArrayOutputStream;
+          import java.net.HttpURLConnection;
+          import java.net.URL;
+          import java.util.ArrayList;
+          import java.util.concurrent.CountDownLatch;
+          import java.util.concurrent.Executors;
+          import java.util.concurrent.TimeUnit;
+          import org.json.JSONArray;
+          import org.json.JSONObject;
+
+          public class AgentVision {
+            private static volatile String B64 = null;
+            private static volatile float SCALE = 1f;
+            private static volatile int W = 0, H = 0;
+
+            private static String shot(final AccessibilityService svc) {
+              if (android.os.Build.VERSION.SDK_INT < 30) return null;
+              B64 = null;
+              final CountDownLatch L = new CountDownLatch(1);
+              try {
+                svc.takeScreenshot(android.view.Display.DEFAULT_DISPLAY, Executors.newSingleThreadExecutor(), new AccessibilityService.TakeScreenshotCallback() {
+                  @Override
+                  public void onSuccess(AccessibilityService.ScreenshotResult r) {
+                    try {
+                      Bitmap hw = Bitmap.wrapHardwareBuffer(r.getHardwareBuffer(), r.getColorSpace());
+                      Bitmap b = hw.copy(Bitmap.Config.ARGB_8888, false);
+                      r.getHardwareBuffer().close();
+                      int tw = 720;
+                      float s = (float) b.getWidth() / tw;
+                      int th = Math.round(b.getHeight() / s);
+                      Bitmap sc = Bitmap.createScaledBitmap(b, tw, th, true);
+                      ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                      sc.compress(Bitmap.CompressFormat.JPEG, 60, bo);
+                      SCALE = s;
+                      W = tw;
+                      H = th;
+                      B64 = Base64.encodeToString(bo.toByteArray(), Base64.NO_WRAP);
+                    } catch (Throwable t) {
+                      B64 = null;
+                    } finally {
+                      L.countDown();
+                    }
+                  }
+
+                  @Override
+                  public void onFailure(int code) {
+                    L.countDown();
+                  }
+                });
+                L.await(5, TimeUnit.SECONDS);
+              } catch (Throwable t) {
+                return null;
+              }
+              return B64;
+            }
+
+            // Returns JSON action string with real screen pixel x,y, or null
+            public static String see(AccessibilityService svc, String gk, String goal, String pkg, String hist) {
+              try {
+                String img = shot(svc);
+                if (img == null || gk == null || gk.length() < 6) return null;
+                String sys = "You control an Android phone by looking at a screenshot (" + W + "x" + H + " px). Reply ONLY with one JSON object: "
+                    + "{\"action\":\"tapxy|type|enter|scroll|back|home|wait|done|fail\",\"x\":int,\"y\":int,\"target\":\"visible label of what you tap\",\"text\":\"for type\",\"dir\":\"down|up for scroll\",\"say\":\"short Hinglish note\"}. "
+                    + "x,y are pixel coordinates inside THIS image. Find buttons by how they look (magnifier = search, gear = settings, paper plane = send, three dots = more). "
+                    + "For type, first tapxy the text field, then type. Never pay, buy, transfer, delete or type passwords. If the goal needs that reply fail. When done reply done.";
+                String user = "GOAL: " + goal + "\nAPP: " + pkg + "\nRECENT: " + hist;
+                JSONObject body = new JSONObject();
+                body.put("system_instruction", new JSONObject().put("parts", new JSONArray().put(new JSONObject().put("text", sys))));
+                JSONArray parts = new JSONArray();
+                parts.put(new JSONObject().put("text", user));
+                parts.put(new JSONObject().put("inline_data", new JSONObject().put("mime_type", "image/jpeg").put("data", img)));
+                body.put("contents", new JSONArray().put(new JSONObject().put("role", "user").put("parts", parts)));
+                body.put("generationConfig", new JSONObject().put("responseMimeType", "application/json").put("temperature", 0.2));
+                String[] models = new String[] { "gemini-flash-latest", "gemini-flash-lite-latest" };
+                for (String m : models) {
+                  HttpURLConnection c = null;
+                  try {
+                    c = (HttpURLConnection) new URL("https://generativelanguage.googleapis.com/v1beta/models/" + m + ":generateContent").openConnection();
+                    c.setRequestMethod("POST");
+                    c.setConnectTimeout(12000);
+                    c.setReadTimeout(30000);
+                    c.setRequestProperty("Content-Type", "application/json");
+                    c.setRequestProperty("x-goog-api-key", gk);
+                    c.setDoOutput(true);
+                    c.getOutputStream().write(body.toString().getBytes("UTF-8"));
+                    if (c.getResponseCode() != 200) continue;
+                    java.io.BufferedReader br = new java.io.BufferedReader(new java.io.InputStreamReader(c.getInputStream(), "UTF-8"));
+                    StringBuilder sb = new StringBuilder();
+                    String ln;
+                    while ((ln = br.readLine()) != null) sb.append(ln);
+                    JSONArray ps = new JSONObject(sb.toString()).getJSONArray("candidates").getJSONObject(0).getJSONObject("content").getJSONArray("parts");
+                    StringBuilder o = new StringBuilder();
+                    for (int i = 0; i < ps.length(); i++) o.append(ps.getJSONObject(i).optString("text", ""));
+                    String t = o.toString();
+                    int a = t.indexOf('{'), z = t.lastIndexOf('}');
+                    if (a < 0 || z < a) continue;
+                    JSONObject j = new JSONObject(t.substring(a, z + 1));
+                    if (j.has("x")) j.put("x", Math.round(j.optDouble("x", 0) * SCALE));
+                    if (j.has("y")) j.put("y", Math.round(j.optDouble("y", 0) * SCALE));
+                    return j.toString();
+                  } catch (Throwable e) {
+                    continue;
+                  } finally {
+                    if (c != null) c.disconnect();
+                  }
+                }
+              } catch (Throwable t) {
+              }
+              return null;
+            }
+          }
+          EOF
           cat > $D/AgentCore.java << 'EOF'
           package com.divyanshu.aura;
 
@@ -2547,7 +2665,17 @@ jobs:
                 ArrayList<AccessibilityNodeInfo> nodes = new ArrayList<AccessibilityNodeInfo>();
                 StringBuilder sb = new StringBuilder();
                 walk(root, 0, nodes, sb);
-                String reply = askAi(sp, goal, pkg, sb.toString(), hist);
+                String reply = null;
+                int hn = hist.size();
+                boolean weak = nodes.size() < 4 || (hn >= 2 && hist.get(hn - 1).contains("(fail)") && hist.get(hn - 2).contains("(fail)")) || (hn > 0 && hist.get(hn - 1).startsWith("STUCK"));
+                if (weak && "1".equals(sp.getString("vis", "")) && !"1".equals(sp.getString("lo", "")) && sp.getString("gk", "").length() > 5 && sb.indexOf("[password field]") < 0) {
+                  try {
+                    Class<?> vc = Class.forName("com.divyanshu.aura.AgentVision");
+                    Object vr = vc.getMethod("see", android.accessibilityservice.AccessibilityService.class, String.class, String.class, String.class, String.class).invoke(null, svc, sp.getString("gk", ""), goal, pkg, hist.toString());
+                    if (vr != null) reply = (String) vr;
+                  } catch (Throwable t) { }
+                }
+                if (reply == null) reply = askAi(sp, goal, pkg, sb.toString(), hist);
                 if (reply == null) { finish(ctx, "AI se jawab nahi mila."); return; }
                 JSONObject a = parse(reply);
                 if (a == null) { hist.add("invalid reply"); nap(500); continue; }
@@ -2561,6 +2689,7 @@ jobs:
                 String h = act;
                 if (a.has("id")) h += " #" + a.optInt("id");
                 if (a.has("text")) h += " '" + a.optString("text") + "'";
+                if (a.has("x")) h += " @" + a.optInt("x") + "," + a.optInt("y");
                 if (res == 0) h += " (fail)";
                 hist.add(h);
                 while (hist.size() > 8) hist.remove(0);
@@ -2703,6 +2832,13 @@ jobs:
                 if (BLOCK_RE.matcher(t).find()) return -1;
                 if (clickNode(n)) return 1;
                 return tapNode(svc, n) ? 1 : 0;
+              }
+              if ("tapxy".equals(act)) {
+                String tg = a.optString("target", "") + " " + a.optString("say", "");
+                if (BLOCK_RE.matcher(tg).find()) return -1;
+                float tx = (float) a.optDouble("x", -1), ty = (float) a.optDouble("y", -1);
+                if (tx < 0 || ty < 0) return 0;
+                return svc.tap(tx, ty) ? 1 : 0;
               }
               if ("type".equals(act)) {
                 if (!idOk) {
@@ -3297,6 +3433,7 @@ jobs:
               android:accessibilityFlags="flagDefault|flagReportViewIds"
               android:canRetrieveWindowContent="true"
               android:canPerformGestures="true"
+              android:canTakeScreenshot="true"
               android:notificationTimeout="200"
               android:description="@string/aura_access_desc" />
           EOF
@@ -3403,7 +3540,7 @@ jobs:
             echo "FULL build: launcher + media + Hey Aura + Auto-Send + Screen-control + HUD stats" > build-info.txt
           else
             echo "=== FULL fail: retry without HUD stats ==="
-            rm -f $J/HudNative.java $J/BubbleService.java
+            rm -f $J/HudNative.java $J/BubbleService.java $J/AgentVision.java
             if ./gradlew assembleDebug > gl2.log 2>&1; then
               echo "BUILD 1b: Hey Aura + Auto-Send + Screen-control (HUD stats/icons nahi)" > build-info.txt
             else
