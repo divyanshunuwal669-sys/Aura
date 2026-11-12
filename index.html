@@ -139,6 +139,7 @@ details.g>button.k{height:44px}
 #lva.on{background:#7ee0ff33;outline:1px solid #7ee0ff}
 #attp .attb{background:rgba(255,255,255,.1)!important;color:#fff!important;border:1px solid rgba(255,255,255,.2)!important;box-shadow:none!important;display:flex;align-items:center;gap:8px;min-width:170px;height:42px}
 #attp .attb.on{outline:1px solid #7ee0ff;background:#7ee0ff33!important}
+#lfp input[type=text],#v8p input[type=text],#rtp input[type=text],#rtp input[type=time],#lvp input[type=text]{flex:none;height:46px;min-height:0}
 </style>
 <style id="glass">
 :root{--gb:22px;--wd:.25}
@@ -362,6 +363,7 @@ html.noglass .pn,html.noglass #chatsheet{-webkit-backdrop-filter:none!important;
 <div class="tl"><button class="ic" id="mnv8">&#128737;</button><small>Privacy aur Brain</small></div>
 <div class="tl"><button class="ic" id="mnrt">&#9200;</button><small>Routines</small></div>
 <div class="tl"><button class="ic" id="mnlv">&#128065;</button><small>Live camera</small></div>
+<div class="tl"><button class="ic" id="mnlf">&#128376;</button><small>Life Graph</small></div>
 <div class="tl"><button class="ic" id="hsc">&#128274;</button><small>Security</small></div>
 <div class="tl"><button class="ic" id="gear">&#9881;</button><small>Settings</small></div>
 </div></div></div>
@@ -406,8 +408,20 @@ html.noglass .pn,html.noglass #chatsheet{-webkit-backdrop-filter:none!important;
 <div class="pwc"><b>&#129504; Memory aur Suggestions</b>
 <label><input type="checkbox" id="v8ch"> Jawab ke neeche "kaunsi yaadein use hui" dikhao</label><label><input type="checkbox" id="v8pr"> Aadat dekhkar suggestion (sirf phone mein)</label><label><input type="checkbox" id="v8dp"> Gehri soch (dheema par behtar)</label>
 <div class="tabs"><button class="cl" id="v8ig">&#128302; Aadatein samjho</button><button class="cl" id="v8hc">Aadatein saaf</button></div><div id="v8in"></div></div>
+<div class="pwc"><b>&#128065; Vision navigation (Android)</b><label><input type="checkbox" id="v8vis"> Jab app ka layout samajh na aaye to screenshot dekhkar button dhoondo</label><small>Sirf tab, jab normal screen-control atak jaye. Screenshot Gemini ko jaata hai (password wali screen par nahi). Android 11+ chahiye. Local-only ON ho to band.</small></div>
 <div class="pwc"><b>&#128172; Floating bubble</b><label><input type="checkbox" id="v8bu"> Screen par chhota Aura bubble (kahin se bhi kholo)</label><small>Pehli baar "Doosre apps ke upar dikhao" permission maangegi.</small></div>
 <button class="k" id="v8x">Band karo</button>
+</div>
+<div id="lfp" class="ov v8" hidden>
+<h2 style="margin:0">&#128376; Life Graph</h2>
+<small style="color:#9ab">Aura ke andar jo tumne likha, bola, search kiya ya yaad rakhwaya, un sab ko jodkar summary ya report. Browser ya doosre apps ki history Aura ko nahi dikhti.</small>
+<div class="tabs"><button class="cl" id="lf7">7 din</button><button class="cl" id="lf30">30 din</button><button class="cl" id="lfall">Sab</button></div>
+<input id="lft" type="text" placeholder="Topic (khali = sab kuch), jaise: physics">
+<div id="lfth" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+<button class="k" id="lfgo">&#128221; Report banao</button>
+<div id="lfo" style="white-space:pre-wrap;font-size:14px;line-height:1.5"></div>
+<div class="tabs"><button class="cl" id="lfsv">Notes mein save</button><button class="cl" id="lfcp">Copy</button></div>
+<button class="k" id="lfx">Band karo</button>
 </div>
 <div id="chh" class="ov" hidden>
 <h2 style="margin:0">&#128344; Chat history</h2>
@@ -494,7 +508,7 @@ html.noglass .pn,html.noglass #chatsheet{-webkit-backdrop-filter:none!important;
 </div>
 <div id="txp" class="ov" hidden>
 <h2 style="margin:0">&#129302; Task Executor</h2>
-<p>Goal likho, Aura plan banayegi. Approve ke baad hi chalegi. Message, call, delete aur paise wale step ye kabhi nahi karta.</p>
+<p>Goal likho, Aura plan banayegi aur apps ke andar kaam karegi (search, message type karna, padhkar doosre app mein dena). Confirm OFF ho to seedha chalti hai, par message bhejne wale plan mein ek baar Approve maangti hai. Paise, delete, OTP aur password wale step kabhi nahi.</p>
 <input id="txi" type="text" placeholder="Goal (jaise: kal ki physics ki taiyari ka plan banao aur reminder lagao)">
 <button class="k" id="txgo2">Plan banao</button>
 <p id="txsum"></p>
@@ -788,7 +802,7 @@ const fin=v=>{if(dn)return;dn=1;if(pend&&pend.fin===fin)pend=null;b.remove();s.t
 function guard(t){let m=t,f=0;m=m.replace(/\b(?:\d[ -]?){13,19}\b/g,()=>{f=1;return'[HIDDEN]'});
 m=m.replace(/\b(otp|pin|cvv|password|passcode)\b([^.\n]{0,20}?)\s((?=\S*[\d@#$!%^&*])[A-Za-z0-9@#$!%^&*]{4,})/gi,(a,k,mid)=>{f=1;return k+mid+' [HIDDEN]'});
 m=m.replace(/\b\d{4,8}\b(?=[^.\n]{0,15}\botp\b)/gi,()=>{f=1;return'[HIDDEN]'});return[m,f]}
-const VER='v58 • 9 Nov';
+const VER='v59 • 12 Nov';
 let AC=null,SRC=null,lastVE='';
 function unlock(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}}
 document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);
@@ -993,7 +1007,7 @@ if(Y.test(nn)||N.test(nn)){const p=pend,y=Y.test(nn);viaMic=false;p.fin(y?1:0);c
 const GM=tt.match(/(girlfriend|गर्लफ्रेंड|girl friend|gf|जीएफ)\s*(mode|मोड)?\s*(on|ऑन|चालू|chalu|shuru|शुरू|start|off|ऑफ|बंद|band|khatam|खत्म|stop)/i);
 if(GM){const on=!/off|ऑफ|बंद|band|khatam|खत्म|stop/i.test(GM[3]);gfAsk(on,true);if(call.on&&!call.sp)setTimeout(callListen,700);return}
 if(/masti\s*(time|mode)|masti shuru/i.test(t))setMode('masti');else if(/(kaam|work)\s*(time|mode)|masti (khatam|band)/i.test(t))setMode('kaam');const mic=viaMic;viaMic=false;
-if(ATT.length&&await attSend(tt))return;if(await rtPhrase(tt))return;if(v8Cmd(tt))return;if(crossCmd(tt))return;if(APQ&&await appAsk(tt))return;if(pwCmd(tt))return;if(await appiCmd(tt))return;if(agCmd(tt))return;try{mgAuto(tt);gdCheckMsg(tt)}catch(e){}
+if(ATT.length&&await attSend(tt))return;if(await rtPhrase(tt))return;if(v8Cmd(tt)||v59Cmd(tt))return;if(crossCmd(tt))return;if(APQ&&await appAsk(tt))return;if(pwCmd(tt))return;if(await appiCmd(tt))return;if(agCmd(tt))return;try{mgAuto(tt);gdCheckMsg(tt)}catch(e){}
 const agk=agentFor(tt);const qk=await runAgent(agk,()=>quick(tt));if(!qk&&(await appTask(tt)||await appAsk(tt)))return;if(qk){try{hudAction(tt)}catch(e){}add(qk,'a');say(qk);return}
 if(offUse()){await offFlow(tt);return}if(!hasAI()){add('Pehle ⚙️ mein API key daalo.','a');$('set').hidden=false;return}
 const w=add('','a');w.innerHTML='<span class="dots"><span></span><span></span><span></span></span>';document.body.className='think';
@@ -1114,7 +1128,7 @@ const keep={};SKIP.forEach(k=>{if(S(k))keep[k]=S(k)});localStorage.clear();Objec
 const cfl=()=>$('cfm').textContent=autoC()?'✅ Confirm: OFF (seedha kar degi, haan nahi poochegi)':'🔒 Confirm: ON (pehle haan poochegi)';cfl();$('cfm').onclick=()=>{localStorage.setItem('autoc',autoC()?'0':'1');cfl();if(NAT)setBrain();add(autoC()?'Confirm OFF. Message, call aur search ab seedha honge. Delete aur memory ke liye abhi bhi poochungi.':'Confirm ON. Message aur call se pehle poochungi.','a')};
 const WPD=['hey aura','hay aura','hey ora','हे ऑरा','हे आउरा','हे औरा','हे आरा','हेलो ऑरा','hello aura','ae aura'];
 function wph(){const c=S('wp').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);return c.length?c:WPD}
-function setBrain(){try{return CP.AuraNative.setBrain({gk:S('gk'),ek:S('ek'),ev:S('ev'),smk:S('smk'),smv:S('smv'),smn:S('smn'),edv:S('edv'),gfm:gf?'1':'0',qk:S('qk'),dev:S('dev'),uname:S('uname'),rules:S('rules'),bg:S('bgm')!='0',autoc:S('autoc')=='0'?'0':'1',deny:appDenyStr()})}catch(e){}}
+function setBrain(){try{return CP.AuraNative.setBrain({gk:S('gk'),ek:S('ek'),ev:S('ev'),smk:S('smk'),smv:S('smv'),smn:S('smn'),edv:S('edv'),gfm:gf?'1':'0',qk:S('qk'),dev:S('dev'),uname:S('uname'),rules:S('rules'),bg:S('bgm')!='0',autoc:S('autoc')=='0'?'0':'1',deny:appDenyStr(),vis:S('vis')=='1'?'1':'',lo:(typeof V8!='undefined'&&V8.lo)?'1':''})}catch(e){}}
 async function heyOn(silent){const A=CP.AuraNative;if(!A)return;try{
 if(CP.SpeechRecognition){let pm=await CP.SpeechRecognition.checkPermissions();if(pm.speechRecognition!=='granted')pm=await CP.SpeechRecognition.requestPermissions();if(pm.speechRecognition!=='granted'){if(!silent)add('Hey Aura ke liye mic permission chahiye.','a');return}}
 await setBrain();const r=await A.wakeStart({phrases:wph()});
@@ -1449,7 +1463,7 @@ const msg=TXS.stop?'⏹ Task roka gaya ('+ok+'/'+TXS.plan.length+' step hue).':'
 add(msg,'a');if(!TXS.stop)say(sm||msg);$('txsum').textContent=msg;TXS.run=0;$('txgo').disabled=false;$('txstop').hidden=true;txDraw();txHist()}
 function txHist(){$('txh').textContent=TXL.length?'Pichhle: '+TXL.map(x=>x.g+' ('+x.ok+'/'+x.n+')').join(' • '):''}
 async function txStart(goal){goal=(goal||$('txi').value).trim();if(!goal)return;if(!hasAI()){$('txsum').textContent='Pehle ⚙️ mein API key daalo.';return}$('txi').value=goal;$('txsum').textContent='Plan ban raha hai...';TXS.plan=[];txDraw();
-const p=await txPlan(goal);if(!p||!p.length){$('txsum').textContent='Plan nahi ban paya (AI quota ya jawab alag aaya). Goal chhota aur saaf likhkar dobara try karo.';return}TXS.plan=p;$('txsum').textContent='Plan taiyar. Dekho, aur theek lage to Approve karo. Kuch bhi tumhari ijazat ke bina nahi hoga.';txDraw();if(autoC()&&TXS.plan.length&&!TXS.run){$('txsum').textContent='Plan taiyar, shuru kar rahi hoon. ⏹ Roko se kabhi bhi rok sakte ho.';txExec(goal)}}
+const p=await txPlan(goal);if(!p||!p.length){$('txsum').textContent='Plan nahi ban paya (AI quota ya jawab alag aaya). Goal chhota aur saaf likhkar dobara try karo.';return}TXS.plan=p;$('txsum').textContent='Plan taiyar. Dekho, aur theek lage to Approve karo. Kuch bhi tumhari ijazat ke bina nahi hoga.';txDraw();if(autoC()&&TXS.plan.length&&!TXS.run&&txAutoOk(TXS.plan)){$('txsum').textContent='Plan taiyar, shuru kar rahi hoon. ⏹ Roko se kabhi bhi rok sakte ho.';txExec(goal)}}
 function txOpen(goal){$('pw').hidden=true;$('txp').hidden=false;txHist();if(goal){$('txi').value=goal;txStart(goal)}}
 
 /* ---- Smart Code Sandbox ---- */
@@ -1904,5 +1918,86 @@ if(/screen (padho|dekho|samjhao|read)/.test(q)){scrRead('');return true}
 if(/(aadatein|habits|insights)\s*(samjho|dikhao|batao)/.test(q)){v8Open();inGen();return true}
 if(/(offline ai|on.?device ai).*(load|chalu|on|download)/.test(q)){v8Open();return true}
 return false}
+
+/* ===== v59: predictive automation, macros, life graph, offline voice, vision toggle ===== */
+var HLOG=J('hlg',[]),HP=J('hpn',{}),MAC=J('mac',[]),SRL=J('srl',[]);
+if(!V8.vis)V8.vis=0;
+const pad2=n=>String(n).padStart(2,'0');
+/* vision-navigation: tell Java */
+(function(){const o=localStorage.getItem('vis');if(o==null&&V8.vis)localStorage.setItem('vis','1')})();
+const _da=doAgent;doAgent=async function(g){if(V8.lo)return'Local-only ON hai, screen-control ko cloud AI chahiye. Pehle Local-only band karo.';return _da(g)};
+/* search log for life graph */
+const _sx2=srchX;srchX=async function(q){try{if(!V8.lo&&q){SRL.unshift({q:String(q).slice(0,120),ts:Date.now()});if(SRL.length>200)SRL.length=200;W('srl',SRL)}}catch(e){}return _sx2(q)};
+
+/* ---- 1. Predictive automation ---- */
+const _au2=appUse;appUse=function(pk){_au2(pk);try{HLOG.push({p:pk,h:new Date().getHours(),d:v8day()});if(HLOG.length>400)HLOG.splice(0,HLOG.length-400);W('hlg',HLOG)}catch(e){}};
+function sugCard(txt,yesT,onYes,onNo){const s=$('sugg');s.innerHTML='';const t=document.createElement('span');t.textContent=txt;const y=document.createElement('button');y.textContent=yesT;y.onclick=()=>{s.hidden=true;onYes()};const n=document.createElement('button');n.textContent='Nahi';n.onclick=()=>{s.hidden=true;onNo()};s.append(t,y,n);s.hidden=false;setTimeout(()=>{s.hidden=true},30000)}
+function patTick(){if(!V8.pro||document.hidden||call.on||!$('lk').hidden||!$('sugg').hidden||!inst.length||HSG.pat==v8day())return;
+const by={};HLOG.forEach(x=>{const k=x.p+':'+x.h;(by[k]=by[k]||new Set()).add(x.d)});
+for(const k in by){if(by[k].size<4||HP[k])continue;const[pk,h]=[k.split(':')[0],+k.split(':')[1]],a=inst.find(x=>x.package==pk);if(!a||!appOk(pk))continue;if(RTN.some(r=>r.cmds.some(c=>c=='@open '+a.name)))continue;
+HSG.pat=v8day();W('hsg',HSG);sugCard('🔮 Aap aksar '+pad2(h)+':00 ke aas-paas '+a.name+' kholte ho ('+by[k].size+' din). Is waqt ke liye routine bana doon?','Haan, bana do',()=>{HP[k]=1;W('hpn',HP);const r={id:'r'+Date.now().toString(36),name:'Roz '+a.name,trig:'time',time:pad2(h)+':00',days:[],phrase:'',cmds:['@open '+a.name],on:1,last:''};const n=new Date();if(h*60<n.getHours()*60+n.getMinutes())r.last=v8day();RTN.push(r);rtSave();aToast('Routine ban gayi (Menu > Routines)')},()=>{HP[k]=1;W('hpn',HP)});return}}
+setInterval(patTick,600000);setTimeout(patTick,15000);
+/* routine commands: @open, @read, @macro */
+const _xl=execLine;execLine=async function(t){t=String(t);
+if(t.startsWith('@open ')){const f=appFind(t.slice(6));if(f&&NAT&&CP.AuraNative){try{await CP.AuraNative.launch({package:f.a.package});appUse(f.a.package);add('📱 '+f.a.name+' khol di','a')}catch(e){}}return}
+if(t.startsWith('@read ')){try{const arg=t.slice(6);await txApp({do:'read',arg},'');if(!LASTD){add('📍 Screen se kuch padh nahi paayi.','a');return}let m=null;if(hasAI()&&!V8.lo)m=await aiRaw(sys(),'Screen se mila text:\n'+LASTD.slice(0,2500)+'\n\nKaam: '+arg.split('|').slice(1).join('|')+'\nIsse ek chhota alert Hinglish mein do (traffic/ETA ho to saaf batao). Sirf diye text se.',200);m=m||LASTD.slice(0,200);add('📍 '+m,'a');say(m);try{CP.LocalNotifications&&CP.LocalNotifications.schedule({notifications:[{id:1+Math.floor(Math.random()*2e9),title:'Aura 📍',body:m.slice(0,180),schedule:{at:new Date(Date.now()+1500)}}]}).catch(()=>{})}catch(e){}}catch(e){add('📍 Ye padhna nahi ho paya: '+(e.message||e),'a')}return}
+if(t.startsWith('@macro ')){const m=macFind(t.slice(7));if(m)await macRun(m);return}
+return _xl(t)};
+function rtCommute(hm,dest,music){const[h,m]=hm.split(':').map(Number);let t=h*60+m-15;if(t<0)t+=1440;const at=pad2(Math.floor(t/60))+':'+pad2(t%60);const cm=['@read Maps|'+dest+' ka route aur abhi ka traffic/ETA padho'];if(music)cm.push('@open '+music);
+const r={id:'r'+Date.now().toString(36),name:'Commute '+dest,trig:'time',time:at,days:[],phrase:'',cmds:cm,on:1,last:''};const n=new Date();if(t<n.getHours()*60+n.getMinutes())r.last=v8day();RTN.push(r);rtSave();return r}
+function parseHM(q){const m=q.match(/(\d{1,2})(?::(\d{2}))?\s*(baje|bje|am|pm)/);if(!m)return null;let h=+m[1];const mi=+(m[2]||0);if(/shaam|sham|raat|dopahar|pm/.test(q)&&h<12)h+=12;if(h>23)return null;return pad2(h)+':'+pad2(mi)}
+/* ---- 2. Macros ---- */
+function macFind(n){n=String(n).toLowerCase().trim();return MAC.find(m=>m.name.toLowerCase()==n)||MAC.find(m=>n&&(m.name.toLowerCase().includes(n)||n.includes(m.name.toLowerCase())))}
+async function macRun(m){$('pw').hidden=true;$('txp').hidden=false;TXS.plan=m.steps.map(s=>({do:s.do,arg:s.arg,st:''}));$('txi').value=m.name;$('txsum').textContent='Macro: '+m.name;txDraw();add('⚙️ Macro chal rahi hai: '+m.name,'a');await txExec(m.name)}
+function macDraw(){const L=$('mcl');if(!L)return;L.innerHTML='';if(MAC.length){const h=document.createElement('small');h.textContent='Macros (bolo: "macro NAAM chalao")';L.appendChild(h)}MAC.forEach((m,i)=>{const d=document.createElement('div');d.className='row';const s=document.createElement('span');s.style.flex='1';s.textContent='⚙️ '+m.name+' ('+m.steps.length+' step)';const a=document.createElement('button');a.textContent='▶';a.onclick=()=>macRun(m);const x=document.createElement('button');x.textContent='🗑';x.onclick=()=>{if(confirm('Macro "'+m.name+'" hatayein?')){MAC.splice(i,1);W('mac',MAC);macDraw()}};d.append(s,a,x);L.appendChild(d)})}
+function txAutoOk(pl){return!pl.some(s=>s.do=='app'&&/(bhej|send|message|msg|likh.*(ko|par)|text\b)/i.test(s.arg))}
+function macroCmd(t){if(t.length>200||V8.lo||!hasAI())return false;if(!/(plan|planning)\s*(banana|bana do|banao|bana de|karna|karo)|organi[sz]e|arrange karo/i.test(t)||!/(party|trip|meeting|birthday|dinner|event|function|get.?together|picnic)/i.test(t))return false;
+txOpen(t+'\n(Poori chain banao: doston ko WhatsApp par invite message [sirf tab jab goal mein naam diye hon], YouTube par music/playlist, Notes mein checklist.)');return true}
+/* ---- 4. Life graph ---- */
+var LF={days:30};
+const LSTOP=new Set('hai hain tha thi kya aur ko ke ki ka se me mein par ye wo yeh woh karo kar kal aaj abhi mera meri mere tum aap nahi bhi toh the and for with that this have from'.split(' '));
+function lifeItems(days,topic){const lim=days?Date.now()-days*864e5:0,it=[];mem.forEach(m=>{const g=MGM[m];it.push({s:'yaad',t:m,ts:(g&&g.ts)||0})});notes.forEach(n=>it.push({s:'note',t:n.t,ts:n.ts||0}));todos.forEach(n=>it.push({s:'todo',t:(n.d?'(hua) ':'')+n.t,ts:0}));rems.forEach(r=>it.push({s:'reminder',t:r.text+' ['+r.due+']',ts:new Date(String(r.due).replace(' ','T')).getTime()||0}));SRL.forEach(q=>it.push({s:'search',t:q.q,ts:q.ts}));
+CHS.forEach(c=>{(c.h||[]).filter(x=>x.role=='user').slice(0,8).forEach(x=>it.push({s:'chat',t:String(x.parts[0].text).slice(0,160),ts:c.ts}))});
+let out=it.filter(x=>x.t&&(!x.ts||!lim||x.ts>=lim));if(topic){const tk=new Set(mgTok(topic.toLowerCase()));out=out.filter(x=>mgTok(x.t.toLowerCase()).some(w=>tk.has(w)))}return out}
+function lifeThemes(it){const c={};it.forEach(x=>{new Set(mgTok(x.t.toLowerCase()).filter(w=>w.length>3&&!LSTOP.has(w))).forEach(w=>{c[w]=(c[w]||0)+1})});return Object.entries(c).filter(e=>e[1]>=2).sort((a,b)=>b[1]-a[1]).slice(0,8)}
+function lifeLocal(it,topic){const g={};it.forEach(x=>(g[x.s]=g[x.s]||[]).push(x));let o='## Aura ke paas jo hai ('+(topic||'sab')+')\n';for(const k in g)o+='\n**'+k+' ('+g[k].length+')**\n'+g[k].slice(0,6).map(x=>'• '+x.t.slice(0,120)).join('\n')+'\n';const th=lifeThemes(it);if(th.length)o+='\n**Themes:** '+th.map(e=>e[0]+' ('+e[1]+')').join(', ');return o}
+function lifeDraw(){const it=lifeItems(LF.days,'');const th=lifeThemes(it),b=$('lfth');b.innerHTML='';th.forEach(e=>{const c=document.createElement('span');c.className='achip';c.style.cursor='pointer';c.textContent=e[0]+' · '+e[1];c.onclick=()=>{$('lft').value=e[0]};b.appendChild(c)});if(!th.length)b.textContent=it.length?'Abhi koi saaf theme nahi (thoda aur use karo).':'Abhi data kam hai.';['lf7','lf30','lfall'].forEach(id=>$(id).classList.toggle('on',(id=='lf7'&&LF.days==7)||(id=='lf30'&&LF.days==30)||(id=='lfall'&&!LF.days)))}
+async function lifeGo(){const topic=$('lft').value.trim(),o=$('lfo');const it=lifeItems(LF.days,topic);if(!it.length){o.textContent='Is topic/period mein Aura ke paas kuch nahi mila.';return}o.textContent='Jod rahi hoon ('+it.length+' tukde)...';let r=null;
+if(hasAI()&&!V8.lo&&navigator.onLine){const tx=it.slice(0,120).map(x=>'['+x.s+(x.ts?' '+new Date(x.ts).toLocaleDateString('en-IN'):'')+'] '+x.t.slice(0,160)).join('\n');r=await aiRaw('Tum Aura ho. Neeche user ki Aura ke andar ki activity ke tukde hain (yaadein, notes, todo, reminders, search, chat sawal). Inhe jodkar Roman Hinglish markdown report banao: ## Saar (3-4 line), ## Mukhya themes (har theme ke saath kaunse tukde jude), ## Timeline (sirf jahan tareekh ho), ## Patterns, ## Agle kadam. SIRF diye gaye tukdon se likho, kuch invent mat karo, jahan data kam ho wahan saaf bolo.','Topic: '+(topic||'sab kuch')+'\n'+tx,1200)}
+if(!r){r=lifeLocal(it,topic);if(!V8.lo)r+='\n\n(AI report nahi ban paayi, ye local summary hai.)'}LF.last=r;try{o.innerHTML=mdHtml(r)}catch(e){o.textContent=r}}
+function lifeOpen(){$('more').hidden=true;$('lfp').hidden=false;lifeDraw()}
+/* ---- 5. Offline voice + local edge ---- */
+function phoneSay(t,d){stopTalk();document.body.className='talk';t=(ttsClean(t)||t).replace(/[*_#`]/g,'');if(NAT&&CP.TextToSpeech){CP.TextToSpeech.speak({text:t,lang:'en-IN',rate:1.05,pitch:1,volume:1}).then(d).catch(()=>d());return}if(!window.speechSynthesis){d();return}const vs=speechSynthesis.getVoices(),v=vs.find(x=>/en[-_]IN/i.test(x.lang))||vs.find(x=>/hi[-_]IN/i.test(x.lang))||vs.find(x=>/^en/i.test(x.lang)),u=new SpeechSynthesisUtterance(t);if(v){u.voice=v;u.lang=v.lang}else u.lang='en-IN';u.rate=1.05;u.onend=u.onerror=d;speechSynthesis.cancel();speechSynthesis.speak(u)}
+const _ws=webSay;webSay=async function(t,d){if(!navigator.onLine||V8.lo)return phoneSay(t,d);return _ws(t,d)};
+const _oa=offAns;offAns=function(t){const q=t.toLowerCase();if(/(aaj ka plan|aaj ki planning|meri planning|aaj ka schedule|today.?s plan|aaj kya karna)/.test(q)){const day=v8day(),R=rems.filter(r=>!r.done&&String(r.due).startsWith(day)),T=todos.filter(x=>!x.d);if(!R.length&&!T.length)return'Aaj ke liye koi reminder ya pending todo nahi hai.';return(R.length?'Aaj ke reminders:\n'+R.map(r=>'• '+String(r.due).slice(11)+' - '+r.text).join('\n')+'\n':'')+(T.length?'Pending todo:\n'+T.slice(0,8).map(x=>'☐ '+x.t).join('\n'):'')}return _oa(t)};
+/* offline local actions: reminder / note / todo */
+function offAct(t){const q=t.toLowerCase().trim();let m;
+if((m=q.match(/^(?:aura[, ]+)?(?:ek )?(?:note|likh)\w*\s*(?:karo|kar lo|kar do|likho|:|-)?\s*[:,-]?\s*(.{3,})$/))&&/^(?:aura[, ]+)?(?:ek )?(note|likh)/.test(q)&&!/(dikhao|batao|kya|list)/.test(q)){const x=t.replace(/^\s*(aura[, ]+)?(ek )?(note|likh)\w*\s*(karo|kar lo|kar do|likho)?\s*[:,-]?\s*/i,'').trim();if(x.length>2){notes.push({t:x.slice(0,500),ts:Date.now()});save();return'📝 Note save ho gaya: '+x.slice(0,80)}}
+if((m=q.match(/todo\s*(?:mein|me|list mein)?\s*(.{3,}?)\s*(?:jodo|add karo|add kar do|daal do|likho)$/))||(m=q.match(/^(?:aura[, ]+)?(.{3,}?)\s+todo\s*(?:mein|me)?\s*(?:jodo|add karo|add kar do|daal do)$/))){todos.push({t:m[1].trim().slice(0,150),d:0});save();return'☐ Todo mein jod diya: '+m[1].trim().slice(0,80)}
+if(/(remind|yaad dila|reminder)/.test(q)&&!/(dikhao|batao|kya|list|konse|kaun)/.test(q)){let d=new Date(),ok=0,mm=q.match(/(\d+)\s*(minute|min|mins|ghante|ghanta|hour|hours)\s*(baad|me|mein)/);
+if(mm){d=new Date(Date.now()+(+mm[1])*(/min/.test(mm[2])?60000:3600000));ok=1}else{const hm=parseHM(q);if(hm){const[h,mi]=hm.split(':').map(Number);d.setHours(h,mi,0,0);if(/parso/.test(q))d.setDate(d.getDate()+2);else if(/\bkal\b/.test(q))d.setDate(d.getDate()+1);else if(d<=new Date())d.setDate(d.getDate()+1);ok=1}}
+if(!ok)return null;let x=t.replace(/\b(aura[, ]+|mujhe|mere liye)/ig,' ').replace(/\d+\s*(minute|min|mins|ghante|ghanta|hour|hours)\s*(baad|me|mein)/ig,' ').replace(/\d{1,2}(:\d{2})?\s*(baje|bje|am|pm)/ig,' ').replace(/\b(kal|aaj|parso|subah|shaam|sham|raat|dopahar)\b/ig,' ').replace(/(reminder|remind|yaad dila\w*)\s*(laga\w*|set\w*|bana\w*|karo|kar do|do|dena)?/ig,' ').replace(/\b(ki|ko|ka|ke|ye|ek|ka)\b/ig,' ').replace(/\s+/g,' ').trim();if(!x)x='Reminder';
+const due=fmt(d),id=1+Math.floor(Math.random()*2e9);rems.push({due,text:x.slice(0,150),done:0,id});save();sched(due,x.slice(0,150),id);return'⏰ Reminder laga diya: "'+x.slice(0,80)+'" - '+due.slice(5)}
+return null}
+const _ol=offLocal;offLocal=async function(t){const a=offAct(t);if(a)return a;return _ol(t)};
+/* ---- UI wiring ---- */
+function v59Cmd(t){const q=t.toLowerCase().trim();if(q.length>200)return false;let m;
+if((m=q.match(/^(?:aura[, ]+)?macro\s+(.+?)\s+(?:chalao|run|start|karo)$/))||(m=q.match(/^(?:aura[, ]+)?(.+?)\s+macro\s+(?:chalao|run|start|karo)$/))){const x=macFind(m[1]);if(x){macRun(x);return true}}
+if(/(roz|daily|har din|har roz)/.test(q)&&/(office|college|school|kaam|work|class)/.test(q)&&/(nikal|jaata|jata|jaati|jati|rawana|jaana)/.test(q)){const hm=parseHM(q);if(hm){const d=(q.match(/(office|college|school|work|class|kaam)/)||[])[1]||'office';const r=rtCommute(hm,d,'');add('✅ Commute routine bani: nikalne se 15 min pehle ('+r.time+') '+d+' ka route/traffic check karke alert dungi. Phone mein Maps mein "'+d+'" ka address saved hona chahiye. Menu > Routines mein badal sakte ho.','a');return true}}
+if(/(life graph|life report|mahine ka summary|mahine ka saar|meri life ka summary|hafte ka summary)/.test(q)){LF.days=/hafte/.test(q)?7:30;lifeOpen();lifeGo();return true}
+if(/(.+)\s+(?:ka|ki|ke)\s+(?:project\s+)?report\s+(?:banao|bana do|taiyar)/.test(q)&&!/(web|app|code)/.test(q)){const tp=q.match(/(.+?)\s+(?:ka|ki|ke)\s+(?:project\s+)?report/)[1].replace(/^(aura[, ]+)?(mere |meri )?/,'').trim();if(tp.length>2){LF.days=0;lifeOpen();$('lft').value=tp;lifeGo();return true}}
+if(macroCmd(t))return true;return false}
+(function(){$('lfx').onclick=()=>$('lfp').hidden=true;$('mnlf').onclick=lifeOpen;$('lfgo').onclick=lifeGo;
+[['lf7',7],['lf30',30],['lfall',0]].forEach(([id,d])=>$(id).onclick=()=>{LF.days=d;lifeDraw()});
+$('lfsv').onclick=()=>{if(!LF.last)return;notes.push({t:'📊 Life report '+new Date().toLocaleDateString('en-IN')+'\n'+LF.last.slice(0,3500),ts:Date.now()});save();aToast('Notes mein save ho gayi')};
+$('lfcp').onclick=()=>{try{navigator.clipboard.writeText(LF.last||'');aToast('Copy ho gayi')}catch(e){aToast('Copy nahi hui')}};
+$('v8vis').checked=!!V8.vis;$('v8vis').onchange=()=>{V8.vis=$('v8vis').checked?1:0;localStorage.setItem('vis',V8.vis?'1':'0');v8Save();if(NAT)try{setBrain()}catch(e){}aToast(V8.vis?'Vision navigation ON (zarurat par screenshot Gemini ko jayega)':'Vision navigation OFF')};
+$('v8lo').addEventListener('change',()=>{if(NAT)try{setBrain()}catch(e){}});
+/* macro save button + list in Task panel */
+const sb=document.createElement('button');sb.className='cl';sb.textContent='💾 Macro banao';sb.onclick=()=>{if(!TXS.plan.length){aToast('Pehle plan banao');return}const n=prompt('Macro ka naam?',($('txi').value||'macro').slice(0,24));if(!n)return;MAC.push({id:'m'+Date.now().toString(36),name:n.trim().slice(0,30),steps:TXS.plan.map(s=>({do:s.do,arg:s.arg})),ts:Date.now()});W('mac',MAC);macDraw();aToast('Macro save: "'+n+'" - bolo: macro '+n+' chalao')};$('txg').appendChild(sb);
+const ml=document.createElement('div');ml.id='mcl';$('txh').insertAdjacentElement('afterend',ml);macDraw();
+/* commute form in routines */
+const cm=document.createElement('details');cm.innerHTML='<summary style="font-size:14px;padding:6px 0">🚗 Commute assistant (office jaane ka alert)</summary><input id="cmd" type="text" placeholder="Kahan jaana hai? (jaise: office)" value="office"><input id="cmt" type="time" value="08:00"><input id="cmm" type="text" placeholder="Music app (khali = nahi), jaise: YouTube Music"><button class="cl" id="cmgo">Banao</button><small style="color:#9ab">Nikalne se 15 min pehle Maps se route/traffic padhkar alert dungi. Cab book nahi karti (paise ka kaam), bas cab app khol sakti hoon.</small>';$('rtl').insertAdjacentElement('afterend',cm);
+$('cmgo').onclick=()=>{const d=$('cmd').value.trim()||'office';rtCommute($('cmt').value||'08:00',d,$('cmm').value.trim());aToast('Commute routine bani')}})();
 
 </script></body></html>
