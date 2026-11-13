@@ -738,6 +738,87 @@ jobs:
               call.resolve(o);
             }
 
+            private Object refl(String cls, String m, Class<?>[] sig, Object[] args) throws Exception {
+              return Class.forName("com.divyanshu.aura." + cls).getMethod(m, sig).invoke(null, args);
+            }
+
+            @PluginMethod
+            public void schedAdd(PluginCall call) {
+              JSObject o = new JSObject();
+              try {
+                Object r = refl("SchedReceiver", "add", new Class<?>[] { Context.class, String.class, double.class, String.class, String.class },
+                    new Object[] { getContext(), call.getString("id", ""), call.getDouble("at", 0.0), call.getString("kind", ""), call.getString("payload", "{}") });
+                o.put("mode", String.valueOf(r));
+              } catch (Throwable t) { o.put("mode", "error"); }
+              call.resolve(o);
+            }
+
+            @PluginMethod
+            public void schedCancel(PluginCall call) {
+              try { refl("SchedReceiver", "cancel", new Class<?>[] { Context.class, String.class }, new Object[] { getContext(), call.getString("id", "") }); } catch (Throwable t) { }
+              call.resolve(new JSObject());
+            }
+
+            @PluginMethod
+            public void schedList(PluginCall call) {
+              JSObject o = new JSObject();
+              String a = "[]", b = "[]";
+              try {
+                a = String.valueOf(refl("SchedReceiver", "list", new Class<?>[] { Context.class }, new Object[] { getContext() }));
+                b = String.valueOf(refl("SchedReceiver", "log", new Class<?>[] { Context.class }, new Object[] { getContext() }));
+              } catch (Throwable t) { }
+              o.put("list", a);
+              o.put("log", b);
+              call.resolve(o);
+            }
+
+            @PluginMethod
+            public void notifStatus(PluginCall call) {
+              JSObject o = new JSObject();
+              boolean on = false;
+              try { on = Boolean.TRUE.equals(refl("AuraNotifService", "enabled", new Class<?>[] { Context.class }, new Object[] { getContext() })); } catch (Throwable t) { }
+              o.put("on", on);
+              call.resolve(o);
+            }
+
+            @PluginMethod
+            public void notifSettings(PluginCall call) {
+              try {
+                Intent i = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(i);
+              } catch (Throwable t) { }
+              call.resolve(new JSObject());
+            }
+
+            @PluginMethod
+            public void notifList(PluginCall call) {
+              JSObject o = new JSObject();
+              String r = "[]";
+              try {
+                long since = System.currentTimeMillis() - (long) (call.getInt("mins", 720) * 60000L);
+                r = String.valueOf(refl("AuraNotifService", "query", new Class<?>[] { Context.class, String.class, long.class, int.class },
+                    new Object[] { getContext(), call.getString("pkg", ""), since, call.getInt("limit", 40) }));
+              } catch (Throwable t) { }
+              o.put("list", r);
+              call.resolve(o);
+            }
+
+            @PluginMethod
+            public void smsPerm(PluginCall call) {
+              JSObject o = new JSObject();
+              boolean ok = false;
+              try {
+                ok = getContext().checkSelfPermission(android.Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED;
+                if (!ok && Boolean.TRUE.equals(call.getBoolean("ask", false)) && getActivity() != null) {
+                  getActivity().requestPermissions(new String[] { android.Manifest.permission.SEND_SMS }, 9123);
+                  o.put("asked", true);
+                }
+              } catch (Throwable t) { }
+              o.put("ok", ok);
+              call.resolve(o);
+            }
+
             @PluginMethod
             public void agentRunning(PluginCall call) {
               JSObject o = new JSObject();
@@ -760,12 +841,12 @@ jobs:
                   i.putExtra(android.provider.AlarmClock.EXTRA_HOUR, call.getInt("hour", 0));
                   i.putExtra(android.provider.AlarmClock.EXTRA_MINUTES, call.getInt("min", 0));
                   i.putExtra(android.provider.AlarmClock.EXTRA_MESSAGE, call.getString("label", "Aura"));
-                  i.putExtra(android.provider.AlarmClock.EXTRA_SKIP_UI, false);
+                  i.putExtra(android.provider.AlarmClock.EXTRA_SKIP_UI, true);
                 } else if ("timer".equals(kind)) {
                   i = new Intent(android.provider.AlarmClock.ACTION_SET_TIMER);
                   i.putExtra(android.provider.AlarmClock.EXTRA_LENGTH, call.getInt("secs", 60));
                   i.putExtra(android.provider.AlarmClock.EXTRA_MESSAGE, call.getString("label", "Aura"));
-                  i.putExtra(android.provider.AlarmClock.EXTRA_SKIP_UI, false);
+                  i.putExtra(android.provider.AlarmClock.EXTRA_SKIP_UI, true);
                 } else if ("event".equals(kind)) {
                   i = new Intent(Intent.ACTION_INSERT);
                   i.setData(android.provider.CalendarContract.Events.CONTENT_URI);
@@ -914,6 +995,358 @@ jobs:
               try { if (v != null && wm != null) wm.removeView(v); } catch (Throwable t) { }
               v = null;
               super.onDestroy();
+            }
+          }
+          EOF
+          cat > $D/AuraNotifService.java << 'EOF'
+          package com.divyanshu.aura;
+
+          import android.app.Notification;
+          import android.content.Context;
+          import android.os.Bundle;
+          import android.os.Parcelable;
+          import android.provider.Settings;
+          import android.service.notification.NotificationListenerService;
+          import android.service.notification.StatusBarNotification;
+          import java.util.ArrayList;
+          import java.util.Collections;
+          import java.util.Comparator;
+          import java.util.HashSet;
+          import org.json.JSONArray;
+          import org.json.JSONObject;
+
+          public class AuraNotifService extends NotificationListenerService {
+            private static volatile AuraNotifService INSTANCE = null;
+            private static final ArrayList<JSONObject> BUF = new ArrayList<JSONObject>();
+            private static final java.util.regex.Pattern SECRET = java.util.regex.Pattern.compile("(otp|one.?time|verification code|passcode|password|cvv|\\bpin\\b)", java.util.regex.Pattern.CASE_INSENSITIVE);
+            private static final String[] BLOCK = new String[] { "paisa", "phonepe", "paytm", "bhim", "upi", "bank", "wallet", "razorpay", "cred.club", "payment" };
+
+            @Override
+            public void onListenerConnected() { INSTANCE = this; }
+
+            @Override
+            public void onListenerDisconnected() { INSTANCE = null; }
+
+            @Override
+            public void onNotificationPosted(StatusBarNotification sbn) {
+              try {
+                JSONObject o = conv(sbn, getPackageName());
+                if (o != null) push(o);
+              } catch (Throwable t) { }
+            }
+
+            private static synchronized void push(JSONObject o) {
+              BUF.add(o);
+              while (BUF.size() > 150) BUF.remove(0);
+            }
+
+            private static String clean(CharSequence cs) {
+              if (cs == null) return "";
+              String s = cs.toString().replaceAll("\\s+", " ").trim();
+              if (SECRET.matcher(s).find()) return "[code/OTP wala message, chhupaya]";
+              s = s.replaceAll("\\d{6,}", "[num]");
+              if (s.length() > 160) s = s.substring(0, 160);
+              return s;
+            }
+
+            private static JSONObject conv(StatusBarNotification sbn, String self) throws Exception {
+              String pkg = sbn.getPackageName();
+              if (pkg == null || pkg.equals(self) || pkg.equals("android") || pkg.startsWith("com.android.systemui")) return null;
+              String lp = pkg.toLowerCase();
+              for (String b : BLOCK) if (lp.contains(b)) return null;
+              Notification n = sbn.getNotification();
+              if (n == null) return null;
+              if ((n.flags & Notification.FLAG_ONGOING_EVENT) != 0 || (n.flags & Notification.FLAG_GROUP_SUMMARY) != 0) return null;
+              Bundle ex = n.extras;
+              if (ex == null) return null;
+              String title = clean(ex.getCharSequence(Notification.EXTRA_TITLE));
+              String text = clean(ex.getCharSequence(Notification.EXTRA_TEXT));
+              if (title.length() == 0 && text.length() == 0) return null;
+              JSONArray lines = new JSONArray();
+              try {
+                Parcelable[] ms = ex.getParcelableArray(Notification.EXTRA_MESSAGES);
+                if (ms != null) {
+                  int from = Math.max(0, ms.length - 5);
+                  for (int i = from; i < ms.length; i++) {
+                    if (ms[i] instanceof Bundle) {
+                      Bundle b = (Bundle) ms[i];
+                      String t = clean(b.getCharSequence("text"));
+                      String sd = clean(b.getCharSequence("sender"));
+                      if (t.length() > 0) lines.put(sd.length() > 0 ? sd + ": " + t : t);
+                    }
+                  }
+                }
+              } catch (Throwable t) { }
+              JSONObject o = new JSONObject();
+              o.put("pkg", pkg);
+              o.put("key", sbn.getKey());
+              o.put("title", title);
+              o.put("text", text);
+              o.put("lines", lines);
+              o.put("ts", sbn.getPostTime());
+              return o;
+            }
+
+            public static boolean enabled(Context c) {
+              try {
+                String s = Settings.Secure.getString(c.getContentResolver(), "enabled_notification_listeners");
+                return s != null && s.contains(c.getPackageName());
+              } catch (Throwable t) {
+                return false;
+              }
+            }
+
+            public static String query(Context c, String pkg, long sinceMs, int limit) {
+              ArrayList<JSONObject> all = new ArrayList<JSONObject>();
+              HashSet<String> seen = new HashSet<String>();
+              try {
+                AuraNotifService inst = INSTANCE;
+                if (inst != null) {
+                  StatusBarNotification[] act = inst.getActiveNotifications();
+                  if (act != null) {
+                    for (StatusBarNotification s : act) {
+                      JSONObject o = conv(s, c.getPackageName());
+                      if (o != null) all.add(o);
+                    }
+                  }
+                }
+              } catch (Throwable t) { }
+              synchronized (AuraNotifService.class) {
+                all.addAll(BUF);
+              }
+              ArrayList<JSONObject> out = new ArrayList<JSONObject>();
+              String q = pkg == null ? "" : pkg.toLowerCase();
+              for (JSONObject o : all) {
+                if (o.optLong("ts") < sinceMs) continue;
+                if (q.length() > 0 && !o.optString("pkg").toLowerCase().contains(q)) continue;
+                String id = o.optString("key") + "|" + o.optLong("ts");
+                if (!seen.add(id)) continue;
+                out.add(o);
+              }
+              Collections.sort(out, new Comparator<JSONObject>() {
+                public int compare(JSONObject a, JSONObject b) { return Long.compare(b.optLong("ts"), a.optLong("ts")); }
+              });
+              JSONArray arr = new JSONArray();
+              for (int i = 0; i < out.size() && i < limit; i++) arr.put(out.get(i));
+              return arr.toString();
+            }
+          }
+          EOF
+          cat > $D/SchedReceiver.java << 'EOF'
+          package com.divyanshu.aura;
+
+          import android.app.AlarmManager;
+          import android.app.KeyguardManager;
+          import android.app.Notification;
+          import android.app.NotificationChannel;
+          import android.app.NotificationManager;
+          import android.app.PendingIntent;
+          import android.content.BroadcastReceiver;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.SharedPreferences;
+          import android.content.pm.PackageManager;
+          import android.os.Build;
+          import android.os.PowerManager;
+          import java.util.ArrayList;
+          import java.util.Iterator;
+          import org.json.JSONArray;
+          import org.json.JSONObject;
+
+          public class SchedReceiver extends BroadcastReceiver {
+            private static final String ACT = "aura.SCHED_FIRE";
+
+            private static SharedPreferences sp(Context c) {
+              return c.getSharedPreferences("aura_sched", Context.MODE_PRIVATE);
+            }
+
+            private static JSONObject jobs(Context c) {
+              try { return new JSONObject(sp(c).getString("jobs", "{}")); } catch (Throwable t) { return new JSONObject(); }
+            }
+
+            private static void saveJobs(Context c, JSONObject o) {
+              sp(c).edit().putString("jobs", o.toString()).apply();
+            }
+
+            private static PendingIntent pi(Context c, String id) {
+              Intent i = new Intent(c, SchedReceiver.class);
+              i.setAction(ACT);
+              i.putExtra("id", id);
+              return PendingIntent.getBroadcast(c, id.hashCode(), i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            }
+
+            // returns "exact" or "inexact"
+            private static String arm(Context c, String id, long at) {
+              AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
+              PendingIntent p = pi(c, id);
+              try {
+                if (Build.VERSION.SDK_INT >= 31 && !am.canScheduleExactAlarms()) {
+                  am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, p);
+                  return "inexact";
+                }
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, p);
+                return "exact";
+              } catch (Throwable t) {
+                try { am.set(AlarmManager.RTC_WAKEUP, at, p); } catch (Throwable t2) { }
+                return "inexact";
+              }
+            }
+
+            public static String add(Context c, String id, double at, String kind, String payload) {
+              try {
+                JSONObject all = jobs(c);
+                JSONObject j = new JSONObject();
+                j.put("at", (long) at);
+                j.put("kind", kind);
+                j.put("p", new JSONObject(payload));
+                j.put("tries", 0);
+                all.put(id, j);
+                saveJobs(c, all);
+                return arm(c, id, (long) at);
+              } catch (Throwable t) {
+                return "error";
+              }
+            }
+
+            public static void cancel(Context c, String id) {
+              try {
+                JSONObject all = jobs(c);
+                all.remove(id);
+                saveJobs(c, all);
+                ((AlarmManager) c.getSystemService(Context.ALARM_SERVICE)).cancel(pi(c, id));
+              } catch (Throwable t) { }
+            }
+
+            public static String list(Context c) {
+              JSONArray a = new JSONArray();
+              try {
+                JSONObject all = jobs(c);
+                Iterator<String> it = all.keys();
+                while (it.hasNext()) {
+                  String k = it.next();
+                  JSONObject j = all.getJSONObject(k);
+                  j.put("id", k);
+                  a.put(j);
+                }
+              } catch (Throwable t) { }
+              return a.toString();
+            }
+
+            public static String log(Context c) {
+              return sp(c).getString("log", "[]");
+            }
+
+            private static void addLog(Context c, String msg) {
+              try {
+                JSONArray old = new JSONArray(sp(c).getString("log", "[]"));
+                JSONArray n = new JSONArray();
+                n.put(new JSONObject().put("ts", System.currentTimeMillis()).put("m", msg));
+                for (int i = 0; i < old.length() && i < 19; i++) n.put(old.get(i));
+                sp(c).edit().putString("log", n.toString()).apply();
+              } catch (Throwable t) { }
+            }
+
+            private static void notify(Context c, String title, String text) {
+              try {
+                NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
+                if (Build.VERSION.SDK_INT >= 26) nm.createNotificationChannel(new NotificationChannel("aura_sched", "Aura schedule", NotificationManager.IMPORTANCE_DEFAULT));
+                Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(c, "aura_sched") : new Notification.Builder(c);
+                b.setContentTitle(title);
+                b.setContentText(text);
+                b.setSmallIcon(android.R.drawable.ic_popup_reminder);
+                b.setAutoCancel(true);
+                nm.notify(79, b.build());
+              } catch (Throwable t) { }
+            }
+
+            public static void rearm(Context c) {
+              try {
+                JSONObject all = jobs(c);
+                Iterator<String> it = all.keys();
+                long now = System.currentTimeMillis();
+                while (it.hasNext()) {
+                  String k = it.next();
+                  long at = all.getJSONObject(k).optLong("at");
+                  arm(c, k, at < now ? now + 5000 : at);
+                }
+              } catch (Throwable t) { }
+            }
+
+            @Override
+            public void onReceive(Context c, Intent i) {
+              try {
+                if (Intent.ACTION_BOOT_COMPLETED.equals(i.getAction())) { rearm(c); return; }
+                String id = i.getStringExtra("id");
+                if (id != null) fire(c, id);
+              } catch (Throwable t) { }
+            }
+
+            private static void fire(Context c, String id) throws Exception {
+              JSONObject all = jobs(c);
+              JSONObject j = all.optJSONObject(id);
+              if (j == null) return;
+              String kind = j.optString("kind");
+              JSONObject p = j.getJSONObject("p");
+              String label = p.optString("label", id);
+              if ("sms".equals(kind)) {
+                all.remove(id);
+                saveJobs(c, all);
+                String to = p.optString("to"), text = p.optString("text");
+                if (c.checkSelfPermission(android.Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+                  addLog(c, "SMS nahi gaya (permission nahi): " + label);
+                  notify(c, "Aura: SMS nahi bheja", "SMS permission nahi hai. Aura mein permission do. " + label);
+                  return;
+                }
+                try {
+                  android.telephony.SmsManager sm = Build.VERSION.SDK_INT >= 31 ? c.getSystemService(android.telephony.SmsManager.class) : android.telephony.SmsManager.getDefault();
+                  ArrayList<String> parts = sm.divideMessage(text);
+                  sm.sendMultipartTextMessage(to, null, parts, null, null);
+                  addLog(c, "SMS bheja: " + label);
+                  notify(c, "Aura ne SMS bheja", label);
+                } catch (Throwable t) {
+                  addLog(c, "SMS fail: " + label);
+                  notify(c, "Aura: SMS fail", label);
+                }
+                return;
+              }
+              if ("agent".equals(kind)) {
+                PowerManager pm = (PowerManager) c.getSystemService(Context.POWER_SERVICE);
+                try {
+                  PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, "aura:sched");
+                  wl.acquire(120000);
+                } catch (Throwable t) { }
+                KeyguardManager km = (KeyguardManager) c.getSystemService(Context.KEYGUARD_SERVICE);
+                int tries = j.optInt("tries", 0);
+                if (km != null && km.isKeyguardLocked()) {
+                  if (tries < 30) {
+                    j.put("tries", tries + 1);
+                    j.put("at", System.currentTimeMillis() + 60000);
+                    all.put(id, j);
+                    saveJobs(c, all);
+                    arm(c, id, System.currentTimeMillis() + 60000);
+                    if (tries == 0) notify(c, "Aura ko kaam karna hai", "Phone unlock karo, Aura kaam karegi: " + label);
+                    return;
+                  }
+                  all.remove(id);
+                  saveJobs(c, all);
+                  addLog(c, "Nahi hua (phone locked raha): " + label);
+                  notify(c, "Aura: kaam nahi hua", "Phone locked raha: " + label);
+                  return;
+                }
+                all.remove(id);
+                saveJobs(c, all);
+                String r = AgentCore.start(c, p.optString("goal"));
+                if (r == null) addLog(c, "Shuru hua: " + label);
+                else {
+                  addLog(c, "Nahi hua (" + r + "): " + label);
+                  notify(c, "Aura: kaam nahi hua", r);
+                }
+                return;
+              }
+              all.remove(id);
+              saveJobs(c, all);
+              notify(c, "Aura", label);
+              addLog(c, label);
             }
           }
           EOF
@@ -3633,8 +4066,8 @@ jobs:
           </resources>
           EOF
           M=android/app/src/main/AndroidManifest.xml
-          sed -i 's#<application#<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><uses-permission android:name="android.permission.RECORD_AUDIO"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/><uses-permission android:name="android.permission.USE_EXACT_ALARM"/><uses-permission android:name="android.permission.WRITE_SETTINGS"/><uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/><uses-permission android:name="android.permission.FLASHLIGHT"/><uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/><uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/><uses-permission android:name="android.permission.VIBRATE"/><uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.SET_ALARM"/><queries><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent><intent><action android:name="android.speech.RecognitionService"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries><application#' $M
-          sed -i 's#</application>#<service android:name=".BubbleService" android:exported="false"/><!--AURA_X1--><service android:name=".WakeService" android:exported="false" android:foregroundServiceType="microphone"/><!--AURA_X2--><!--AURA_Y1--><service android:name=".SendService" android:exported="true" android:label="Aura Auto-Send" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"><intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter><meta-data android:name="android.accessibilityservice" android:resource="@xml/aura_access"/></service><!--AURA_Y2--></application>#' $M
+          sed -i 's#<application#<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><uses-permission android:name="android.permission.RECORD_AUDIO"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/><uses-permission android:name="android.permission.USE_EXACT_ALARM"/><uses-permission android:name="android.permission.WRITE_SETTINGS"/><uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/><uses-permission android:name="android.permission.FLASHLIGHT"/><uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/><uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/><uses-permission android:name="android.permission.VIBRATE"/><uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.SET_ALARM"/><uses-permission android:name="android.permission.SEND_SMS"/><uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/><queries><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent><intent><action android:name="android.speech.RecognitionService"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries><application#' $M
+          sed -i 's#</application>#<service android:name=".BubbleService" android:exported="false"/><service android:name=".AuraNotifService" android:exported="true" android:label="Aura" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"><intent-filter><action android:name="android.service.notification.NotificationListenerService"/></intent-filter></service><receiver android:name=".SchedReceiver" android:exported="false"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"/></intent-filter></receiver><!--AURA_X1--><service android:name=".WakeService" android:exported="false" android:foregroundServiceType="microphone"/><!--AURA_X2--><!--AURA_Y1--><service android:name=".SendService" android:exported="true" android:label="Aura Auto-Send" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"><intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter><meta-data android:name="android.accessibilityservice" android:resource="@xml/aura_access"/></service><!--AURA_Y2--></application>#' $M
           sed -i '0,/<\/activity>/s#</activity>#<intent-filter><action android:name="android.intent.action.SEND"/><category android:name="android.intent.category.DEFAULT"/><data android:mimeType="text/plain"/></intent-filter></activity>#' $M
           python3 -m pip install pillow --break-system-packages -q || python3 -m pip install pillow -q || true
           cat > aura_icon.py << 'PYEOF'
@@ -3729,7 +4162,7 @@ jobs:
             echo "FULL build: launcher + media + Hey Aura + Auto-Send + Screen-control + HUD stats" > build-info.txt
           else
             echo "=== FULL fail: retry without HUD stats ==="
-            rm -f $J/HudNative.java $J/BubbleService.java $J/AgentVision.java
+            rm -f $J/HudNative.java $J/BubbleService.java $J/AgentVision.java $J/AuraNotifService.java $J/SchedReceiver.java
             if ./gradlew assembleDebug > gl2.log 2>&1; then
               echo "BUILD 1b: Hey Aura + Auto-Send + Screen-control (HUD stats/icons nahi)" > build-info.txt
             else
