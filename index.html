@@ -364,6 +364,7 @@ html.noglass .pn,html.noglass #chatsheet{-webkit-backdrop-filter:none!important;
 <div class="tl"><button class="ic" id="mnrt">&#9200;</button><small>Routines</small></div>
 <div class="tl"><button class="ic" id="mnlv">&#128065;</button><small>Live camera</small></div>
 <div class="tl"><button class="ic" id="mnlf">&#128376;</button><small>Life Graph</small></div>
+<div class="tl"><button class="ic" id="mnsc">&#128197;</button><small>Schedule</small></div>
 <div class="tl"><button class="ic" id="hsc">&#128274;</button><small>Security</small></div>
 <div class="tl"><button class="ic" id="gear">&#9881;</button><small>Settings</small></div>
 </div></div></div>
@@ -423,6 +424,12 @@ html.noglass .pn,html.noglass #chatsheet{-webkit-backdrop-filter:none!important;
 <div id="lfo" style="white-space:pre-wrap;font-size:14px;line-height:1.5"></div>
 <div class="tabs"><button class="cl" id="lfsv">Notes mein save</button><button class="cl" id="lfcp">Copy</button></div>
 <button class="k" id="lfx">Band karo</button>
+</div>
+<div id="scp" class="ov v8" hidden>
+<h2 style="margin:0">&#128197; Schedule (background)</h2>
+<small style="color:#9ab">Jo kaam tumne baad ke waqt ke liye bola, wo Aura khuli na ho tab bhi hoga. SMS phone locked ho tab bhi jata hai. App ke andar kaam (Telegram/WhatsApp) ke liye phone unlock aur screen-control ON chahiye.</small>
+<div id="scl"></div>
+<button class="k" id="scx">Band karo</button>
 </div>
 <div id="chh" class="ov" hidden>
 <h2 style="margin:0">&#128344; Chat history</h2>
@@ -803,7 +810,7 @@ const fin=v=>{if(dn)return;dn=1;if(pend&&pend.fin===fin)pend=null;b.remove();s.t
 function guard(t){let m=t,f=0;m=m.replace(/\b(?:\d[ -]?){13,19}\b/g,()=>{f=1;return'[HIDDEN]'});
 m=m.replace(/\b(otp|pin|cvv|password|passcode)\b([^.\n]{0,20}?)\s((?=\S*[\d@#$!%^&*])[A-Za-z0-9@#$!%^&*]{4,})/gi,(a,k,mid)=>{f=1;return k+mid+' [HIDDEN]'});
 m=m.replace(/\b\d{4,8}\b(?=[^.\n]{0,15}\botp\b)/gi,()=>{f=1;return'[HIDDEN]'});return[m,f]}
-const VER='v60 • 13 Nov';
+const VER='v61 • 13 Nov';
 let AC=null,SRC=null,lastVE='';
 function unlock(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume()}catch(e){}}
 document.addEventListener('click',unlock);document.addEventListener('touchstart',unlock);
@@ -1008,7 +1015,7 @@ if(Y.test(nn)||N.test(nn)){const p=pend,y=Y.test(nn);viaMic=false;p.fin(y?1:0);c
 const GM=tt.match(/(girlfriend|गर्लफ्रेंड|girl friend|gf|जीएफ)\s*(mode|मोड)?\s*(on|ऑन|चालू|chalu|shuru|शुरू|start|off|ऑफ|बंद|band|khatam|खत्म|stop)/i);
 if(GM){const on=!/off|ऑफ|बंद|band|khatam|खत्म|stop/i.test(GM[3]);gfAsk(on,true);if(call.on&&!call.sp)setTimeout(callListen,700);return}
 if(/masti\s*(time|mode)|masti shuru/i.test(t))setMode('masti');else if(/(kaam|work)\s*(time|mode)|masti (khatam|band)/i.test(t))setMode('kaam');const mic=viaMic;viaMic=false;
-if(ATT.length&&await attSend(tt))return;if(await rtPhrase(tt))return;if(v8Cmd(tt)||v59Cmd(tt))return;if(crossCmd(tt))return;if(APQ&&await appAsk(tt))return;if(pwCmd(tt))return;if(await appiCmd(tt))return;if(agCmd(tt))return;try{mgAuto(tt);gdCheckMsg(tt)}catch(e){}
+if(ATT.length&&await attSend(tt))return;if(await rtPhrase(tt))return;if(v8Cmd(tt)||v59Cmd(tt)||v61Cmd(tt))return;if(crossCmd(tt))return;if(APQ&&await appAsk(tt))return;if(pwCmd(tt))return;if(await appiCmd(tt))return;if(agCmd(tt))return;try{mgAuto(tt);gdCheckMsg(tt)}catch(e){}
 const agk=agentFor(tt);const qk=await runAgent(agk,()=>quick(tt));if(!qk&&(await appTask(tt)||await appAsk(tt)))return;if(qk){try{hudAction(tt)}catch(e){}add(qk,'a');say(qk);return}
 if(offUse()){await offFlow(tt);return}if(!hasAI()){add('Pehle ⚙️ mein API key daalo.','a');$('set').hidden=false;return}
 const w=add('','a');w.innerHTML='<span class="dots"><span></span><span></span><span></span></span>';document.body.className='think';
@@ -1615,7 +1622,7 @@ async function appiCmd(t){t=t.trim();if(t.length>260)return false;let m;
 if(CHAIN.run&&/^(?:aura[, ]+)?(roko|ruko|stop|band karo|cancel)\b/i.test(t)){CHAIN.stop=1;try{CP.AuraNative.agentStop()}catch(e){}add('Theek hai, rok rahi hoon.','a');return true}
 if(/^(?:aura[, ]+)?(?:apps? control|app control|apps ka control)\b/i.test(t)){apOpen();add('App Control khol diya. Jis app ko OFF karoge, Aura use nahi chhuyegi.','a');return true}
 /* alarm */
-if(/alarm/i.test(t)&&/(laga|set|bana|rakh|chala)/i.test(t)){const x=tmParse(t);if(!x){add('Alarm ka samay samajh nahi aaya. Jaise: "subah 6 baje alarm lagao" ya "alarm 7:30".','a');return true}const hh=p(x.h)+':'+p(x.m);actNow('Alarm: '+hh,()=>setIntent({kind:'alarm',hour:x.h,min:x.m,label:'Aura'},'⏰ Alarm app mein '+hh+' ka alarm daal diya.'));return true}
+if(/alarm/i.test(t)&&/(laga|set|bana|rakh|chala)/i.test(t)){const x=tmParse(t);if(!x){add('Alarm ka samay samajh nahi aaya. Jaise: "subah 6 baje alarm lagao" ya "alarm 7:30".','a');return true}const hh=p(x.h)+':'+p(x.m);actNow('Alarm: '+hh,()=>setIntent({kind:'alarm',hour:x.h,min:x.m,label:'Aura'},'⏰ Alarm set ho gaya: '+hh+' (alarm app kholne ki zaroorat nahi).'));return true}
 /* timer */
 if(/timer/i.test(t)&&(m=t.match(/(\d+)\s*(seconds?|secs?|minutes?|mins?|ghanta|ghante|hours?|hrs?)\b/i))){const secs=Math.min(+m[1]*UNIT(m[2]),86400);actNow('Timer: '+m[1]+' '+m[2],()=>setIntent({kind:'timer',secs,label:'Aura'},'⏳ Timer chalu: '+m[1]+' '+m[2]+'.'));return true}
 /* maps */
@@ -2020,5 +2027,48 @@ if(navigator.getBattery)navigator.getBattery().then(b=>{let low=b.level<=.2;b.ad
 $('v8al').checked=!!V8.alog;$('v8al').onchange=()=>{V8.alog=$('v8al').checked?1:0;v8Save()};
 $('v8fl').checked=!V8.noflow;$('v8fl').onchange=()=>{V8.noflow=$('v8fl').checked?0:1;v8Save();try{setBrain()}catch(e){}};
 $('v8fc').onclick=async()=>{try{const r=await CP.AuraNative.flowsClear();aToast((r&&r.n||0)+' seekhe hue rasta saaf')}catch(e){aToast('Ye sirf Android app mein hota hai')}}})();
+
+/* ===== v61: background work: notifications, scheduled actions ===== */
+var BGS=+(localStorage.getItem('bgs')||0);
+const bgOk=()=>NAT&&CP.AuraNative&&CP.AuraNative.schedAdd;
+const APPAL={telegram:'telegram',whatsapp:'whatsapp',instagram:'instagram',gmail:'gm',sms:'messag',messages:'messag',snapchat:'snapchat',facebook:'facebook',messenger:'orca',signal:'signal',youtube:'youtube'};
+function bgApp(q){let best=null;for(const a of inst){const n=String(a.name||'').toLowerCase();if(n.length>=4&&q.includes(n)&&(!best||n.length>best.n.length))best={n,name:a.name,pkg:a.package}}if(best)return{name:best.name,pkg:best.pkg};for(const k in APPAL)if(q.includes(k))return{name:k[0].toUpperCase()+k.slice(1),pkg:APPAL[k]};return null}
+async function notifOn(){try{return!!(await CP.AuraNative.notifStatus()).on}catch(e){return false}}
+function notifFmt(list,app){const g={};list.forEach(n=>{const k=n.pkg+'|'+n.title;(g[k]=g[k]||{t:n.title,pkg:n.pkg,n:0,last:[],ts:0});const o=g[k];o.n++;o.ts=Math.max(o.ts,n.ts);const L=(n.lines&&n.lines.length)?n.lines:[n.text];L.forEach(x=>{if(x&&!o.last.includes(x))o.last.push(x)})});
+const arr=Object.values(g).sort((a,b)=>b.ts-a.ts).slice(0,10);if(!arr.length)return null;const nm=p=>{const a=inst.find(x=>x.package==p);return a?a.name:p.split('.').pop()};
+return'📨 '+(app?app.name+': ':'')+list.length+' notification\n'+arr.map(o=>'• '+(app?'':nm(o.pkg)+' - ')+(o.t||'(naam nahi)')+(o.last.length?': '+o.last.slice(-2).map(x=>'"'+x.slice(0,70)+'"').join(' / '):'')).join('\n')}
+async function notifCmd(q){if(!NAT||!CP.AuraNative||!CP.AuraNative.notifList){add('Notification padhna sirf Android app mein hota hai.','a');return}
+if(!(await notifOn())){add('Notification padhne ke liye ek baar permission chahiye. Settings khol rahi hoon: wahan Aura ko ON karo, phir wapas aakar dobara poochho. Main ye sirf tab padhti hoon jab aap poochte ho, kuch save ya bhejti nahi, aur OTP/code wale message chhupa deti hoon.','a');try{await CP.AuraNative.notifSettings()}catch(e){}return}
+const app=bgApp(q);let r;try{r=JSON.parse((await CP.AuraNative.notifList({pkg:app?app.pkg:'',mins:720,limit:60})).list||'[]')}catch(e){r=[]}
+const m=notifFmt(r,app);const out=m||('Abhi '+(app?app.name+' ka ':'')+'koi naya notification nahi mila (pichhle 12 ghante mein). Aura sirf wahi dekh paati hai jo permission ON hone ke baad aaye ya abhi notification bar mein ho.');add(out,'a');say(m?(app?app.name+' par ':'')+r.length+' notification hain.':'Koi naya notification nahi mila.')}
+/* ---- schedule ---- */
+const SCX=/(alarm|timer|reminder|yaad dila|routine|macro)/;
+async function scCmd(t){const q=t.toLowerCase();if(!bgOk()){add('Background kaam sirf Android app mein hote hain.','a');return}
+if(!hasAI()||V8.lo){add('Ye kaam samajhne ke liye AI chahiye (Local-only band karo aur internet rakho). Time wala simple alarm/reminder offline ho jata hai.','a');return}
+const r=await aiRaw(sys(),'User ka vakya: "'+t+'"\nAaj ki tareekh/samay: '+fmt(new Date())+'\nIse parse karke SIRF JSON do: {"when":"HH:MM 24 ghante","dayoff":0 (aaj) ya 1 (kal) ya 2 (parso),"kind":"message|task","app":"whatsapp|telegram|sms|instagram|other","to":"kisko (naam ya number), message ke liye","text":"jo exact message bhejna hai (user ki bhasha mein, sirf message)","task":"kind task ho to chhota Hinglish command jo us waqt chalana hai"}. Agar samay nahi hai to {"when":""}.',350);
+let j=null;try{j=JSON.parse(r.slice(r.indexOf('{'),r.lastIndexOf('}')+1))}catch(e){}if(!j||!/^\d{1,2}:\d\d$/.test(j.when||'')){add('Samay ya kaam samajh nahi aaya. Aise bolo: "shaam 5 baje Rahul ko telegram par message kar dena ki ye kaam hai".','a');return}
+const[h,mi]=j.when.split(':').map(Number),d=new Date();d.setHours(h,mi,0,0);d.setDate(d.getDate()+(+j.dayoff||0));if(d<=new Date()&&!(+j.dayoff))d.setDate(d.getDate()+1);
+const hh=pad2(h)+':'+pad2(mi),dayT=d.toDateString()==new Date().toDateString()?'aaj':'kal';let kind='agent',payload,label;
+if(GRISK.test((j.text||'')+' '+(j.task||''))){add('⛔ Paise/delete jaisa kaam schedule nahi karti.','a');return}
+if(j.kind=='message'){const to=String(j.to||'').trim(),text=String(j.text||'').trim(),app=String(j.app||'whatsapp').toLowerCase();if(!to||!text){add('Kisko aur kya message bhejna hai, ye saaf nahi hua.','a');return}
+if(app=='sms'){const c=cons.find(x=>x.n.toLowerCase()==to.toLowerCase())||cons.find(x=>x.n.toLowerCase().includes(to.toLowerCase())),num=c?c.v:(/^\+?\d{10,13}$/.test(to.replace(/\s/g,''))?to.replace(/\s/g,''):'');if(!num){add('SMS ke liye "'+to+'" ka number nahi mila. Contacts mein jodo ya number bolo.','a');return}
+let sp={};try{sp=await CP.AuraNative.smsPerm({ask:true})}catch(e){}if(sp&&!sp.ok)add('SMS bhejne ki permission maangi hai, "Allow" karo, warna SMS nahi jayega.','a');kind='sms';payload={to:num,text,label:'SMS '+to+': '+text.slice(0,40)}}
+else{const an=app[0].toUpperCase()+app.slice(1);const f=inst.find(x=>String(x.name).toLowerCase().includes(app));if(f&&!appOk(f.package)){add('Is app ko tumne Aura ke liye band rakha hai.','a');return}payload={goal:'Open the '+an+' app, open the chat with "'+to+'", type exactly this message: "'+text+'" and send it. Then reply done.',label:an+' par '+to+' ko: '+text.slice(0,40)}}}
+else{const task=String(j.task||t).trim();payload={goal:task,label:task.slice(0,60)}}
+label=payload.label;let res;try{res=await CP.AuraNative.schedAdd({id:'s'+Date.now().toString(36),at:d.getTime(),kind,payload:JSON.stringify(payload)})}catch(e){res=null}
+if(!res||res.mode=='error'){add('Schedule nahi ho paya.','a');return}
+add('✅ '+dayT+' '+hh+' baje: '+label+'\nBackground mein hoga, Aura khuli hone ki zaroorat nahi.'+(kind=='agent'?'\nDhyan: us waqt phone unlock hona chahiye (screen lock par Aura unlock hone ka 30 min wait karegi aur notification degi). Screen-control ON hona chahiye.':'\nSMS phone locked ho tab bhi jayega.')+(res.mode=='inexact'?'\n(Exact alarm permission nahi, isliye kuch minute aage-peechhe ho sakta hai.)':'')+'\nMenu > Schedule mein dekh/cancel kar sakte ho.','a')}
+async function scDraw(){const L=$('scl');L.innerHTML='';let r={list:'[]',log:'[]'};try{r=await CP.AuraNative.schedList()}catch(e){L.textContent='Ye sirf Android app mein hota hai.';return}
+const a=JSON.parse(r.list||'[]').sort((x,y)=>x.at-y.at),g=JSON.parse(r.log||'[]');if(!a.length)L.innerHTML='<p style="font-size:13px;color:#9ab">Koi schedule nahi. Bolo: "shaam 5 baje Rahul ko telegram par message kar dena ki ye kaam hai".</p>';
+a.forEach(j=>{const d=document.createElement('div');d.className='row';const s=document.createElement('span');s.style.flex='1';s.textContent='🕔 '+new Date(j.at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' • '+(j.p&&j.p.label||j.kind);const b=document.createElement('button');b.textContent='🗑';b.onclick=async()=>{try{await CP.AuraNative.schedCancel({id:j.id})}catch(e){}scDraw()};d.append(s,b);L.appendChild(d)});
+if(g.length){const h=document.createElement('small');h.textContent='Pichhle background kaam:';L.appendChild(h);g.slice(0,8).forEach(x=>{const d=document.createElement('div');d.style.cssText='font-size:12px;color:#aab';d.textContent=new Date(x.ts).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+' - '+x.m;L.appendChild(d)})}}
+async function bgLogCheck(){if(!bgOk())return;try{const r=await CP.AuraNative.schedList(),g=JSON.parse(r.log||'[]').filter(x=>x.ts>BGS).reverse();if(g.length){g.forEach(x=>add('🔔 Background: '+x.m,'a'));BGS=Math.max(...g.map(x=>x.ts));localStorage.setItem('bgs',BGS)}}catch(e){}}
+function v61Cmd(t){const q=t.toLowerCase().trim();if(q.length>260)return false;
+if(/(schedule|scheduled|baad mein hone wale|background kaam).*(dikhao|list|kya kya|batao|kholo)|mere schedule/.test(q)){$('more').hidden=true;$('scp').hidden=false;scDraw();return true}
+if(/(kiske|kisne|kaun)\s.*(message|msg|notification)|(kya|kitne)\s+(naya|naye|new)?\s*(message|msg|notification)|(new|naye|unread)\s*(message|msg|notification)|notification\s*(dikhao|batao|padho|check)|(message|msg)\s+(aaye|aaya|aayi)\s*(hain|hai|hue)?/.test(q)&&!/(bhej|send|likh|kar dena|schedule)/.test(q)){notifCmd(q);return true}
+if(parseHM(q)&&!SCX.test(q)&&/(kar dena|kar do|bhej dena|bol dena|keh dena|bata dena|likh dena|message kar|msg kar|chala dena|chalao|bhejna|bhej do)/.test(q)&&/(ko|par|pe|mein|me)\b/.test(q)&&!/(abhi|turant|ab hi)/.test(q)){scCmd(t);return true}
+return false}
+$('mnsc').onclick=()=>{$('more').hidden=true;$('scp').hidden=false;scDraw()};$('scx').onclick=()=>$('scp').hidden=true;
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)bgLogCheck()});setTimeout(bgLogCheck,3000);
 
 </script></body></html>
