@@ -436,7 +436,7 @@ jobs:
             @PluginMethod
             public void setBrain(PluginCall call) {
               android.content.SharedPreferences.Editor e = getContext().getSharedPreferences("aura", Context.MODE_PRIVATE).edit();
-              String[] ks = new String[] { "gk", "ek", "ev", "smk", "smv", "smn", "gfm", "edv", "qk", "dev", "uname", "rules", "autoc", "deny", "vis", "lo" };
+              String[] ks = new String[] { "gk", "ek", "ev", "smk", "smv", "smn", "gfm", "edv", "qk", "dev", "uname", "rules", "autoc", "deny", "vis", "lo", "flow" };
               for (String k : ks) e.putString(k, call.getString(k, ""));
               e.putBoolean("bg", call.getBoolean("bg", true));
               e.apply();
@@ -690,6 +690,8 @@ jobs:
                 Object d = c.getMethod("said").invoke(null);
                 out = r == null ? "" : r.toString();
                 said = d == null ? "" : d.toString();
+                Object lgo = c.getMethod("log").invoke(null);
+                o.put("log", lgo == null ? "" : lgo.toString());
               } catch (Throwable t) { }
               o.put("out", out);
               o.put("said", said);
@@ -721,6 +723,19 @@ jobs:
               } catch (Throwable t) {
                 call.reject("bubble: " + t.getMessage());
               }
+            }
+
+            @PluginMethod
+            public void flowsClear(PluginCall call) {
+              JSObject o = new JSObject();
+              int n = 0;
+              try {
+                Class<?> c = Class.forName("com.divyanshu.aura.AgentCore");
+                Object r = c.getMethod("clearFlows", android.content.Context.class).invoke(null, getContext());
+                n = r == null ? 0 : ((Integer) r).intValue();
+              } catch (Throwable t) { }
+              o.put("n", n);
+              call.resolve(o);
             }
 
             @PluginMethod
@@ -2573,6 +2588,27 @@ jobs:
             private static volatile boolean cancel = false;
             private static volatile String OUT = "";
             private static volatile String SAYMSG = "";
+            private static final StringBuilder LOG = new StringBuilder();
+            private static final java.util.regex.Pattern DISMISS_RE = java.util.regex.Pattern.compile("^(skip|skip for now|not now|no thanks|no, thanks|maybe later|remind me later|later|dismiss|got it|not interested|बाद में|छोड़ें|अभी नहीं)$", java.util.regex.Pattern.CASE_INSENSITIVE);
+
+            public static String log() {
+              return LOG.toString();
+            }
+
+            private static void lg(String t) {
+              if (LOG.length() < 2500 && t != null && t.length() > 0) LOG.append("• ").append(t).append('\n');
+            }
+
+            public static int clearFlows(Context ctx) {
+              try {
+                SharedPreferences sp = ctx.getSharedPreferences("aura", Context.MODE_PRIVATE);
+                int n = new JSONObject(sp.getString("flows", "{}")).length();
+                sp.edit().remove("flows").apply();
+                return n;
+              } catch (Throwable t) {
+                return 0;
+              }
+            }
 
             public static String result() {
               return OUT;
@@ -2606,6 +2642,7 @@ jobs:
               cancel = false;
               OUT = "";
               SAYMSG = "";
+              LOG.setLength(0);
               new Thread(new Runnable() {
                 public void run() {
                   final BroadcastReceiver rcv = new BroadcastReceiver() {
@@ -2646,6 +2683,15 @@ jobs:
               note(ctx, "Aura kaam kar rahi hai", goal + " | shuru", true);
               int step = 0;
               int guard = 0;
+              ArrayList<JSONObject> rec = new ArrayList<JSONObject>();
+              boolean flowOk = true;
+              int dismissN = 0;
+              String lastSig = "";
+              boolean noDismiss = goal.toLowerCase().matches("(?s).*(skip|dismiss|later|not now|no thanks).*");
+              boolean learn = !"0".equals(sp.getString("flow", "1"));
+              if (!learn) flowOk = false;
+              int rp = learn ? replay(ctx, sp, goal, hist) : 0;
+              if (rp != 0) flowOk = false;
               while (step < 32 && guard < 70 && !cancel) {
                 guard++;
                 SendService svc = SendService.INSTANCE;
@@ -2667,6 +2713,23 @@ jobs:
                 walk(root, 0, nodes, sb);
                 String reply = null;
                 int hn = hist.size();
+                String sig = Integer.toString(sb.toString().hashCode());
+                if (hn > 0 && sig.equals(lastSig)) {
+                  String lh = hist.get(hn - 1);
+                  if (!lh.startsWith("wait") && !lh.startsWith("read") && !lh.startsWith("NOTE") && !lh.startsWith("auto-")) { hist.add("NOTE: screen unchanged after last action, it may not have worked"); hn = hist.size(); }
+                }
+                lastSig = sig;
+                if (!noDismiss && dismissN < 4 && sb.indexOf("[password field]") < 0) {
+                  boolean dm = false;
+                  for (AccessibilityNodeInfo c : nodes) {
+                    if (!c.isClickable()) continue;
+                    String dl = label(c).trim();
+                    if (dl.length() > 0 && DISMISS_RE.matcher(dl).matches()) {
+                      if (clickNode(c) || tapNode(svc, c)) { dismissN++; hist.add("auto-dismissed '" + dl + "'"); lg("Popup hataya: " + dl); dm = true; break; }
+                    }
+                  }
+                  if (dm) { nap(900); continue; }
+                }
                 boolean weak = nodes.size() < 4 || (hn >= 2 && hist.get(hn - 1).contains("(fail)") && hist.get(hn - 2).contains("(fail)")) || (hn > 0 && hist.get(hn - 1).startsWith("STUCK"));
                 if (weak && "1".equals(sp.getString("vis", "")) && !"1".equals(sp.getString("lo", "")) && sp.getString("gk", "").length() > 5 && sb.indexOf("[password field]") < 0) {
                   try {
@@ -2682,10 +2745,28 @@ jobs:
                 String act = a.optString("action", "");
                 String say = a.optString("say", "");
                 note(ctx, "Aura kaam kar rahi hai", goal + " | step " + step + ": " + (say.length() > 0 ? say : act), true);
-                if ("done".equals(act)) { if (OUT.length() == 0) OUT = say; finish(ctx, say.length() > 0 ? say : "Ho gaya."); return; }
+                if ("done".equals(act)) { if (OUT.length() == 0) OUT = say; lg(say.length() > 0 ? say : "Ho gaya"); if (flowOk && rec.size() > 0 && rec.size() <= 14) saveFlow(sp, goal, rec); finish(ctx, say.length() > 0 ? say : "Ho gaya."); return; }
                 if ("fail".equals(act)) { finish(ctx, say.length() > 0 ? say : "Nahi ho paya."); return; }
                 int res = exec(ctx, svc, a, nodes);
                 if (res < 0) { finish(ctx, "Ye kaam payment ya delete jaisa hai, main nahi karti."); return; }
+                lg((say.length() > 0 ? say : act) + (res == 0 ? " (nahi hua)" : ""));
+                if (res == 1 && flowOk) {
+                  try {
+                    JSONObject fs = new JSONObject(a.toString());
+                    fs.remove("id");
+                    fs.remove("say");
+                    int ii = a.optInt("id", -1);
+                    boolean hasId = ii >= 0 && ii < nodes.size();
+                    if ("click".equals(act)) {
+                      String fl = hasId ? label(nodes.get(ii)) : "";
+                      if (fl.length() == 0 || fl.startsWith("[")) flowOk = false; else fs.put("l", fl);
+                    } else if ("type".equals(act) && hasId) {
+                      fs.put("e", 1);
+                    }
+                    if ("tapxy".equals(act) || "read".equals(act) || "clip".equals(act) || "home".equals(act)) flowOk = false;
+                    if (flowOk) rec.add(fs);
+                  } catch (Throwable t) { flowOk = false; }
+                }
                 String h = act;
                 if (a.has("id")) h += " #" + a.optInt("id");
                 if (a.has("text")) h += " '" + a.optString("text") + "'";
@@ -2698,6 +2779,92 @@ jobs:
                 nap("open".equals(act) ? 2300 : 1100);
               }
               finish(ctx, cancel ? "Roka gaya." : "Kaam poora nahi ho paya.");
+            }
+
+            private static void saveFlow(SharedPreferences sp, String goal, ArrayList<JSONObject> rec) {
+              try {
+                JSONObject all = new JSONObject(sp.getString("flows", "{}"));
+                JSONArray st = new JSONArray();
+                for (JSONObject s0 : rec) st.put(s0);
+                all.put(norm(goal), new JSONObject().put("s", st).put("ts", System.currentTimeMillis()));
+                while (all.length() > 40) {
+                  String oldest = null;
+                  long ot = Long.MAX_VALUE;
+                  java.util.Iterator<String> it = all.keys();
+                  while (it.hasNext()) {
+                    String k = it.next();
+                    long t = all.getJSONObject(k).optLong("ts");
+                    if (t < ot) { ot = t; oldest = k; }
+                  }
+                  if (oldest == null) break;
+                  all.remove(oldest);
+                }
+                sp.edit().putString("flows", all.toString()).apply();
+              } catch (Throwable t) { }
+            }
+
+            // 0 = no saved flow, 1 = replayed fully, -1 = failed midway (flow deleted)
+            private static int replay(Context ctx, SharedPreferences sp, String goal, ArrayList<String> hist) {
+              JSONObject all;
+              JSONArray st;
+              String key = norm(goal);
+              try {
+                all = new JSONObject(sp.getString("flows", "{}"));
+                JSONObject fl = all.optJSONObject(key);
+                if (fl == null) return 0;
+                st = fl.getJSONArray("s");
+              } catch (Throwable t) {
+                return 0;
+              }
+              note(ctx, "Aura kaam kar rahi hai", goal + " | seekha hua rasta chala rahi hai", true);
+              lg("Pehle seekha hua rasta try kiya");
+              int bad = -1;
+              for (int i = 0; i < st.length() && !cancel && bad < 0; i++) {
+                try {
+                  JSONObject s0 = new JSONObject(st.getJSONObject(i).toString());
+                  String act = s0.optString("action", "");
+                  SendService svc = SendService.INSTANCE;
+                  if (svc == null) { bad = i; break; }
+                  ArrayList<AccessibilityNodeInfo> nodes = new ArrayList<AccessibilityNodeInfo>();
+                  if ("click".equals(act) || "type".equals(act)) {
+                    int found = -1;
+                    for (int tr = 0; tr < 4 && found < 0; tr++) {
+                      AccessibilityNodeInfo root = svc.getRootInActiveWindow();
+                      if (root != null) {
+                        CharSequence pk = root.getPackageName();
+                        if (pk != null && blockedPkg(pk.toString())) { bad = i; break; }
+                        nodes.clear();
+                        walk(root, 0, nodes, new StringBuilder());
+                        String want = norm(s0.optString("l", ""));
+                        for (int k = 0; k < nodes.size(); k++) {
+                          AccessibilityNodeInfo n = nodes.get(k);
+                          if (want.length() > 0) { if (norm(label(n)).equals(want)) { found = k; break; } }
+                          else if (n.isEditable()) { found = k; break; }
+                        }
+                      }
+                      if (found < 0 && bad < 0) nap(900);
+                    }
+                    if (bad >= 0) break;
+                    if (found < 0) {
+                      if ("type".equals(act)) { /* fall back to focused input */ }
+                      else { bad = i; break; }
+                    } else s0.put("id", found);
+                  }
+                  int r = exec(ctx, svc, s0, nodes);
+                  if (r != 1) { bad = i; break; }
+                  lg("Seekha: " + act + (s0.has("l") ? " " + s0.optString("l") : ""));
+                  nap("open".equals(act) ? 2300 : 1100);
+                } catch (Throwable t) { bad = i; }
+              }
+              if (cancel) return -1;
+              if (bad >= 0) {
+                try { all.remove(key); sp.edit().putString("flows", all.toString()).apply(); } catch (Throwable t) { }
+                hist.add("saved route failed at step " + (bad + 1) + "; continue from the current screen yourself");
+                lg("Seekha rasta kaam nahi kiya, khud dekh rahi hoon");
+                return -1;
+              }
+              hist.add("saved route replayed; check the screen and finish with done if the goal is achieved");
+              return 1;
             }
 
             private static String label(AccessibilityNodeInfo n) {
@@ -2888,6 +3055,27 @@ jobs:
                 boolean down = !"up".equals(a.optString("dir", "down"));
                 return n.performAction(down ? AccessibilityNodeInfo.ACTION_SCROLL_FORWARD : AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD) ? 1 : 0;
               }
+              if ("find".equals(act)) {
+                String fq = a.optString("text", "").toLowerCase().trim();
+                if (fq.length() < 2) return 0;
+                for (int pass = 0; pass < 7; pass++) {
+                  AccessibilityNodeInfo fr = svc.getRootInActiveWindow();
+                  if (fr == null) return 0;
+                  ArrayList<AccessibilityNodeInfo> ns = new ArrayList<AccessibilityNodeInfo>();
+                  walk(fr, 0, ns, new StringBuilder());
+                  for (AccessibilityNodeInfo fn : ns) {
+                    if (fn.isEditable()) continue;
+                    if (label(fn).toLowerCase().contains(fq)) {
+                      if (BLOCK_RE.matcher(fullInfo(fn)).find()) return -1;
+                      if (clickNode(fn) || tapNode(svc, fn)) return 1;
+                    }
+                  }
+                  AccessibilityNodeInfo sc = firstScrollable(fr, 0);
+                  if (sc == null || !sc.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) break;
+                  nap(900);
+                }
+                return 0;
+              }
               if ("back".equals(act)) return svc.global("back") ? 1 : 0;
               if ("home".equals(act)) return svc.global("home") ? 1 : 0;
               if ("wait".equals(act)) { nap(1500); return 1; }
@@ -2931,8 +3119,9 @@ jobs:
 
             // ---------- AI ----------
             private static final String SYS = "You control an Android phone through its accessibility tree. Reply with ONE JSON object and nothing else: "
-              + "{\"action\":\"click|type|enter|scroll|back|home|open|wait|read|clip|done|fail\",\"id\":<element id>,\"text\":\"<text to type>\",\"dir\":\"down|up\",\"app\":\"<app name for open>\",\"say\":\"very short Hinglish status\"}. "
+              + "{\"action\":\"click|type|enter|scroll|find|back|home|open|wait|read|clip|done|fail\",\"id\":<element id>,\"text\":\"<text to type>\",\"dir\":\"down|up\",\"app\":\"<app name for open>\",\"say\":\"very short Hinglish status\"}. "
               + "Choose the single next best action. Screen elements are listed as id|flags|label (c=clickable e=editable s=scrollable k=checkbox). Unlabeled icon buttons are listed as [icon Class at x= y=]. "
+              + "Use find with text (label of the element) when the target is not visible: Aura scrolls the list and taps it for you. "
               + "Use open to launch an app by name (skip it if CURRENT APP is already the right app). "
               + "HOW TO WORK INSIDE APPS: to search, click the search icon/box if needed, type the query into the editable element, then use enter; if enter fails click the Search/Send/Go button or the icon button at the right end of the input row. "
               + "For chat or AI apps (ChatGPT, Gemini, Claude, WhatsApp, Telegram etc.): click the message box (editable), type the message once, then click the Send button (label Send, or an unlabeled icon at the right/bottom-right of the input row, usually the one that appeared after typing). Do not type the same text again if the box already contains it. "
