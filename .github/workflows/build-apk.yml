@@ -820,6 +820,19 @@ jobs:
             }
 
             @PluginMethod
+            public void toFront(PluginCall call) {
+              try {
+                Context c = getContext();
+                Intent i = c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
+                if (i != null) {
+                  i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                  c.startActivity(i);
+                }
+              } catch (Throwable t) { }
+              call.resolve(new JSObject());
+            }
+
+            @PluginMethod
             public void agentRunning(PluginCall call) {
               JSObject o = new JSObject();
               boolean r = false;
@@ -3470,8 +3483,11 @@ jobs:
                   if (l.length() > 0 && !l.startsWith("[icon")) rb.append(l).append('\n');
                   if (rb.length() > 3000) break;
                 }
-                OUT = rb.toString().trim();
-                return OUT.length() > 0 ? 1 : 0;
+                String cur = rb.toString().trim();
+                if (cur.length() == 0) return 0;
+                OUT = OUT.length() > 0 ? OUT + "\n---\n" + cur : cur;
+                if (OUT.length() > 6000) OUT = OUT.substring(OUT.length() - 6000);
+                return 1;
               }
               if ("clip".equals(act)) {
                 try {
