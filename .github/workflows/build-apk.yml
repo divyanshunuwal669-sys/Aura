@@ -819,6 +819,62 @@ jobs:
               call.resolve(o);
             }
 
+            private String[] mediaPerms() {
+              if (Build.VERSION.SDK_INT >= 33)
+                return new String[] { "android.permission.READ_MEDIA_IMAGES", "android.permission.READ_MEDIA_VIDEO", "android.permission.READ_MEDIA_AUDIO" };
+              return new String[] { "android.permission.READ_EXTERNAL_STORAGE" };
+            }
+
+            @PluginMethod
+            public void mediaPerm(PluginCall call) {
+              JSObject o = new JSObject();
+              boolean ok = true;
+              try {
+                String[] ps = mediaPerms();
+                for (String p : ps) if (getContext().checkSelfPermission(p) != PackageManager.PERMISSION_GRANTED) ok = false;
+                if (!ok && Boolean.TRUE.equals(call.getBoolean("ask", false)) && getActivity() != null) {
+                  getActivity().requestPermissions(ps, 9124);
+                  o.put("asked", true);
+                }
+              } catch (Throwable t) { ok = false; }
+              o.put("ok", ok);
+              call.resolve(o);
+            }
+
+            @PluginMethod
+            public void recentFiles(PluginCall call) {
+              JSObject o = new JSObject();
+              JSArray arr = new JSArray();
+              try {
+                long since = System.currentTimeMillis() / 1000L - (long) (call.getInt("hours", 48) * 3600L);
+                int lim = call.getInt("limit", 40);
+                String[] cols = new String[] { "_display_name", "_size", "date_added", "mime_type", "relative_path" };
+                if (Build.VERSION.SDK_INT < 29) cols = new String[] { "_display_name", "_size", "date_added", "mime_type", "_data" };
+                android.database.Cursor c = getContext().getContentResolver().query(
+                    MediaStore.Files.getContentUri("external"), cols, "date_added > ?", new String[] { String.valueOf(since) }, "date_added DESC");
+                if (c != null) {
+                  int n = 0;
+                  while (c.moveToNext() && n < lim) {
+                    String name = c.getString(0);
+                    if (name == null || name.startsWith(".")) continue;
+                    JSObject f = new JSObject();
+                    f.put("name", name);
+                    f.put("size", c.getLong(1));
+                    f.put("ts", c.getLong(2) * 1000L);
+                    f.put("mime", c.getString(3));
+                    String p = c.getString(4);
+                    if (p != null && p.contains("/")) { String[] pp = p.split("/"); p = pp.length > 1 ? pp[pp.length - 2] : p; }
+                    f.put("dir", p == null ? "" : p);
+                    arr.put(f);
+                    n++;
+                  }
+                  c.close();
+                }
+              } catch (Throwable t) { }
+              o.put("files", arr);
+              call.resolve(o);
+            }
+
             @PluginMethod
             public void toFront(PluginCall call) {
               try {
@@ -4082,6 +4138,7 @@ jobs:
           </resources>
           EOF
           M=android/app/src/main/AndroidManifest.xml
+          sed -i 's#<application#<uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/><uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/><uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/><uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/><application#' $M
           sed -i 's#<application#<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/><uses-permission android:name="android.permission.RECORD_AUDIO"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/><uses-permission android:name="android.permission.USE_EXACT_ALARM"/><uses-permission android:name="android.permission.WRITE_SETTINGS"/><uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/><uses-permission android:name="android.permission.FLASHLIGHT"/><uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/><uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/><uses-permission android:name="android.permission.VIBRATE"/><uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.SET_ALARM"/><uses-permission android:name="android.permission.SEND_SMS"/><uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/><queries><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent><intent><action android:name="android.speech.RecognitionService"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent></queries><application#' $M
           sed -i 's#</application>#<service android:name=".BubbleService" android:exported="false"/><service android:name=".AuraNotifService" android:exported="true" android:label="Aura" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"><intent-filter><action android:name="android.service.notification.NotificationListenerService"/></intent-filter></service><receiver android:name=".SchedReceiver" android:exported="false"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"/></intent-filter></receiver><!--AURA_X1--><service android:name=".WakeService" android:exported="false" android:foregroundServiceType="microphone"/><!--AURA_X2--><!--AURA_Y1--><service android:name=".SendService" android:exported="true" android:label="Aura Auto-Send" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"><intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter><meta-data android:name="android.accessibilityservice" android:resource="@xml/aura_access"/></service><!--AURA_Y2--></application>#' $M
           sed -i '0,/<\/activity>/s#</activity>#<intent-filter><action android:name="android.intent.action.SEND"/><category android:name="android.intent.category.DEFAULT"/><data android:mimeType="text/plain"/></intent-filter></activity>#' $M
